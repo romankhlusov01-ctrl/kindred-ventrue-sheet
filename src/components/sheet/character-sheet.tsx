@@ -45,6 +45,7 @@ import { EnvironmentHazards } from "@/components/sheet/environment-hazards";
 import { OnboardingBanner } from "@/components/sheet/onboarding";
 import { SessionSummary } from "@/components/sheet/session-summary";
 import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
+import { AcBuilder } from "@/components/sheet/ac-builder";
 
 
 
@@ -826,6 +827,7 @@ export function CharacterSheet() {
             <RestWizard />
             <EnvironmentHazards />
             <ConcentrationHelper />
+            <AcBuilder />
             <CombatCard />
             <ResourcePool
               label="Очки крови"
