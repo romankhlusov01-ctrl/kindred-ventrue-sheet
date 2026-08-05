@@ -22,7 +22,7 @@ export function TorporPanel() {
       <div className="flex flex-wrap gap-1.5">
         <Button
           type="button"
-          size="sm"
+          className="h-11"
           variant="secondary"
           onClick={() => {
             setField("hpCurrent", 1);
@@ -35,7 +35,7 @@ export function TorporPanel() {
         </Button>
         <Button
           type="button"
-          size="sm"
+          className="h-11"
           variant="blood"
           onClick={() => {
             if (c.bloodCurrent < pb) {

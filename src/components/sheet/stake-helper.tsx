@@ -20,7 +20,7 @@ export function StakeHelper() {
       <div className="flex flex-wrap gap-1.5">
         <Button
           type="button"
-          size="sm"
+          className="h-11"
           variant="blood"
           onClick={() => {
             setField(
@@ -38,7 +38,7 @@ export function StakeHelper() {
         </Button>
         <Button
           type="button"
-          size="sm"
+          className="h-11"
           variant="secondary"
           onClick={() => {
             setField(

@@ -35,7 +35,7 @@ export function EnvironmentHazards() {
       <div className="flex flex-wrap gap-1.5">
         <Button
           type="button"
-          size="sm"
+          className="h-11"
           variant="secondary"
           onClick={() => take("Солнце", 5, true)}
         >
@@ -43,7 +43,7 @@ export function EnvironmentHazards() {
         </Button>
         <Button
           type="button"
-          size="sm"
+          className="h-11"
           variant="blood"
           onClick={() => take("Огонь", 10, true)}
         >
@@ -51,7 +51,7 @@ export function EnvironmentHazards() {
         </Button>
         <Button
           type="button"
-          size="sm"
+          className="h-11"
           variant="outline"
           onClick={() => take("Луч (закл.)", 8, true)}
         >
@@ -59,7 +59,7 @@ export function EnvironmentHazards() {
         </Button>
         <Button
           type="button"
-          size="sm"
+          className="h-11"
           variant="outline"
           onClick={() => {
             if (c.bloodCurrent < 1) {
