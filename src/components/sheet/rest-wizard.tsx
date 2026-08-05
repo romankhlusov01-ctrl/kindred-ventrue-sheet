@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { Moon, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCharacterStore, getLuckMax } from "@/lib/character-store";
+import { useSessionStore } from "@/lib/session-store";
 import { effectivePb } from "@/lib/level-utils";
 
 export function RestWizard() {
@@ -10,12 +11,13 @@ export function RestWizard() {
   const longRest = useCharacterStore((s) => s.longRest);
   const spendHitDie = useCharacterStore((s) => s.spendHitDie);
   const addLog = useCharacterStore((s) => s.addLog);
+  const pushUndo = useSessionStore((s) => s.pushUndo);
   const luckMax = getLuckMax(c.level, c.multiclass);
   const pb = effectivePb(c.level, c.multiclass);
   const hdLeft = c.level - c.hitDiceUsed;
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <h3 className="mb-2 font-display text-sm">Отдых</h3>
       <div className="mb-3 space-y-1 text-xs text-muted">
         <p>
@@ -37,6 +39,7 @@ export function RestWizard() {
           className="h-14 w-full"
           variant="secondary"
           onClick={() => {
+            pushUndo("Короткий отдых");
             shortRest();
             toast.success("Короткий: Зверь, Голос");
           }}
@@ -64,6 +67,7 @@ export function RestWizard() {
           className="h-14 w-full"
           variant={c.bloodCurrent >= 1 ? "blood" : "outline"}
           onClick={() => {
+            pushUndo("Долгий отдых");
             const ok = c.bloodCurrent >= 1;
             longRest();
             toast.message(
