@@ -361,7 +361,7 @@ export function PlayHub() {
       </section>
 
       <DeathPanel />
-      <SelfReminders />
+      {!focusMode && <SelfReminders />}
       <RollModeBar />
       {(c.pendingAdv || c.pendingDis) && (
         <div className="rounded-[var(--radius)] border border-accent/30 bg-accent/10 px-3 py-2 text-center text-xs text-accent">

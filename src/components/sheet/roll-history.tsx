@@ -3,12 +3,14 @@ import { cn } from "@/lib/utils";
 
 export function RollHistory() {
   const hist = useSessionStore((s) => s.rollHistory);
+  const focusMode = useSessionStore((s) => s.focusMode);
   if (!hist.length) return null;
+  const shown = focusMode ? hist.slice(0, 3) : hist;
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <h3 className="mb-2 font-display text-sm">Последние броски</h3>
       <ul className="space-y-1">
-        {hist.map((r, i) => (
+        {shown.map((r, i) => (
           <li
             key={`${r.at}-${i}`}
             className={cn(
