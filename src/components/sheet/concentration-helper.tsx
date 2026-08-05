@@ -89,7 +89,7 @@ export function ConcentrationHelper() {
         <span className="mb-1 text-xs text-muted">
           Сл {dc} · ТЕЛ {formatMod(conMod)}
         </span>
-        <Button type="button" size="sm" variant="secondary" onClick={check}>
+        <Button type="button" className="h-11" variant="secondary" onClick={check}>
           Спас
         </Button>
       </div>
