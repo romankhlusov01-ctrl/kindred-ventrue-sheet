@@ -967,16 +967,16 @@ export function VentrueBuilder() {
           </div>
         )}
 
-        <div className="mt-6 flex justify-between gap-2 border-t border-border pt-4">
-          <Button type="button" className="h-12" variant="secondary" disabled={stepIndex === 0} onClick={() => go(-1)}>
+        <div className="sticky bottom-16 z-10 mt-6 flex justify-between gap-2 border-t border-border bg-bg/95 py-3 backdrop-blur sm:bottom-0">
+          <Button type="button" className="h-12 flex-1" variant="secondary" disabled={stepIndex === 0} onClick={() => go(-1)}>
             <ChevronLeft className="size-4" /> Назад
           </Button>
           {step !== "finish" ? (
-            <Button className="h-12" type="button" variant="blood" onClick={() => go(1)}>
+            <Button className="h-12 flex-1" type="button" variant="blood" onClick={() => go(1)}>
               Далее <ChevronRight className="size-4" />
             </Button>
           ) : (
-            <Button type="button" variant="secondary" onClick={applyToSheet}>
+            <Button type="button" className="h-12 flex-1" variant="blood" onClick={applyToSheet}>
               Применить
             </Button>
           )}
