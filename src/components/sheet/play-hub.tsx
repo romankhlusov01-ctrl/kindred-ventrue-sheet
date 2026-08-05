@@ -43,6 +43,7 @@ import { BloodPips } from "@/components/sheet/blood-pips";
 import { DeathPanel } from "@/components/sheet/death-panel";
 import { AbilityStrip } from "@/components/sheet/ability-strip";
 import { SelfReminders } from "@/components/sheet/self-reminders";
+import { AutoInit } from "@/components/sheet/auto-init";
 import {
   getBloodMax,
   getLuckMax,
@@ -147,7 +148,7 @@ export function PlayHub() {
   const showRest = scenario === "rest";
 
   return (
-    <div className="mx-auto max-w-lg space-y-2.5 sm:max-w-none sm:space-y-3">
+    <div className="mx-auto max-w-lg space-y-2.5 sm:max-w-3xl sm:space-y-3 lg:max-w-none">
       {/* Scenario chips — primary phone filter */}
       <div className="grid grid-cols-4 gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-1">
         {SCENARIOS.map((s) => (
@@ -471,8 +472,11 @@ export function PlayHub() {
 
       {showCombat && (
         <>
+          <AutoInit />
+          <div className="grid gap-2.5 lg:grid-cols-2">
           <PrimaryPowers />
           <PcSaves />
+          </div>
 
           <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
             <div className="mb-2 flex items-center justify-between">
@@ -589,8 +593,10 @@ export function PlayHub() {
 
       {showSocial && (
         <>
+          <div className="grid gap-2.5 lg:grid-cols-2">
           <QuickSkills />
           <DominateDc />
+          </div>
           <PrimaryPowers />
           <MyEffects />
           <Passives />

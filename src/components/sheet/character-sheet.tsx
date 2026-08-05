@@ -540,10 +540,24 @@ export function CharacterSheet() {
           </button>
         </div>
         {lastRoll && (
-          <div className="mt-1.5 flex items-center justify-between gap-2 rounded-[var(--radius)] border border-primary/25 bg-primary/10 px-2.5 py-1.5">
+          <button
+            type="button"
+            className="mt-1.5 flex w-full items-center justify-between gap-2 rounded-[var(--radius)] border border-primary/25 bg-primary/10 px-2.5 py-1.5 text-left active:scale-[0.99]"
+            onClick={async () => {
+              const text = `${lastRoll.label}: ${lastRoll.total} (${lastRoll.detail})`;
+              try {
+                await navigator.clipboard.writeText(text);
+                toast.success("Бросок скопирован");
+              } catch {
+                toast.message(text);
+              }
+            }}
+          >
             <span className="min-w-0 truncate text-[11px] text-muted">{lastRoll.label}</span>
-            <span className="font-display text-xl tabular-nums leading-none text-primary">{lastRoll.total}</span>
-          </div>
+            <span className="font-display text-xl tabular-nums leading-none text-primary">
+              {lastRoll.total}
+            </span>
+          </button>
         )}
         {character.conditions.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
