@@ -37,6 +37,8 @@ import { BloodBond } from "@/components/sheet/blood-bond";
 import { PcSaves } from "@/components/sheet/pc-saves";
 import { Passives } from "@/components/sheet/passives";
 import { ClearLog } from "@/components/sheet/clear-log";
+import { LogSearch } from "@/components/sheet/log-search";
+
 import { EnemyTurn } from "@/components/sheet/enemy-turn";
 import { AutoInit } from "@/components/sheet/auto-init";
 
@@ -1536,6 +1538,7 @@ export function CharacterSheet() {
                 </li>
               ))}
             </ul>
+
           </div>
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-sm text-muted">
             <h3 className="mb-2 font-display text-base text-fg">Подсказки сессии</h3>
