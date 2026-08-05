@@ -52,6 +52,7 @@ import {
   type CharacterSheet,
 } from "@/lib/character-store";
 import { BUILD_PRESETS, defaultAttacks, type BuildPreset } from "@/data/builder-presets";
+import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
 
 export function VentrueBuilder() {
   const character = useCharacterStore((s) => s.character);
@@ -435,6 +436,22 @@ export function VentrueBuilder() {
               {bpPreview} · Питание {getLevelData(level).feed} · черты сородича {featSlots} ·
               ASI×{asiCount(level)}
               <div className="mt-1 text-xs">{KINDRED_TABLE[level - 1]?.features}</div>
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-medium">Веха Вентру</h3>
+              <ul className="max-h-40 space-y-1 overflow-y-auto scroll-thin text-xs text-muted">
+                {VENTRUE_MILESTONES.filter((m) => m.level <= level).map((m) => (
+                  <li
+                    key={m.level}
+                    className={cn(
+                      "rounded border border-border px-2 py-1",
+                      m.level === level && "border-primary/50 bg-primary/10 text-fg",
+                    )}
+                  >
+                    <strong>ур.{m.level} {m.title}:</strong> {m.items.join(" · ")}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}

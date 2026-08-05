@@ -35,6 +35,8 @@ import { DamageIntake } from "@/components/sheet/damage-intake";
 import { VentrueBuilder } from "@/components/sheet/ventrue-builder";
 import { LevelUpHelper } from "@/components/sheet/level-up-helper";
 import { WarlockSnippet } from "@/components/sheet/warlock-snippet";
+import { EncounterPanel } from "@/components/sheet/encounter-panel";
+import { InventoryPanel } from "@/components/sheet/inventory-panel";
 
 
 
@@ -882,6 +884,7 @@ export function CharacterSheet() {
           </div>
 
           <aside className="space-y-4 lg:col-span-4">
+            <EncounterPanel />
             <ResourcePool
               label="Очки крови"
               current={character.bloodCurrent}
@@ -1429,14 +1432,7 @@ export function CharacterSheet() {
 
       {tab === "gear" && (
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-            <Label>Снаряжение</Label>
-            <Textarea
-              className="mt-1 min-h-48"
-              value={character.equipment}
-              onChange={(e) => setField("equipment", e.target.value)}
-            />
-          </div>
+          <InventoryPanel />
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <Label>Заметки / Bonds / цели сессии</Label>
             <Textarea

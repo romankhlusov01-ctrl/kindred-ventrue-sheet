@@ -20,6 +20,7 @@ import { conditionMode, type RollKind } from "@/lib/play-helpers";
 
 
 import { SKILLS } from "@/data/skills";
+import { useSessionStore } from "@/lib/session-store";
 
 type LogEntry = {
   id: number;
@@ -52,6 +53,7 @@ export function DicePanel() {
   const spendProtected = useCharacterStore((s) => s.spendProtected);
   const setField = useCharacterStore((s) => s.setField);
   const patch = useCharacterStore((s) => s.patch);
+  const setLastRoll = useSessionStore((s) => s.setLastRoll);
 
   const [log, setLog] = useState<LogEntry[]>([]);
   const row = getLevelData(character.level);
@@ -67,6 +69,7 @@ export function DicePanel() {
       [{ id: Date.now() + Math.random(), label, detail, total, kind }, ...prev].slice(0, 20),
     );
     addLog(`${label}: ${total} (${detail})`);
+    setLastRoll({ label, total, detail, at: Date.now() });
   }
 
   function effectiveMode(forceAdv = false, kind: RollKind = "check"): RollMode {

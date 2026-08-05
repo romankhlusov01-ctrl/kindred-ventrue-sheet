@@ -81,6 +81,32 @@
   }
 }
 
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .fixed,
+  [data-grok-banner],
+  nav,
+  .sticky {
+    display: none !important;
+  }
+  .bg-surface,
+  .bg-surface-2,
+  .bg-bg {
+    background: white !important;
+    border-color: #ccc !important;
+  }
+  .text-muted,
+  .text-faint,
+  .text-fg,
+  .text-accent,
+  .text-primary {
+    color: #111 !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

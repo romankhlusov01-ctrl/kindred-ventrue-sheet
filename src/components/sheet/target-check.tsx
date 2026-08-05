@@ -1,17 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSessionStore } from "@/lib/session-store";
 
 /**
  * Solo GM helper: compare last/manual roll to target AC/DC.
  */
-export function TargetCheck({ lastTotal }: { lastTotal?: number | null }) {
+export function TargetCheck() {
+  const lastRoll = useSessionStore((s) => s.lastRoll);
   const [target, setTarget] = useState(15);
-  const [last, setLast] = useState<number | null>(lastTotal ?? null);
+  const [last, setLast] = useState<number | null>(null);
   const [result, setResult] = useState<"hit" | "miss" | null>(null);
+
+  useEffect(() => {
+    if (lastRoll) setLast(lastRoll.total);
+  }, [lastRoll]);
 
   function compare(roll: number) {
     setLast(roll);
@@ -25,6 +31,12 @@ export function TargetCheck({ lastTotal }: { lastTotal?: number | null }) {
       <h3 className="mb-2 flex items-center gap-2 font-display text-sm">
         <Crosshair className="size-4 text-accent" /> Цель (КД / Сл)
       </h3>
+      {lastRoll && (
+        <p className="mb-2 text-xs text-muted">
+          Последний бросок: <strong className="text-fg">{lastRoll.label}</strong> ={" "}
+          <strong className="text-primary">{lastRoll.total}</strong>
+        </p>
+      )}
       <div className="flex flex-wrap items-end gap-2">
         <label className="block">
           <span className="text-[10px] uppercase text-muted">КД или Сл</span>
@@ -45,9 +57,24 @@ export function TargetCheck({ lastTotal }: { lastTotal?: number | null }) {
             onChange={(e) => setLast(Number(e.target.value) || 0)}
           />
         </label>
-        <Button type="button" size="sm" variant="secondary" onClick={() => last != null && compare(last)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => last != null && compare(last)}
+        >
           Сравнить
         </Button>
+        {lastRoll && (
+          <Button
+            type="button"
+            size="sm"
+            variant="blood"
+            onClick={() => compare(lastRoll.total)}
+          >
+            Сравнить последний
+          </Button>
+        )}
       </div>
       {result && last != null && (
         <div
@@ -62,9 +89,6 @@ export function TargetCheck({ lastTotal }: { lastTotal?: number | null }) {
           {last - target >= 0 ? ` (+${last - target})` : ` (${last - target})`}
         </div>
       )}
-      <p className="mt-2 text-[10px] text-muted">
-        Введи итог атаки/проверки (или возьми из тоста) и сравни с КД врага / Сл эффекта.
-      </p>
     </div>
   );
 }

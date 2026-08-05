@@ -22,6 +22,7 @@ import {
 import { rollD20, rollDamage } from "@/lib/roll-engine";
 import { conditionMode } from "@/lib/play-helpers";
 import { SKILLS } from "@/data/skills";
+import { useSessionStore } from "@/lib/session-store";
 
 /**
  * Fixed bottom dock for one-thumb solo play (mobile-first).
@@ -37,6 +38,7 @@ export function PlayDock() {
   const setField = useCharacterStore((s) => s.setField);
   const gainBlood = useCharacterStore((s) => s.gainBlood);
   const consumeRollMode = useCharacterStore((s) => s.consumeRollMode);
+  const setLastRoll = useSessionStore((s) => s.setLastRoll);
   const [open, setOpen] = useState(true);
   const [last, setLast] = useState<{ label: string; total: number; detail: string } | null>(
     null,
@@ -49,6 +51,7 @@ export function PlayDock() {
   function show(label: string, total: number, detail: string) {
     setLast({ label, total, detail });
     addLog(`${label}: ${total} (${detail})`);
+    setLastRoll({ label, total, detail, at: Date.now() });
   }
 
   function modeFor(kind: "check" | "attack" | "save" | "init") {
