@@ -312,7 +312,7 @@ export function PlayDock() {
           </>
         ) : (
           <>
-            <DockBtn label={primary ? "Атака" : "—"} danger onClick={rollPrimaryAttack} />
+            <DockBtn label={primary ? (primary.name.length > 8 ? primary.name.slice(0, 7) + "…" : primary.name) : "—"} danger onClick={rollPrimaryAttack} />
             <DockBtn label="Питан." danger onClick={rollFeed} />
             <DockBtn
               label="Зверь"
