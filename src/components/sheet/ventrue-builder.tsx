@@ -309,7 +309,7 @@ export function VentrueBuilder() {
       ].join("\n"),
       equipment:
         character.equipment ||
-        `${bg.equipment}\nНагрудник или кожа + плащ\nОружие ближнего боя\nСимвол дома`,
+        `💰 15\n• Короткий меч ×1 (2 lb)\n• Кинжал ×2 (1 lb)\n• Нагрудник ×1 (20 lb)\n• ${bg.equipment}`,
       notes:
         character.notes ||
         `Сл ${spellDc}. Bane: ${character.preferredBlood}. Dual luck: Везучий + Защищённый.`,
