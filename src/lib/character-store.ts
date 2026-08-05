@@ -286,12 +286,27 @@ export const useCharacterStore = create<LibraryState>()(
         set((s) =>
           updateActive(s, (c) => {
             const has = c.selectedFeats.includes(featId);
-            return {
-              ...c,
-              selectedFeats: has
-                ? c.selectedFeats.filter((x) => x !== featId)
-                : [...c.selectedFeats, featId],
-            };
+            const selectedFeats = has
+              ? c.selectedFeats.filter((x) => x !== featId)
+              : [...c.selectedFeats, featId];
+            let customResources = c.customResources;
+            // auto Presence resource for Forceful Presence
+            if (featId === "forceful" && !has) {
+              if (!customResources.some((r) => /присутств|forceful|awe/i.test(r.name))) {
+                const pb = Math.ceil(c.level / 4) + 1;
+                customResources = [
+                  ...customResources,
+                  {
+                    id: `cr-presence-${Date.now()}`,
+                    name: "Властное присутствие",
+                    current: pb,
+                    max: pb,
+                    note: "Awe / Daunt · LR",
+                  },
+                ];
+              }
+            }
+            return { ...c, selectedFeats, customResources };
           }),
         ),
       patch: (partial) =>

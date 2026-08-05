@@ -1330,9 +1330,16 @@ export function CharacterSheet() {
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <h2 className="font-display text-lg">Черты сородича + происхождение</h2>
             <p className="mt-1 text-sm text-muted">
-              Слоты Kindred Feat: 2, 7, 10, 13, 17. На ASI (4/8/12/16) можно взять Kindred Feat
-              или обычную черту. Origin: {FEAT_LUCKY.name} + {FEAT_PROTECTED.name}.
+              Слоты Kindred Feat: 2, 7, 10, 13, 17 — <strong>отдельно</strong> от ASI (4/8/12/16/19).
+              ASI не заменяет черту сородича (RAW PDF). Origin: {FEAT_LUCKY.name} +{" "}
+              {FEAT_PROTECTED.name}.
             </p>
+            <Input
+              className="mt-3"
+              placeholder="Поиск черты…"
+              value={featureQ}
+              onChange={(e) => setFeatureQ(e.target.value)}
+            />
             <div className="mt-3 flex flex-wrap gap-2">
               {character.selectedFeats.map((id) => {
                 const f = availableFeats.find((x) => x.id === id);
@@ -1354,7 +1361,15 @@ export function CharacterSheet() {
             </div>
           </div>
           <div className="grid gap-2 lg:grid-cols-2">
-            {availableFeats.map((f) => {
+            {availableFeats
+              .filter(
+                (f) =>
+                  !featureQ.trim() ||
+                  `${f.name} ${f.body} ${f.prereq}`
+                    .toLowerCase()
+                    .includes(featureQ.toLowerCase()),
+              )
+              .map((f) => {
               const on = character.selectedFeats.includes(f.id);
               return (
                 <button
