@@ -55,6 +55,13 @@ import { StakeHelper } from "@/components/sheet/stake-helper";
 import { Glossary } from "@/components/sheet/glossary";
 import { FullHealButton } from "@/components/sheet/full-heal";
 import { InitOrder } from "@/components/sheet/init-order";
+import { DominateDc } from "@/components/sheet/dominate-dc";
+import { SessionNote } from "@/components/sheet/session-note";
+import { TempHp } from "@/components/sheet/temp-hp";
+import { QuickCondition } from "@/components/sheet/quick-condition";
+
+
+
 
 
 
@@ -838,7 +845,13 @@ export function CharacterSheet() {
           </div>
 
           <aside className="space-y-4 lg:col-span-4">
+            <SessionNote />
+            <DominateDc />
+            <TempHp />
+            <QuickCondition />
             <EncounterPanel />
+
+
             <InitOrder />
             <RestWizard />
             <EnvironmentHazards />
@@ -847,6 +860,7 @@ export function CharacterSheet() {
             <TorporPanel />
             <StakeHelper />
             <CombatCard />
+
             <ResourcePool
               label="Очки крови"
               current={character.bloodCurrent}

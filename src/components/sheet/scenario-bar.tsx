@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { scenarioHints } from "@/lib/play-helpers";
 import { useCharacterStore } from "@/lib/character-store";
 import { Swords, MessageCircle, Droplets, Moon } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const SCENES = [
   { id: "combat", label: "Бой", icon: Swords },
@@ -12,6 +13,8 @@ const SCENES = [
 
 export function ScenarioBar() {
   const scenario = useCharacterStore((s) => s.character.scenario ?? "combat");
+  const preferredBlood = useCharacterStore((s) => s.character.preferredBlood);
+  const hunger = useCharacterStore((s) => s.character.hunger);
   const setField = useCharacterStore((s) => s.setField);
   const hints = scenarioHints(scenario);
 
@@ -38,6 +41,22 @@ export function ScenarioBar() {
           </button>
         ))}
       </div>
+      {(scenario === "feed" || scenario === "social") && (
+        <label className="mb-2 block text-[10px] text-muted">
+          Предпочтённая кровь (Bane)
+          <Input
+            className="mt-0.5 h-8"
+            value={preferredBlood}
+            placeholder="напр. знать, девы, художники…"
+            onChange={(e) => setField("preferredBlood", e.target.value)}
+          />
+        </label>
+      )}
+      {hunger && (
+        <p className="mb-2 rounded border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] text-primary">
+          Голод: помеха на проверки характеристик (вкл. соц.)
+        </p>
+      )}
       <ol className="space-y-1 text-xs text-muted">
         {hints.map((h) => (
           <li key={h} className="leading-snug">

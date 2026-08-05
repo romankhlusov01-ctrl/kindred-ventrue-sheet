@@ -344,11 +344,26 @@ export const useCharacterStore = create<LibraryState>()(
       adjustHp: (delta) =>
         set((s) =>
           updateActive(s, (c) => {
-            const next = clamp(c.hpCurrent + delta, 0, Math.max(c.hpMax + 100, 0));
-            // Kindred auto-success death saves at 0 — still track if user wants
-            return { ...c, hpCurrent: next };
+            // Positive delta heals current HP only; negative applies through temp HP
+            if (delta >= 0) {
+              return {
+                ...c,
+                hpCurrent: clamp(c.hpCurrent + delta, 0, Math.max(c.hpMax + 100, 0)),
+              };
+            }
+            let dmg = -delta;
+            let temp = c.tempHp;
+            let hp = c.hpCurrent;
+            if (temp > 0) {
+              const absorbed = Math.min(temp, dmg);
+              temp -= absorbed;
+              dmg -= absorbed;
+            }
+            hp = Math.max(0, hp - dmg);
+            return { ...c, hpCurrent: hp, tempHp: temp };
           }),
         ),
+
       shortRest: () =>
         set((s) =>
           updateActive(s, (c) => ({

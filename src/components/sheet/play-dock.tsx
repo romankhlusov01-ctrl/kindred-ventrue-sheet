@@ -2,16 +2,12 @@ import { toast } from "sonner";
 import {
   Droplets,
   Heart,
-  RefreshCw,
   Sparkles,
-  Swords,
-  Dices,
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { cn, abilityMod, formatMod, rollDie } from "@/lib/utils";
+import { cn, abilityMod, rollDie } from "@/lib/utils";
 import { getLevelData } from "@/data/kindred-ru";
 import {
   getBloodMax,
@@ -40,6 +36,8 @@ export function PlayDock() {
   const consumeRollMode = useCharacterStore((s) => s.consumeRollMode);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
   const shortRest = useCharacterStore((s) => s.shortRest);
+  const spendLucky = useCharacterStore((s) => s.spendLucky);
+  const spendProtected = useCharacterStore((s) => s.spendProtected);
   const [open, setOpen] = useState(true);
   const [last, setLast] = useState<{ label: string; total: number; detail: string } | null>(
     null,
@@ -47,7 +45,11 @@ export function PlayDock() {
 
   const pb = getLevelData(c.level).pb;
   const bloodMax = getBloodMax(c);
+  const luckMax = getLuckMax(c.level);
+  const luckyLeft = Math.max(0, luckMax - (c.luckyUsed ?? 0));
+  const protectedLeft = Math.max(0, luckMax - (c.protectedUsed ?? 0));
   const primary = c.attacks[0];
+  const atZero = c.hpCurrent <= 0;
 
   function show(label: string, total: number, detail: string) {
     setLast({ label, total, detail });
@@ -66,8 +68,7 @@ export function PlayDock() {
 
   function rollInit() {
     const m = modeFor("init");
-    // Alacrity
-    const force = c.selectedFeats.includes("alacrity") ? "adv" as const : m;
+    const force = c.selectedFeats.includes("alacrity") ? ("adv" as const) : m;
     const r = rollD20("Инициатива", abilityMod(c.abilities.dex), force);
     consumeRollMode();
     setField("initiative", r.total);
@@ -103,7 +104,8 @@ export function PlayDock() {
     const sum = rolls.reduce((a, b) => a + b, 0) + con;
     if (sixes) gainBlood(sixes);
     show("Питание", sum, `${rolls.join("+")}+Тел`);
-    toast.success(`Питание ${sum}${sixes ? ` · +${sixes} ОБК` : ""}`);
+    const pref = c.preferredBlood ? ` · Bane: ${c.preferredBlood}` : "";
+    toast.success(`Питание ${sum}${sixes ? ` · +${sixes} ОБК` : ""}${pref}`);
   }
 
   function rollPersuade() {
@@ -130,6 +132,11 @@ export function PlayDock() {
               {last.total}
             </span>
           )}
+          {atZero && (
+            <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
+              0 ХП
+            </span>
+          )}
         </button>
       </div>
     );
@@ -137,6 +144,11 @@ export function PlayDock() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_32px_rgb(0_0_0_/_0.45)] backdrop-blur-md">
+      {atZero && (
+        <div className="mx-3 mb-1 rounded border border-primary/50 bg-primary/20 px-2 py-1 text-center text-[11px] font-semibold text-primary">
+          0 хитов · Kindred: спас. от смерти автоматически успешны · Protected / кол?
+        </div>
+      )}
       {last && (
         <div className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-[var(--radius)] border border-primary/30 bg-primary/10 px-3 py-2">
           <div className="min-w-0">
@@ -164,12 +176,15 @@ export function PlayDock() {
           {Math.max(0, pb - c.beastUsed)}/{pb}
           {c.beastActive ? " ★" : ""}
         </span>
+        <span className="tabular-nums text-faint">
+          L{luckyLeft}/P{protectedLeft}
+        </span>
         <button type="button" className="text-faint" onClick={() => setOpen(false)}>
           <ChevronDown className="size-4" />
         </button>
       </div>
 
-      <div className="grid grid-cols-5 gap-1 px-2 pb-1 sm:grid-cols-6">
+      <div className="grid grid-cols-4 gap-1 px-2 pb-1 sm:grid-cols-7">
         <DockBtn
           label="−ХП"
           onClick={() => {
@@ -215,8 +230,32 @@ export function PlayDock() {
         <DockBtn
           label={primary ? "Атака" : "—"}
           danger
-          className="col-span-2"
+          className="col-span-2 sm:col-span-1"
           onClick={rollPrimaryAttack}
+        />
+        <DockBtn
+          label={`Lucky ${luckyLeft}`}
+          accent
+          onClick={() => {
+            if (!spendLucky()) {
+              toast.error("Нет Lucky");
+              return;
+            }
+            setField("pendingAdv", true);
+            addLog("Lucky — преимущество на следующий d20");
+            toast.success("Lucky: преим. на след. d20");
+          }}
+        />
+        <DockBtn
+          label={`Prot ${protectedLeft}`}
+          onClick={() => {
+            if (!spendProtected()) {
+              toast.error("Нет Protected");
+              return;
+            }
+            addLog("Protected — реакция (см. черту)");
+            toast.success("Protected использован");
+          }}
         />
         <DockBtn
           label="Отдых"

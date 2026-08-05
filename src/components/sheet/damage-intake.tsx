@@ -23,6 +23,7 @@ export function DamageIntake() {
     if (fireRadiant) dmg = dmg * 2; // Kindred vulnerability
     if (halve) dmg = Math.floor(dmg / 2);
 
+    const raw = dmg;
     let temp = c.tempHp;
     let hp = c.hpCurrent;
     let absorbed = 0;
@@ -36,9 +37,16 @@ export function DamageIntake() {
 
     setField("tempHp", temp);
     setField("hpCurrent", hp);
-    addLog(
-      `Урон ${amount}${halve ? " (½)" : ""}${fireRadiant ? " огонь/луч" : ""} → −${amount - (halve ? Math.ceil(amount / 2) : 0) === amount && !halve ? dmg + absorbed : ""}${absorbed ? ` (врем. ${absorbed})` : ""} · ХП ${hp}`,
-    );
+    const parts = [
+      `Урон ${amount}`,
+      fireRadiant ? "огонь/луч ×2" : null,
+      halve ? "½ мрамор" : null,
+      `= ${raw}`,
+      absorbed ? `врем. −${absorbed}` : null,
+      dmg ? `ХП −${dmg}` : null,
+      `→ ${hp}/${c.hpMax}`,
+    ].filter(Boolean);
+    addLog(parts.join(" · "));
 
     if (wentToZero) {
       if (fireRadiant) {
@@ -48,7 +56,7 @@ export function DamageIntake() {
         toast.message("0 хитов — Kindred автоуспех death saves / Protected");
       }
     } else {
-      toast.message(`ХП ${hp}/${c.hpMax}`);
+      toast.message(`ХП ${hp}/${c.hpMax}${temp ? ` · врем. ${temp}` : ""}`);
     }
   }
 
@@ -68,6 +76,9 @@ export function DamageIntake() {
             onChange={(e) => setAmount(Number(e.target.value) || 0)}
           />
         </label>
+        {c.tempHp > 0 && (
+          <span className="mb-1 text-xs text-accent">врем. {c.tempHp}</span>
+        )}
         <Button type="button" size="sm" variant="blood" onClick={apply}>
           Применить
         </Button>
