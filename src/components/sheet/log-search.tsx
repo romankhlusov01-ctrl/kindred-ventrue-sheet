@@ -12,9 +12,9 @@ export function LogSearch() {
   }, [log, q]);
 
   return (
-    <div className="mb-2 h-11">
+    <div>
       <Input
-        className="h-8"
+        className="h-11"
         placeholder="Фильтр журнала…"
         value={q}
         onChange={(e) => setQ(e.target.value)}
@@ -28,12 +28,12 @@ export function LogSearch() {
         {filtered.map((e) => (
           <li
             key={e.id}
-            className="rounded border border-border bg-surface-2 px-3 py-2 text-sm"
+            className="rounded-[var(--radius)] border border-border bg-surface-2 px-3 py-2.5 text-sm"
           >
             <div className="text-[10px] text-faint">
               {new Date(e.at).toLocaleTimeString("ru-RU")}
             </div>
-            <div>{e.text}</div>
+            <div className="leading-snug">{e.text}</div>
           </li>
         ))}
         {filtered.length === 0 && (
