@@ -3,6 +3,7 @@ import { TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getLevelData, KINDRED_TABLE } from "@/data/kindred-ru";
 import { calcKindredHp, kindredFeatSlots } from "@/data/builder-ru";
+import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
 import { useCharacterStore } from "@/lib/character-store";
 
 /** One-tap level up: +1 level, HP, BP fill note, feat slot reminder */
@@ -21,6 +22,7 @@ export function LevelUpHelper() {
   const features = KINDRED_TABLE[next - 1]?.features ?? "";
   const asiLevels = [4, 8, 12, 16, 19];
   const newAsi = asiLevels.includes(next);
+  const milestone = VENTRUE_MILESTONES.find((m) => m.level === next);
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-accent/30 bg-accent/5 p-3">
@@ -34,6 +36,7 @@ export function LevelUpHelper() {
         : {features}. ОБК {row.bp}, питание {row.feed}, БМ +{row.pb}
         {newFeat ? " · +слот черты сородича" : ""}
         {newAsi ? " · ASI" : ""}.
+        {milestone ? ` · ${milestone.title}` : ""}
       </p>
       <Button
         type="button"

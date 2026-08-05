@@ -362,7 +362,6 @@ export function PlayHub() {
       <DeathPanel />
       <SelfReminders />
       <RollModeBar />
-      <InspirationToggle />
       {(showCombat || showSocial) && <AbilityStrip />}
 
       {/* Turn economy — combat + social */}
@@ -610,6 +609,7 @@ export function PlayHub() {
 
       {showSocial && (
         <>
+          <InspirationToggle />
           <div className="grid gap-2.5 lg:grid-cols-2">
           <QuickSkills />
           <DominateDc />
