@@ -132,6 +132,15 @@ export const ENEMY_TEMPLATES: EnemyTemplate[] = [
     atkBonus: 5,
     damage: "1d10",
   },
+  {
+    name: "Гончая",
+    hp: 16,
+    ac: 13,
+    notes: "mastiff · pack",
+    init: 12,
+    atkBonus: 3,
+    damage: "1d6+1",
+  },
 ];
 
 
