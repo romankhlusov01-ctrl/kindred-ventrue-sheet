@@ -39,6 +39,7 @@ export function PlayDock() {
   const gainBlood = useCharacterStore((s) => s.gainBlood);
   const consumeRollMode = useCharacterStore((s) => s.consumeRollMode);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
+  const shortRest = useCharacterStore((s) => s.shortRest);
   const [open, setOpen] = useState(true);
   const [last, setLast] = useState<{ label: string; total: number; detail: string } | null>(
     null,
@@ -216,6 +217,13 @@ export function PlayDock() {
           danger
           className="col-span-2"
           onClick={rollPrimaryAttack}
+        />
+        <DockBtn
+          label="Отдых"
+          onClick={() => {
+            shortRest();
+            toast.message("Короткий отдых");
+          }}
         />
       </div>
     </div>
