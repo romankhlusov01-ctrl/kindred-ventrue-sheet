@@ -36,9 +36,11 @@ export function Hotkeys() {
       if (key === " " || key === "n") {
         e.preventDefault();
         store.newTurn();
+        useSessionStore.getState().tickEffects();
         toast.message("Новый ход");
         return;
       }
+
       if (key === "b") {
         e.preventDefault();
         if (!store.activateBeast()) toast.error("Зверь исчерпан");
