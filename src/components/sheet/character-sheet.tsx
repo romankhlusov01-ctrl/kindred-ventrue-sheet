@@ -34,6 +34,8 @@ import { Hotkeys } from "@/components/sheet/hotkeys";
 import { RoundBanner } from "@/components/sheet/round-banner";
 import { AsiHelper } from "@/components/sheet/asi-helper";
 import { BloodBond } from "@/components/sheet/blood-bond";
+import { PcSaves } from "@/components/sheet/pc-saves";
+
 
 
 
@@ -857,7 +859,9 @@ export function CharacterSheet() {
             <SoloCombat />
 
             <TargetCheck />
+            <PcSaves />
             <DamageIntake />
+
 
             <DicePanel />
           </div>
