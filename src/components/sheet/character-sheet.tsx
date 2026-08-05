@@ -39,6 +39,7 @@ import { ExportMarkdown } from "@/components/sheet/export-markdown";
 import { ExportLog } from "@/components/sheet/export-log";
 import { Glossary } from "@/components/sheet/glossary";
 import { AbilityEditor } from "@/components/sheet/ability-editor";
+import { AcBuilder } from "@/components/sheet/ac-builder";
 import { useSessionStore } from "@/lib/session-store";
 
 import {
@@ -1074,6 +1075,8 @@ export function CharacterSheet() {
       {tab === "gear" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <InventoryPanel />
+          <div className="space-y-3">
+          <AcBuilder />
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <Label>Заметки / Bonds / цели сессии</Label>
             <Textarea
@@ -1081,6 +1084,7 @@ export function CharacterSheet() {
               value={character.notes}
               onChange={(e) => setField("notes", e.target.value)}
             />
+          </div>
           </div>
         </div>
       )}

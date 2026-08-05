@@ -33,12 +33,12 @@ export function AcBuilder() {
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <h3 className="mb-1 flex items-center gap-2 font-display text-sm">
         <Shield className="size-4 text-accent" /> Калькулятор КД
       </h3>
       <p className="mb-2 text-[10px] text-muted">Лов {formatMod(dex)} · сейчас КД {c.ac}</p>
-      <div className="grid max-h-48 grid-cols-1 gap-1 overflow-y-auto scroll-thin sm:grid-cols-2">
+      <div className="grid max-h-64 grid-cols-1 gap-1 overflow-y-auto scroll-thin sm:grid-cols-2">
         {ARMORS.map((a) => {
           let ac = a.base + (a.dex ? Math.min(dex, a.maxDex) : 0);
           return (
@@ -47,7 +47,7 @@ export function AcBuilder() {
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-8 flex-1 justify-between text-xs"
+                className="h-11 flex-1 justify-between text-xs"
                 onClick={() => apply(a, false)}
               >
                 <span className="truncate">{a.name}</span>
@@ -57,7 +57,7 @@ export function AcBuilder() {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8 px-2 text-xs"
+                className="h-11 px-2 text-xs"
                 onClick={() => apply(a, true)}
                 title="Со щитом"
               >
