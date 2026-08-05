@@ -106,6 +106,9 @@ export function PcSaves() {
           );
         })}
       </div>
+      {c.clan === "ventrue" && (
+        <p className="mt-2 text-[10px] text-muted">Вентру: часто преимущество к спас. Муд. (клан)</p>
+      )}
       <Button
         type="button"
         size="sm"
