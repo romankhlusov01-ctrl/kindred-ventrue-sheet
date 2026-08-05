@@ -92,6 +92,7 @@ export function PlayHub() {
   const pushUndo = useSessionStore((s) => s.pushUndo);
   const undo = useSessionStore((s) => s.undo);
   const undoStack = useSessionStore((s) => s.undoStack);
+  const focusMode = useSessionStore((s) => s.focusMode);
 
   const [editAtk, setEditAtk] = useState(false);
 
@@ -206,6 +207,17 @@ export function PlayHub() {
           </button>
         </div>
 
+        {focusMode && (
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-sm text-muted">ХП</span>
+            <span className="font-display text-lg tabular-nums">
+              {c.hpCurrent}/{c.hpMax}
+              {c.tempHp > 0 && <span className="ml-1 text-accent">+{c.tempHp}</span>}
+            </span>
+          </div>
+        )}
+        {!focusMode && (
+        <>
         {/* HP */}
         <div className="mb-2">
           <div className="mb-1 flex items-center justify-between text-sm">
@@ -243,6 +255,9 @@ export function PlayHub() {
             ))}
           </div>
         </div>
+
+        </>
+        )}
 
         {/* Resources row */}
         <div className="grid grid-cols-3 gap-2 text-center">
