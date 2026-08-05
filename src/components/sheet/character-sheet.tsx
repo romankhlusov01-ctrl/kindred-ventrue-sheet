@@ -2,12 +2,10 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   BookOpen,
   Download,
-  Droplets,
   Heart,
   Link2,
   Plus,
   Share2,
-  Shield,
   Sparkles,
   Swords,
   Trash2,
@@ -16,77 +14,27 @@ import {
   User,
   Zap,
   Crown,
-  Clover,
-  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ResourcePool } from "@/components/sheet/resource-pool";
-import { DicePanel } from "@/components/sheet/dice-panel";
-import { QuickActions } from "@/components/sheet/quick-actions";
-import { SoloCombat } from "@/components/sheet/solo-combat";
-import { ScenarioBar } from "@/components/sheet/scenario-bar";
 import { PlayDock } from "@/components/sheet/play-dock";
+import { PlayHub } from "@/components/sheet/play-hub";
 import { Hotkeys } from "@/components/sheet/hotkeys";
-import { RoundBanner } from "@/components/sheet/round-banner";
 import { AsiHelper } from "@/components/sheet/asi-helper";
-import { BloodBond } from "@/components/sheet/blood-bond";
-import { PcSaves } from "@/components/sheet/pc-saves";
-import { Passives } from "@/components/sheet/passives";
+import { LevelUpHelper } from "@/components/sheet/level-up-helper";
 import { ClearLog } from "@/components/sheet/clear-log";
 import { LogSearch } from "@/components/sheet/log-search";
-import { FreeRoll } from "@/components/sheet/free-roll";
-
-import { EnemyTurn } from "@/components/sheet/enemy-turn";
-import { AutoInit } from "@/components/sheet/auto-init";
-
-
-
-
-
-
-
-
-
-import { TargetCheck } from "@/components/sheet/target-check";
-import { DamageIntake } from "@/components/sheet/damage-intake";
 import { VentrueBuilder } from "@/components/sheet/ventrue-builder";
-import { LevelUpHelper } from "@/components/sheet/level-up-helper";
-import { WarlockSnippet } from "@/components/sheet/warlock-snippet";
-import { EncounterPanel } from "@/components/sheet/encounter-panel";
 import { InventoryPanel } from "@/components/sheet/inventory-panel";
-import { RestWizard } from "@/components/sheet/rest-wizard";
-import { CombatCard } from "@/components/sheet/combat-card";
-import { InspirationToggle } from "@/components/sheet/inspiration-toggle";
-import { AbilityEditor } from "@/components/sheet/ability-editor";
-import { EnvironmentHazards } from "@/components/sheet/environment-hazards";
 import { OnboardingBanner } from "@/components/sheet/onboarding";
 import { SessionSummary } from "@/components/sheet/session-summary";
-import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
-import { AcBuilder } from "@/components/sheet/ac-builder";
 import { ExportMarkdown } from "@/components/sheet/export-markdown";
 import { ExportLog } from "@/components/sheet/export-log";
-import { RecalcHp } from "@/components/sheet/recalc-hp";
-import { StartEncounter } from "@/components/sheet/start-encounter";
-import { TorporPanel } from "@/components/sheet/torpor-panel";
-import { StakeHelper } from "@/components/sheet/stake-helper";
 import { Glossary } from "@/components/sheet/glossary";
-import { FullHealButton } from "@/components/sheet/full-heal";
-import { InitOrder } from "@/components/sheet/init-order";
-import { DominateDc } from "@/components/sheet/dominate-dc";
-import { SessionNote } from "@/components/sheet/session-note";
-import { TempHp } from "@/components/sheet/temp-hp";
-import { QuickCondition } from "@/components/sheet/quick-condition";
-import { FeedWizard } from "@/components/sheet/feed-wizard";
-
-
-
-
-
-
+import { AbilityEditor } from "@/components/sheet/ability-editor";
 
 import {
   featsForLevel,
@@ -147,7 +95,7 @@ const CLAN_RU: Record<string, string> = {
   none: "—",
 };
 
-type Tab = "builder" | "combat" | "skills" | "features" | "feats" | "gear" | "log";
+type Tab = "play" | "builder" | "skills" | "features" | "feats" | "gear" | "log";
 
 export function CharacterSheet() {
   const character = useCharacterStore((s) => s.character);
@@ -182,7 +130,7 @@ export function CharacterSheet() {
   const spendLucky = useCharacterStore((s) => s.spendLucky);
   const spendProtected = useCharacterStore((s) => s.spendProtected);
 
-  const [tab, setTab] = useState<Tab>("builder");
+  const [tab, setTab] = useState<Tab>("play");
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [openFeature, setOpenFeature] = useState<string | null>(null);
   const [featureQ, setFeatureQ] = useState("");
@@ -293,13 +241,13 @@ export function CharacterSheet() {
   }
 
   const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
+    { id: "play", label: "Игра", icon: <Swords className="size-3.5" /> },
     { id: "builder", label: "Билдер", icon: <User className="size-3.5" /> },
-    { id: "combat", label: "Бой", icon: <Swords className="size-3.5" /> },
     { id: "skills", label: "Навыки", icon: <Zap className="size-3.5" /> },
-    { id: "features", label: "Способности", icon: <Crown className="size-3.5" /> },
+    { id: "features", label: "Силы", icon: <Crown className="size-3.5" /> },
     { id: "feats", label: "Черты", icon: <Sparkles className="size-3.5" /> },
-    { id: "gear", label: "Снаряжение", icon: <BookOpen className="size-3.5" /> },
-    { id: "log", label: "Сессия", icon: <Heart className="size-3.5" /> },
+    { id: "gear", label: "Вещи", icon: <BookOpen className="size-3.5" /> },
+    { id: "log", label: "Ещё", icon: <Heart className="size-3.5" /> },
   ];
 
   return (
@@ -416,6 +364,8 @@ export function CharacterSheet() {
           </div>
         )}
 
+        <details className="group identity-fields" open>
+          <summary className="mb-2 cursor-pointer list-none text-xs text-muted sm:hidden">Имя · клан · уровень ▾</summary>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Имя">
             <Input value={character.name} onChange={(e) => setField("name", e.target.value)} />
@@ -453,6 +403,7 @@ export function CharacterSheet() {
             />
           </Field>
         </div>
+        </details>
       </header>
 
       {/* Sticky HUD */}
@@ -474,7 +425,7 @@ export function CharacterSheet() {
           />
           <HudStat label="Раунд" value={String(character.round ?? 1)} />
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-2 hidden flex-wrap gap-1.5 sm:flex">
             <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(-1)}>
               −ХП
             </Button>
@@ -515,544 +466,19 @@ export function CharacterSheet() {
 
       {tab === "builder" && <VentrueBuilder />}
 
-      {tab === "combat" && (
-        <div className="grid gap-4 lg:grid-cols-12">
-          <div className="space-y-4 lg:col-span-8">
-            <RoundBanner />
-            <ScenarioBar />
-
-            <LevelUpHelper />
-            <AsiHelper />
-            <div className="flex flex-wrap gap-2"><RecalcHp /><FullHealButton /></div>
-
-            <StartEncounter />
-            <WarlockSnippet />
-            <InspirationToggle />
-
-            <AbilityEditor />
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="flex items-center gap-2 font-display text-base">
-                    <Heart className="size-4 text-primary" /> Хиты
-                  </h3>
-                  <div className="flex gap-1">
-                    {[-5, -1, 1, 5].map((n) => (
-                      <Button
-                        key={n}
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => adjustHp(n)}
-                      >
-                        {n > 0 ? `+${n}` : n}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Field label="Текущие">
-                    <Input
-                      type="number"
-                      value={character.hpCurrent}
-                      onChange={(e) => setField("hpCurrent", Number(e.target.value) || 0)}
-                    />
-                  </Field>
-                  <Field label="Макс">
-                    <Input
-                      type="number"
-                      value={character.hpMax}
-                      onChange={(e) => setField("hpMax", Number(e.target.value) || 0)}
-                    />
-                  </Field>
-                  <Field label="Временные">
-                    <Input
-                      type="number"
-                      value={character.tempHp}
-                      onChange={(e) => setField("tempHp", Number(e.target.value) || 0)}
-                    />
-                  </Field>
-                </div>
-                <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-surface-3">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{
-                      width: `${Math.min(100, character.hpMax ? (character.hpCurrent / character.hpMax) * 100 : 0)}%`,
-                    }}
-                  />
-                </div>
-                <p className="mt-2 text-[11px] text-muted">
-                  Protected: 0 хитов → 1 очко → 1 хит. Сородич: автоуспех death saves.
-                </p>
-              </div>
-
-              <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-                <h3 className="mb-3 flex items-center gap-2 font-display text-base">
-                  <Shield className="size-4 text-accent" /> Защита
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <Field label="КД">
-                    <Input
-                      type="number"
-                      value={character.ac}
-                      onChange={(e) => setField("ac", Number(e.target.value) || 0)}
-                    />
-                  </Field>
-                  <Field label="Скорость">
-                    <Input
-                      type="number"
-                      value={character.speed}
-                      onChange={(e) => setField("speed", Number(e.target.value) || 0)}
-                    />
-                  </Field>
-                  <Field label="Сл заклинаний">
-                    <Input readOnly value={spellDc} />
-                  </Field>
-                  <Field label="Вдохновение (Человек)">
-                    <button
-                      type="button"
-                      onClick={() => setField("inspiration", !character.inspiration)}
-                      className={cn(
-                        "flex h-10 w-full items-center justify-center rounded-[var(--radius)] border text-sm font-medium",
-                        character.inspiration
-                          ? "border-accent bg-accent/20 text-accent"
-                          : "border-border bg-surface-2 text-muted",
-                      )}
-                    >
-                      {character.inspiration ? "Есть" : "Нет"}
-                    </button>
-                  </Field>
-                </div>
-                <Field label="Предпочтительная кровь (Bane)">
-                  <Input
-                    className="mt-2"
-                    value={character.preferredBlood}
-                    onChange={(e) => setField("preferredBlood", e.target.value)}
-                    placeholder="солдаты, аристократы…"
-                  />
-                </Field>
-              </div>
+      {tab === "play" && (
+        <div className="space-y-3">
+          <PlayHub />
+          <details className="rounded-[var(--radius-lg)] border border-border bg-surface p-3 text-sm">
+            <summary className="cursor-pointer font-display text-sm text-muted">
+              Характеристики · уровень · ASI
+            </summary>
+            <div className="mt-3 space-y-3">
+              <AbilityEditor />
+              <LevelUpHelper />
+              <AsiHelper />
             </div>
-
-            {/* Dual luck actions */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[var(--radius-lg)] border border-accent/40 bg-surface p-4">
-                <h3 className="mb-1 flex items-center gap-2 font-display text-base text-accent">
-                  <Clover className="size-4" /> Везучий · dnd.su
-                </h3>
-                <p className="mb-3 text-xs text-muted">
-                  Очки = БМ · LR. Преимущество на d20 Test / Помеха на атаку по тебе.
-                </p>
-                <div className="mb-2 font-display text-2xl tabular-nums">
-                  {luckyLeft}
-                  <span className="text-sm text-muted"> / {luckMax}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      if (!spendLucky()) {
-                        toast.error("Очки Везучего кончились");
-                        return;
-                      }
-                      setField("pendingAdv", true);
-                      addLog("Везучий: преимущество на Тест d20 (−1)");
-                      toast.success("Везучий → Преимущество");
-                    }}
-
-                  >
-                    d20 + Преим.
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      if (!spendLucky()) {
-                        toast.error("Очки Везучего кончились");
-                        return;
-                      }
-                      setField("pendingDis", true);
-                      addLog("Везучий: помеха на атаку по тебе (−1)");
-                      toast.success("Везучий → Помеха на атаку");
-                    }}
-                  >
-                    Атака → Помеха
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      setField("luckyUsed", Math.max(0, (character.luckyUsed ?? 0) - 1))
-                    }
-                  >
-                    +1
-                  </Button>
-                </div>
-              </div>
-
-              <div className="rounded-[var(--radius-lg)] border border-primary/40 bg-surface p-4">
-                <h3 className="mb-1 flex items-center gap-2 font-display text-base text-primary">
-                  <ShieldCheck className="size-4" /> Защищённый · PDF
-                </h3>
-                <p className="mb-3 text-xs text-muted">
-                  Очки = БМ · LR. Переброс d20 при ≤9 · 0 ХП → 1 ХП.
-                </p>
-                <div className="mb-2 font-display text-2xl tabular-nums">
-                  {protectedLeft}
-                  <span className="text-sm text-muted"> / {luckMax}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="blood"
-                    onClick={() => {
-                      if (!spendProtected()) {
-                        toast.error("Очки Защищённого кончились");
-                        return;
-                      }
-                      addLog("Защищённый: переброс d20 (было ≤9) (−1)");
-                      toast.success("Protected → Переброс");
-                    }}
-                  >
-                    Переброс ≤9
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="blood"
-                    onClick={() => {
-                      if (!spendProtected()) {
-                        toast.error("Очки Защищённого кончились");
-                        return;
-                      }
-                      setField("hpCurrent", Math.max(1, character.hpCurrent || 1));
-                      if (character.hpCurrent <= 0) setField("hpCurrent", 1);
-                      addLog("Защищённый: 0 ХП → 1 ХП (−1 очко)");
-                      toast.success("Protected → 1 хит");
-                    }}
-                  >
-                    0 → 1 ХП
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      setField(
-                        "protectedUsed",
-                        Math.max(0, (character.protectedUsed ?? 0) - 1),
-                      )
-                    }
-                  >
-                    +1
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-display text-base">Атаки</h3>
-                <Button type="button" size="sm" variant="secondary" onClick={addAttack}>
-                  <Plus className="size-3.5" />
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {character.attacks.map((atk) => (
-                  <div
-                    key={atk.id}
-                    className="rounded-[var(--radius)] border border-border bg-surface-2 p-3"
-                  >
-                    <div className="grid gap-2 sm:grid-cols-4">
-                      <Input
-                        value={atk.name}
-                        onChange={(e) => updateAttack(atk.id, { name: e.target.value })}
-                        placeholder="Название"
-                      />
-                      <Input
-                        type="number"
-                        value={atk.bonus}
-                        onChange={(e) =>
-                          updateAttack(atk.id, { bonus: Number(e.target.value) || 0 })
-                        }
-                        placeholder="Бонус"
-                      />
-                      <Input
-                        value={atk.damage}
-                        onChange={(e) => updateAttack(atk.id, { damage: e.target.value })}
-                        placeholder="Урон"
-                      />
-                      <Input
-                        value={atk.type}
-                        onChange={(e) => updateAttack(atk.id, { type: e.target.value })}
-                        placeholder="Тип"
-                      />
-                    </div>
-                    <Input
-                      className="mt-2"
-                      value={atk.notes}
-                      onChange={(e) => updateAttack(atk.id, { notes: e.target.value })}
-                      placeholder="Заметки"
-                    />
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="blood"
-                        className="flex-1"
-                        onClick={() => {
-                          const mode =
-                            character.beastActive || character.pendingAdv
-                              ? character.rollMode === "dis"
-                                ? "norm"
-                                : "adv"
-                              : character.rollMode ?? "norm";
-                          const a = rollDie(20);
-                          const b = rollDie(20);
-                          const used =
-                            mode === "adv" ? Math.max(a, b) : mode === "dis" ? Math.min(a, b) : a;
-                          const total = used + atk.bonus;
-                          const det =
-                            mode === "adv"
-                              ? `преим. ${a}/${b}`
-                              : mode === "dis"
-                                ? `помеха ${a}/${b}`
-                                : `${a}`;
-                          toast.message(`${atk.name}: ${det}${formatMod(atk.bonus)} = ${total}`);
-                          addLog(`Атака ${atk.name}: ${total} (${det})`);
-                          // damage dice from expression
-                          const m = atk.damage.match(/(\d+)d(\d+)([+-]\d+)?/i);
-                          if (m) {
-                            const count = Number(m[1]);
-                            const sides = Number(m[2]);
-                            const bonus = m[3] ? Number(m[3]) : 0;
-                            let sum = bonus;
-                            const rolls: number[] = [];
-                            for (let i = 0; i < count; i++) {
-                              const r = rollDie(sides);
-                              rolls.push(r);
-                              sum += r;
-                            }
-                            if (used === 20) {
-                              for (let i = 0; i < count; i++) {
-                                const r = rollDie(sides);
-                                rolls.push(r);
-                                sum += r;
-                              }
-                            }
-                            toast.success(
-                              `Урон ${atk.name}: ${sum} ${atk.type}${used === 20 ? " (крит)" : ""}`,
-                            );
-                            addLog(`Урон ${atk.name}: ${sum} [${rolls.join("+")}]`);
-                          }
-                        }}
-                      >
-                        Атака+урон
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => removeAttack(atk.id)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <SoloCombat />
-
-            <TargetCheck />
-            <PcSaves />
-            <DamageIntake />
-
-
-            <FreeRoll />
-            <DicePanel />
-          </div>
-
-          <aside className="space-y-4 lg:col-span-4">
-            <SessionNote />
-            <DominateDc />
-            <TempHp />
-            <Passives />
-            <QuickCondition />
-
-            <FeedWizard />
-            <BloodBond />
-            <EncounterPanel />
-            <EnemyTurn />
-            <AutoInit />
-            <InitOrder />
-
-            <RestWizard />
-
-            <EnvironmentHazards />
-            <ConcentrationHelper />
-            <AcBuilder />
-            <TorporPanel />
-            <StakeHelper />
-            <CombatCard />
-
-            <ResourcePool
-              label="Очки крови"
-              current={character.bloodCurrent}
-              max={bloodMax}
-              color="blood"
-              onSpend={() => spendBlood(1)}
-              onGain={() => gainBlood(1)}
-              onToggle={setBloodTo}
-            />
-            <Button type="button" variant="blood" className="w-full" onClick={fillBlood}>
-              <Droplets className="size-3.5" /> Полный пул
-            </Button>
-
-            <ResourcePool
-              label={`Зверь (осталось ${beastLeft})`}
-              current={beastLeft}
-              max={beastMax}
-              color="beast"
-              onSpend={useBeast}
-              onGain={() => setField("beastUsed", Math.max(0, character.beastUsed - 1))}
-              onToggle={(i) => {
-                const want = beastLeft === i + 1 ? i : i + 1;
-                setField("beastUsed", Math.max(0, beastMax - want));
-              }}
-            />
-
-            <ResourcePool
-              label={`Везучий (осталось ${luckyLeft})`}
-              current={luckyLeft}
-              max={luckMax}
-              color="beast"
-              onSpend={() => {
-                if (!spendLucky()) toast.error("Нет очков");
-              }}
-              onGain={() => setField("luckyUsed", Math.max(0, (character.luckyUsed ?? 0) - 1))}
-              onToggle={(i) => {
-                const want = luckyLeft === i + 1 ? i : i + 1;
-                setField("luckyUsed", Math.max(0, luckMax - want));
-              }}
-            />
-
-            <ResourcePool
-              label={`Защищённый (осталось ${protectedLeft})`}
-              current={protectedLeft}
-              max={luckMax}
-              color="blood"
-              onSpend={() => {
-                if (!spendProtected()) toast.error("Нет очков");
-              }}
-              onGain={() =>
-                setField("protectedUsed", Math.max(0, (character.protectedUsed ?? 0) - 1))
-              }
-              onToggle={(i) => {
-                const want = protectedLeft === i + 1 ? i : i + 1;
-                setField("protectedUsed", Math.max(0, luckMax - want));
-              }}
-            />
-
-            <QuickActions />
-
-            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-display text-sm">Ресурсы (настраиваемые)</h3>
-                <Button type="button" size="sm" variant="ghost" onClick={addResource}>
-                  <Plus className="size-3.5" />
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {character.customResources.map((r) => (
-                  <div key={r.id} className="rounded border border-border bg-surface-2 p-2">
-                    <div className="mb-1 flex items-center gap-1">
-                      <Input
-                        className="h-8"
-                        value={r.name}
-                        onChange={(e) => updateResource(r.id, { name: e.target.value })}
-                      />
-                      <button type="button" onClick={() => removeResource(r.id)}>
-                        <Trash2 className="size-3.5 text-muted" />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() =>
-                          updateResource(r.id, { current: Math.max(0, r.current - 1) })
-                        }
-                      >
-                        −
-                      </Button>
-                      <span className="min-w-12 text-center tabular-nums text-sm">
-                        {r.current}/{r.max}
-                      </span>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() =>
-                          updateResource(r.id, {
-                            current: Math.min(r.max, r.current + 1),
-                          })
-                        }
-                      >
-                        +
-                      </Button>
-                      <Input
-                        type="number"
-                        className="h-8 w-16"
-                        value={r.max}
-                        onChange={(e) =>
-                          updateResource(r.id, { max: Number(e.target.value) || 0 })
-                        }
-                      />
-                    </div>
-                    <Input
-                      className="mt-1 h-8 text-xs"
-                      value={r.note}
-                      onChange={(e) => updateResource(r.id, { note: e.target.value })}
-                      placeholder="Заметка"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-              <h3 className="mb-2 font-display text-sm">Состояния</h3>
-              <div className="flex flex-wrap gap-1.5">
-                {CONDITIONS.map((c) => {
-                  const on = character.conditions.includes(c);
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => toggleCondition(c)}
-                      className={cn(
-                        "rounded-full border px-2.5 py-1 text-[11px]",
-                        on
-                          ? "border-primary bg-primary/20 text-primary"
-                          : "border-border text-muted",
-                      )}
-                    >
-                      {c}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </aside>
+          </details>
         </div>
       )}
 
@@ -1067,12 +493,12 @@ export function CharacterSheet() {
                 return (
                   <li
                     key={sk.id}
-                    className="flex items-center gap-2 rounded-[var(--radius-sm)] px-1 py-1.5 hover:bg-surface-2"
+                    className="flex min-h-12 items-center gap-2 rounded-[var(--radius)] border border-transparent px-1.5 py-1 hover:border-border hover:bg-surface-2"
                   >
                     <button
                       type="button"
                       className={cn(
-                        "flex h-7 w-7 items-center justify-center rounded border text-[10px] font-bold",
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded border text-xs font-bold",
                         prof === "expertise"
                           ? "border-accent bg-accent/20 text-accent"
                           : prof === "proficient"
@@ -1093,7 +519,7 @@ export function CharacterSheet() {
                     <span className="flex-1 text-sm">{sk.nameRu}</span>
                     <button
                       type="button"
-                      className="font-display tabular-nums text-accent"
+                      className="flex h-11 min-w-[3.25rem] items-center justify-center rounded-[var(--radius)] border border-accent/40 bg-accent/10 px-2 font-display text-base tabular-nums text-accent active:scale-[0.97]"
                       onClick={() => {
                         const mode = conditionMode(
                           character,
@@ -1550,7 +976,7 @@ export function CharacterSheet() {
         </div>
       )}
 
-      {(tab === "combat" || tab === "skills") && (
+      {(tab === "play" || tab === "skills") && (
         <>
           <PlayDock />
           <Hotkeys />

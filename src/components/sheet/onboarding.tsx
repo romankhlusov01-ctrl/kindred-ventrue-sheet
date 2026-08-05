@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const KEY = "kindred-onboarding-v2";
+const KEY = "kindred-onboarding-v2-self";
 
 export function OnboardingBanner() {
   const [open, setOpen] = useState(false);
@@ -21,25 +21,18 @@ export function OnboardingBanner() {
     <div className="mb-4 rounded-[var(--radius-lg)] border border-accent/40 bg-accent/10 p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="font-display text-base text-accent">Соло-лист Вентру</h2>
+          <h2 className="font-display text-base text-accent">Лист для тебя</h2>
           <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-muted">
             <li>
-              <strong className="text-fg">Билдер</strong> — пресет / шаги → «Применить билд»
+              <strong className="text-fg">Игра</strong> — ХП, ОБК, удача, атаки, силы
             </li>
             <li>
-              <strong className="text-fg">Бой</strong> — нижняя панель: иниц, атака, питание, Зверь,
-              Lucky / Protected
+              <strong className="text-fg">Низ панели</strong> — Атака · Питание · Зверь · Ход
             </li>
             <li>
-              <strong className="text-fg">Старт боя</strong> — патруль / охота / сородич + шаблоны
-              врагов; «Атака вас» бьёт по КД
+              <strong className="text-fg">Билдер</strong> — один раз настроить, «Применить»
             </li>
-            <li>
-              <strong className="text-fg">Сл Доминирования</strong> — справа; спас NPC одной кнопкой
-            </li>
-            <li>
-              <strong className="text-fg">Сценарий</strong> — бой / соц / питание / отдых с подсказками
-            </li>
+            <li>Редкое (торпор, кол, солнце) — свёрнуто внизу «Игра»</li>
           </ol>
         </div>
         <Button

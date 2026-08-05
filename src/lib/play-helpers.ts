@@ -85,7 +85,6 @@ export function scenarioHints(scenario: string): string[] {
         "3. Атака+урон или Приказ/Внушение (Сл в панели)",
         "4. Зверь / Lucky для преимущества",
         "5. Реакция: Protected / Flesh of Marble",
-        "6. Враг «Атака вас» — авто-урон по КД",
       ];
     case "social":
       return [

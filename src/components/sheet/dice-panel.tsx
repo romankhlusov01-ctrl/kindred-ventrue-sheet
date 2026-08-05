@@ -271,11 +271,11 @@ export function DicePanel() {
               return;
             }
             patch({ pendingDis: true });
-            toast.success("Везучий: помеха на атаку по тебе (отметь вручную у врага)");
+            toast.success("Везучий: помеха на атаку по тебе");
             addLog("Везучий → помеха на атаку по тебе");
           }}
         >
-          Везучий → помеха врагу
+          Везучий → помеха
         </Button>
         <Button
           type="button"

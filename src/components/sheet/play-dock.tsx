@@ -16,15 +16,14 @@ import {
   skillBonus,
   useCharacterStore,
 } from "@/lib/character-store";
-
 import { rollD20, rollDamage } from "@/lib/roll-engine";
 import { conditionMode } from "@/lib/play-helpers";
 import { SKILLS } from "@/data/skills";
 import { useSessionStore } from "@/lib/session-store";
 
 /**
- * Fixed bottom dock for one-thumb solo play (mobile-first).
- * Always shows last roll + critical actions.
+ * One-thumb bottom dock — only self actions.
+ * Phone-first: large targets, last roll always visible.
  */
 export function PlayDock() {
   const c = useCharacterStore((s) => s.character);
@@ -45,16 +44,16 @@ export function PlayDock() {
   const [last, setLast] = useState<{ label: string; total: number; detail: string } | null>(
     null,
   );
+  const [more, setMore] = useState(false);
 
   const pb = effectivePb(c.level, c.multiclass);
   const bloodMax = getBloodMax(c);
   const luckMax = getLuckMax(c.level, c.multiclass);
-
-
   const luckyLeft = Math.max(0, luckMax - (c.luckyUsed ?? 0));
   const protectedLeft = Math.max(0, luckMax - (c.protectedUsed ?? 0));
   const primary = c.attacks[0];
   const atZero = c.hpCurrent <= 0;
+  const feedCount = getLevelData(c.level).feedCount;
 
   function show(label: string, total: number, detail: string) {
     setLast({ label, total, detail });
@@ -67,6 +66,9 @@ export function PlayDock() {
     let base = sticky;
     if (c.beastActive || c.pendingAdv) {
       base = sticky === "dis" ? "norm" : "adv";
+    }
+    if (c.pendingDis) {
+      base = sticky === "adv" ? "norm" : "dis";
     }
     return conditionMode(c, kind, base);
   }
@@ -93,24 +95,20 @@ export function PlayDock() {
     const dmg = rollDamage(primary.damage);
     let total = dmg.total;
     if (r.crit) {
-      const d2 = rollDamage(primary.damage);
-      total += d2.total;
+      total += rollDamage(primary.damage).total;
     }
     show(`Урон · ${primary.name}`, total, dmg.detail + (r.crit ? " · крит×2" : ""));
     toast.success(`${primary.name}: ${r.total} → ${total} ${primary.type}`);
   }
 
   function rollFeed() {
-    const row = getLevelData(c.level);
-    const count = row.feedCount;
-    const rolls = Array.from({ length: count }, () => rollDie(6));
+    const rolls = Array.from({ length: feedCount }, () => rollDie(6));
     const sixes = rolls.filter((x) => x === 6).length;
     const con = Math.max(1, abilityMod(c.abilities.con));
     const sum = rolls.reduce((a, b) => a + b, 0) + con;
     if (sixes) gainBlood(sixes);
     show("Питание", sum, `${rolls.join("+")}+Тел`);
-    const pref = c.preferredBlood ? ` · Bane: ${c.preferredBlood}` : "";
-    toast.success(`Питание ${sum}${sixes ? ` · +${sixes} ОБК` : ""}${pref}`);
+    toast.success(`Питание ${sum}${sixes ? ` · +${sixes} ОБК` : ""}`);
   }
 
   function rollPersuade() {
@@ -128,20 +126,18 @@ export function PlayDock() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mx-auto flex h-11 items-center gap-2 rounded-full border border-border bg-surface/95 px-4 shadow-lg backdrop-blur"
+          className="mx-auto flex h-12 max-w-sm items-center gap-2 rounded-full border border-border bg-surface/95 px-5 shadow-lg backdrop-blur"
         >
-          <ChevronUp className="size-4 text-accent" />
-          <span className="text-sm font-medium">Панель боя</span>
+          <ChevronUp className="size-4 text-primary" />
+          <span className="text-sm font-medium">Играть</span>
           {last && (
-            <span className="rounded-full bg-primary/20 px-2 py-0.5 font-display text-sm text-primary">
+            <span className="rounded-full bg-primary/20 px-2.5 py-0.5 font-display text-base text-primary">
               {last.total}
             </span>
           )}
-          {atZero && (
-            <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
-              0 ХП
-            </span>
-          )}
+          <span className="text-xs text-muted">
+            {c.hpCurrent}/{c.hpMax}
+          </span>
         </button>
       </div>
     );
@@ -150,10 +146,24 @@ export function PlayDock() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_32px_rgb(0_0_0_/_0.45)] backdrop-blur-md">
       {atZero && (
-        <div className="mx-3 mb-1 rounded border border-primary/50 bg-primary/20 px-2 py-1 text-center text-[11px] font-semibold text-primary">
-          0 хитов · Kindred: спас. от смерти автоматически успешны · Protected / кол?
+        <div className="mx-3 mb-1 flex items-center justify-between gap-2 rounded-[var(--radius)] border border-primary bg-primary/20 px-3 py-2 text-sm">
+          <span className="font-medium text-primary">0 ХП</span>
+          <button
+            type="button"
+            className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-fg"
+            onClick={() => {
+              if (!spendProtected()) toast.error("Нет Protected");
+              else {
+                setField("hpCurrent", 1);
+                toast.success("1 хит");
+              }
+            }}
+          >
+            Protected 0→1
+          </button>
         </div>
       )}
+
       {last && (
         <div className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-[var(--radius)] border border-primary/30 bg-primary/10 px-3 py-2">
           <div className="min-w-0">
@@ -168,134 +178,123 @@ export function PlayDock() {
 
       <div className="flex items-center justify-between gap-2 px-3 pb-1 text-[11px] text-muted">
         <span>
-          <Heart className="mr-1 inline size-3 text-primary" />
+          <Heart className="mr-0.5 inline size-3 text-primary" />
           {c.hpCurrent}/{c.hpMax}
           {c.tempHp > 0 ? ` (+${c.tempHp})` : ""}
         </span>
         <span>
-          <Droplets className="mr-1 inline size-3 text-primary" />
+          <Droplets className="mr-0.5 inline size-3 text-primary" />
           {c.bloodCurrent}/{bloodMax}
         </span>
         <span>
-          <Sparkles className="mr-1 inline size-3 text-beast" />
+          <Sparkles className="mr-0.5 inline size-3 text-beast" />
           {Math.max(0, pb - c.beastUsed)}/{pb}
           {c.beastActive ? " ★" : ""}
-        </span>
-        <span className="tabular-nums text-faint">
-          L{luckyLeft}/P{protectedLeft}
         </span>
         <button type="button" className="text-faint" onClick={() => setOpen(false)}>
           <ChevronDown className="size-4" />
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-1 px-2 pb-1 sm:grid-cols-7">
-        <DockBtn
-          label="−ХП"
-          onClick={() => {
-            adjustHp(-1);
-            toast.message(`ХП ${c.hpCurrent - 1}`);
-          }}
-        />
-        <DockBtn
-          label="+ХП"
-          onClick={() => {
-            adjustHp(1);
-          }}
-        />
-        <DockBtn
-          label="−ОБК"
-          danger
-          onClick={() => {
-            if (c.bloodCurrent < 1) {
-              toast.error("Нет ОБК");
-              return;
-            }
-            spendBlood(1);
-          }}
-        />
-        <DockBtn label="Иниц" onClick={rollInit} />
-        <DockBtn
-          label="Ход"
-          onClick={() => {
-            newTurn();
-            tickEffects();
-            toast.message("Новый ход · эффекты −1");
-          }}
-        />
+      <div className="grid grid-cols-4 gap-1.5 px-2 pb-1">
+        <DockBtn label={primary ? "Атака" : "—"} danger onClick={rollPrimaryAttack} />
+        <DockBtn label="Питан." danger onClick={rollFeed} />
         <DockBtn
           label="Зверь"
           accent
           onClick={() => {
             if (!activateBeast()) toast.error("Зверь исчерпан");
-            else toast.success("Преимущество");
+            else toast.success("Преим.");
           }}
         />
-        <DockBtn label="Питан." danger onClick={rollFeed} />
-        <DockBtn label="Убежд." onClick={rollPersuade} />
         <DockBtn
-          label={primary ? "Атака" : "—"}
-          danger
-          className="col-span-2 sm:col-span-1"
-          onClick={rollPrimaryAttack}
-        />
-        <DockBtn
-          label={`Lucky ${luckyLeft}`}
-          accent
+          label="Ход"
           onClick={() => {
-            if (!spendLucky()) {
-              toast.error("Нет Lucky");
-              return;
-            }
-            setField("pendingAdv", true);
-            addLog("Lucky — преимущество на следующий d20");
-            toast.success("Lucky: преим. на след. d20");
+            newTurn();
+            tickEffects();
+            toast.message("Новый ход");
           }}
         />
-        <DockBtn
-          label={`Prot ${protectedLeft}`}
-          onClick={() => {
-            if (!spendProtected()) {
-              toast.error("Нет Protected");
-              return;
-            }
-            addLog("Protected — реакция (см. черту)");
-            toast.success("Protected использован");
-          }}
-        />
-        <DockBtn
-          label="d20"
-          onClick={() => {
-            const m = modeFor("check");
-            const r = rollD20("d20", 0, m);
-            consumeRollMode();
-            show(r.label, r.total, r.detail);
-            toast.message(`d20: ${r.total}`);
-          }}
-        />
-        <DockBtn
-          label="Отдых"
-          onClick={() => {
-            shortRest();
-            toast.message("Короткий отдых");
-          }}
-        />
-        <DockBtn
-          label={c.inspiration ? "Вдохн.✓" : "Вдохн."}
-          accent={c.inspiration}
-          onClick={() => {
-            if (c.inspiration) {
-              setField("inspiration", false);
-              setField("pendingAdv", true);
-              toast.success("Вдохновение → преим.");
-            } else {
-              setField("inspiration", true);
-              toast.message("Вдохновение");
-            }
-          }}
-        />
-
       </div>
+
+      <div className="grid grid-cols-5 gap-1 px-2 pb-1">
+        <DockBtn label="−ХП" onClick={() => adjustHp(-1)} />
+        <DockBtn label="+ХП" onClick={() => adjustHp(1)} />
+        <DockBtn
+          label="−ОБК"
+          danger
+          onClick={() => {
+            if (c.bloodCurrent < 1) toast.error("Нет ОБК");
+            else spendBlood(1);
+          }}
+        />
+        <DockBtn label="Иниц" onClick={rollInit} />
+        <DockBtn label="Убежд." onClick={rollPersuade} />
+      </div>
+
+      {more && (
+        <div className="grid grid-cols-4 gap-1 px-2 pb-1">
+          <DockBtn
+            label={`Удч ${luckyLeft}`}
+            onClick={() => {
+              if (!spendLucky()) toast.error("Нет");
+              else {
+                setField("pendingAdv", true);
+                toast.success("Преим.");
+              }
+            }}
+          />
+          <DockBtn
+            label={`Защ ${protectedLeft}`}
+            danger
+            onClick={() => {
+              if (!spendProtected()) toast.error("Нет");
+              else toast.message("Protected");
+            }}
+          />
+          <DockBtn
+            label={c.inspiration ? "Вдохн" : "+Вдх"}
+            accent={!!c.inspiration}
+            onClick={() => {
+              if (c.inspiration) {
+                setField("inspiration", false);
+                setField("pendingAdv", true);
+                toast.message("Вдохновение → преим.");
+              } else {
+                setField("inspiration", true);
+                toast.message("+вдохновение");
+              }
+            }}
+          />
+          <DockBtn
+            label="Отдых"
+            onClick={() => {
+              shortRest();
+              toast.message("Короткий");
+            }}
+          />
+          <DockBtn
+            label="d20"
+            onClick={() => {
+              const r = rollD20("d20", 0, modeFor("check"));
+              consumeRollMode();
+              show(r.label, r.total, r.detail);
+            }}
+          />
+          <DockBtn label="−5ХП" onClick={() => adjustHp(-5)} />
+          <DockBtn label="+5ХП" onClick={() => adjustHp(5)} />
+          <DockBtn label="Скрыть" onClick={() => setOpen(false)} />
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setMore((v) => !v)}
+        className="mx-auto mb-1 flex items-center gap-1 py-1 text-[10px] text-muted"
+      >
+        {more ? "Меньше" : "Ещё (удача · отдых · d20)"}
+        {more ? <ChevronDown className="size-3" /> : <ChevronUp className="size-3" />}
+      </button>
     </div>
   );
 }

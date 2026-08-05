@@ -120,3 +120,13 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Identity fields: always expanded on desktop */
+@media (min-width: 640px) {
+  details.identity-fields > summary {
+    display: none;
+  }
+  details.identity-fields {
+    display: block;
+  }
+}
