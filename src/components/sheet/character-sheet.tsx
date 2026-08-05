@@ -146,6 +146,7 @@ export function CharacterSheet() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [openFeature, setOpenFeature] = useState<string | null>(null);
   const [featureQ, setFeatureQ] = useState("");
+  const [profOnly, setProfOnly] = useState(false);
 
   const row = getLevelData(character.level);
   const pb = effectivePb(character.level, character.multiclass);
@@ -525,9 +526,27 @@ export function CharacterSheet() {
       {tab === "skills" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-            <h2 className="mb-3 font-display text-lg">Навыки</h2>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="font-display text-lg">Навыки</h2>
+              <button
+                type="button"
+                onClick={() => setProfOnly((v) => !v)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-medium",
+                  profOnly
+                    ? "border-primary bg-primary/15 text-primary"
+                    : "border-border text-muted",
+                )}
+              >
+                {profOnly ? "Владение" : "Все"}
+              </button>
+            </div>
             <ul className="space-y-1">
-              {SKILLS.map((sk) => {
+              {SKILLS.filter((sk) => {
+                if (!profOnly) return true;
+                const p = character.skillProfs[sk.id] ?? "none";
+                return p !== "none";
+              }).map((sk) => {
                 const prof = character.skillProfs[sk.id] ?? "none";
                 const bonus = skillBonus(character.abilities[sk.ability], pb, prof);
                 return (
