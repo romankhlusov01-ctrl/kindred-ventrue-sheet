@@ -94,7 +94,10 @@ export type CharacterSheet = {
   /** Consume next roll as adv then clear (Lucky one-shot without sticky) */
   pendingAdv: boolean;
   pendingDis: boolean;
+  /** Solo scenario focus */
+  scenario: "combat" | "social" | "feed" | "rest";
 };
+
 
 type LibraryState = {
   activeId: string;
@@ -186,6 +189,7 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     initiative: raw.initiative ?? null,
     pendingAdv: raw.pendingAdv ?? false,
     pendingDis: raw.pendingDis ?? false,
+    scenario: raw.scenario ?? "combat",
   };
 }
 

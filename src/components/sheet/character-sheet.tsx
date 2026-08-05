@@ -27,6 +27,11 @@ import { ResourcePool } from "@/components/sheet/resource-pool";
 import { DicePanel } from "@/components/sheet/dice-panel";
 import { QuickActions } from "@/components/sheet/quick-actions";
 import { SoloCombat } from "@/components/sheet/solo-combat";
+import { ScenarioBar } from "@/components/sheet/scenario-bar";
+import { PlayDock } from "@/components/sheet/play-dock";
+import { TargetCheck } from "@/components/sheet/target-check";
+
+
 
 import {
   featsForLevel,
@@ -62,6 +67,9 @@ import {
   type Abilities,
 } from "@/lib/character-store";
 import { abilityMod, cn, formatMod, rollDie } from "@/lib/utils";
+import { rollD20, rollDamage } from "@/lib/roll-engine";
+import { conditionMode } from "@/lib/play-helpers";
+
 
 const ABILITY_KEYS: { key: keyof Abilities; label: string; short: string }[] = [
   { key: "str", label: "Сила", short: "СИЛ" },
@@ -235,7 +243,7 @@ export function CharacterSheet() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-3 pb-28 pt-3 sm:px-5 sm:pb-16 sm:pt-5">
+    <div className="mx-auto w-full max-w-6xl px-3 pb-36 pt-3 sm:px-5 sm:pb-28 sm:pt-5">
       <header className="mb-4 space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -443,6 +451,8 @@ export function CharacterSheet() {
       {tab === "combat" && (
         <div className="grid gap-4 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-8">
+            <ScenarioBar />
+
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {ABILITY_KEYS.map(({ key, short }) => {
                 const score = character.abilities[key];
@@ -457,9 +467,25 @@ export function CharacterSheet() {
                     <div className="text-[10px] font-bold uppercase tracking-wider text-muted">
                       {short}
                     </div>
-                    <div className="font-display text-2xl tabular-nums leading-none text-accent sm:text-3xl">
+                    <button
+                      type="button"
+                      title="Проверка"
+                      onClick={() => {
+                        const mode = conditionMode(
+                          character,
+                          "check",
+                          character.beastActive || character.pendingAdv
+                            ? "adv"
+                            : character.rollMode ?? "norm",
+                        );
+                        const r = rollD20(`Проверка ${short}`, mod, mode);
+                        toast.message(`${short}: ${r.total}`);
+                        addLog(`${r.label}: ${r.detail} = ${r.total}`);
+                      }}
+                      className="font-display text-2xl tabular-nums leading-none text-accent active:scale-95 sm:text-3xl"
+                    >
                       {formatMod(mod)}
-                    </div>
+                    </button>
                     <Input
                       type="number"
                       className="mx-auto mt-1.5 h-8 w-full max-w-[4.5rem] text-center text-sm"
@@ -470,10 +496,28 @@ export function CharacterSheet() {
                     />
                     <button
                       type="button"
-                      onClick={() => toggleSave(key)}
+                      title="Спасбросок (долгое — переключить владение)"
+                      onClick={() => {
+                        const forceAdv = character.clan === "ventrue" && key === "wis";
+                        let mode = conditionMode(
+                          character,
+                          "save",
+                          character.beastActive || character.pendingAdv
+                            ? "adv"
+                            : character.rollMode ?? "norm",
+                        );
+                        if (forceAdv) mode = mode === "dis" ? "norm" : "adv";
+                        const r = rollD20(`Спас ${short}`, saveBonus, mode);
+                        toast.message(`Спас ${short}: ${r.total}`);
+                        addLog(`${r.label}: ${r.detail} = ${r.total}`);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        toggleSave(key);
+                      }}
                       className={cn(
-                        "mt-1.5 w-full rounded text-[10px] font-medium",
-                        saveProf ? "text-primary" : "text-faint",
+                        "mt-1.5 w-full rounded py-1 text-[10px] font-medium",
+                        saveProf ? "bg-primary/10 text-primary" : "text-faint",
                       )}
                     >
                       Спас {formatMod(saveBonus)}
@@ -820,6 +864,8 @@ export function CharacterSheet() {
             </div>
 
             <SoloCombat />
+
+            <TargetCheck />
 
             <DicePanel />
           </div>
@@ -1421,15 +1467,18 @@ export function CharacterSheet() {
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-sm text-muted">
             <h3 className="mb-2 font-display text-base text-fg">Подсказки сессии</h3>
             <ul className="list-disc space-y-2 pl-4">
-              <li>Везучий и Защищённый — два разных пула, оба = БМ.</li>
-              <li>Долгий отдых с ≥1 ОБК: хиты, вдохновение (Человек), оба пула удачи.</li>
-              <li>Без ОБК: Awaken — только польза короткого (PDF).</li>
+              <li>Нижняя панель: ХП, ОБК, иниц, ход, зверь, питание, атака — одним пальцем.</li>
+              <li>Тап по модификатору СИЛ/ЛОВ… = проверка; по «Спас» = спасбросок.</li>
+              <li>Состояния (Отравленный, Голод…) дают помеху автоматически.</li>
+              <li>Везучий и Защищённый — два пула = БМ.</li>
+              <li>Долгий отдых с ≥1 ОБК: хиты, вдохновение, оба пула удачи.</li>
               <li>Bane Вентру: не «солдаты» → half Feed Dice.</li>
-              <li>Ссылка в шапке шарит весь лист (localStorage + hash).</li>
             </ul>
           </div>
         </div>
       )}
+
+      <PlayDock />
     </div>
   );
 }

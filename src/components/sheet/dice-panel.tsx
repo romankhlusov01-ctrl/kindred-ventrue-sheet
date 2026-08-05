@@ -16,6 +16,8 @@ import {
   rollDamage,
   type RollMode,
 } from "@/lib/roll-engine";
+import { conditionMode, type RollKind } from "@/lib/play-helpers";
+
 
 import { SKILLS } from "@/data/skills";
 
@@ -67,20 +69,25 @@ export function DicePanel() {
     addLog(`${label}: ${total} (${detail})`);
   }
 
-  function effectiveMode(forceAdv = false): RollMode {
+  function effectiveMode(forceAdv = false, kind: RollKind = "check"): RollMode {
     const sticky = character.rollMode ?? "norm";
+    let base: RollMode = sticky;
     if (forceAdv || beastOn || character.pendingAdv) {
-      if (sticky === "dis" || character.pendingDis) return "norm";
-      return "adv";
+      base = sticky === "dis" || character.pendingDis ? "norm" : "adv";
+    } else if (character.pendingDis) {
+      base = sticky === "adv" ? "norm" : "dis";
     }
-    if (character.pendingDis) return sticky === "adv" ? "norm" : "dis";
-    return sticky;
+    return conditionMode(character, kind, base);
   }
 
-  function doD20(label: string, mod: number, opts?: { forceAdv?: boolean; consume?: boolean }) {
-    const m = opts?.forceAdv ? effectiveMode(true) : effectiveMode(false);
+  function doD20(
+    label: string,
+    mod: number,
+    opts?: { forceAdv?: boolean; consume?: boolean; kind?: RollKind },
+  ) {
+    const kind = opts?.kind ?? "check";
+    const m = opts?.forceAdv ? effectiveMode(true, kind) : effectiveMode(false, kind);
     if (opts?.consume !== false) {
-      // consume pending one-shots
       consumeRollMode();
     }
     const r = rollD20(label, mod, m);
@@ -130,20 +137,19 @@ export function DicePanel() {
   function rollInitiative() {
     const mod = abilityMod(character.abilities.dex);
     const forceAdv = hasAlacrity(character.selectedFeats);
-    const r = doD20("Инициатива", mod, { forceAdv });
+    const r = doD20("Инициатива", mod, { forceAdv, kind: "init" });
     setField("initiative", r.total);
   }
 
   function rollSave(key: keyof Abilities, name: string) {
     const prof = !!character.saveProfs[key];
     const bonus = abilityMod(character.abilities[key]) + (prof ? pb : 0);
-    // Ventrue: advantage on Wisdom saves
     const forceAdv = character.clan === "ventrue" && key === "wis";
-    doD20(`Спас ${name}`, bonus, { forceAdv });
+    doD20(`Спас ${name}`, bonus, { forceAdv, kind: "save" });
   }
 
   function rollAbility(key: keyof Abilities, name: string) {
-    doD20(`Проверка ${name}`, abilityMod(character.abilities[key]));
+    doD20(`Проверка ${name}`, abilityMod(character.abilities[key]), { kind: "check" });
   }
 
   return (
@@ -266,7 +272,7 @@ export function DicePanel() {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => doD20("Атака закл.", chaMod + pb)}
+          onClick={() => doD20("Атака закл.", chaMod + pb, { kind: "attack" })}
         >
           Атака закл.
         </Button>
@@ -351,7 +357,7 @@ export function DicePanel() {
                 type="button"
                 size="sm"
                 variant="secondary"
-                onClick={() => doD20(sk.nameRu, bonus)}
+                onClick={() => doD20(sk.nameRu, bonus, { kind: "check" })}
               >
                 {sk.nameRu} {formatMod(bonus)}
               </Button>
@@ -375,7 +381,8 @@ export function DicePanel() {
                 size="sm"
                 className="h-auto w-full justify-between py-2"
                 onClick={() => {
-                  const hit = doD20(atk.name, atk.bonus);
+                  const hit = doD20(atk.name, atk.bonus, { kind: "attack" });
+
                   const dmg = rollDamage(atk.damage, `Урон · ${atk.name}`);
                   // crit: double dice roughly by rolling again
                   if (hit.crit) {

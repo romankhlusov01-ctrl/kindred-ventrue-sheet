@@ -10,7 +10,9 @@ const SOLO_DEFAULTS = {
   initiative: null as number | null,
   pendingAdv: false,
   pendingDis: false,
+  scenario: "combat" as const,
 };
+
 
 /**
  * Основной пресет: человек · Опора (Protected) · Везучий (Lucky)
