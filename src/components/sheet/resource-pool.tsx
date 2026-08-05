@@ -54,7 +54,7 @@ export function ResourcePool({
             aria-label={`${label} ${i + 1}`}
             onClick={() => onToggle?.(i)}
             className={cn(
-              "h-7 w-7 rounded-full border-2 transition-transform active:scale-95",
+              "h-9 w-9 rounded-full border-2 transition-transform active:scale-95",
               filled ? styles.filled : styles.empty,
             )}
           />
@@ -69,7 +69,7 @@ export function ResourcePool({
             <button
               type="button"
               onClick={onSpend}
-              className="h-9 flex-1 rounded-[var(--radius-sm)] border border-border bg-surface-2 text-xs font-medium text-fg hover:bg-surface-3"
+              className="h-11 flex-1 rounded-[var(--radius-sm)] border border-border bg-surface-2 text-xs font-medium text-fg hover:bg-surface-3"
             >
               −1
             </button>
@@ -78,7 +78,7 @@ export function ResourcePool({
             <button
               type="button"
               onClick={onGain}
-              className="h-9 flex-1 rounded-[var(--radius-sm)] border border-border bg-surface-2 text-xs font-medium text-fg hover:bg-surface-3"
+              className="h-11 flex-1 rounded-[var(--radius-sm)] border border-border bg-surface-2 text-xs font-medium text-fg hover:bg-surface-3"
             >
               +1
             </button>

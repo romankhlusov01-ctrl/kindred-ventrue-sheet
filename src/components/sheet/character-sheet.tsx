@@ -1070,7 +1070,7 @@ function FeatureCard({
       type="button"
       onClick={onToggle}
       className={cn(
-        "rounded-[var(--radius-lg)] border p-4 text-left transition-colors",
+        "min-h-16 w-full rounded-[var(--radius-lg)] border p-4 text-left transition-colors active:scale-[0.99]",
         accent ? "border-primary/40 bg-surface" : "border-border bg-surface",
         open && "ring-1 ring-primary/50",
       )}
