@@ -40,6 +40,8 @@ import { InventoryPanel } from "@/components/sheet/inventory-panel";
 import { RestWizard } from "@/components/sheet/rest-wizard";
 import { CombatCard } from "@/components/sheet/combat-card";
 import { InspirationToggle } from "@/components/sheet/inspiration-toggle";
+import { AbilityEditor } from "@/components/sheet/ability-editor";
+import { EnvironmentHazards } from "@/components/sheet/environment-hazards";
 
 
 
@@ -470,80 +472,7 @@ export function CharacterSheet() {
             <WarlockSnippet />
             <InspirationToggle />
 
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-              {ABILITY_KEYS.map(({ key, short }) => {
-                const score = character.abilities[key];
-                const mod = abilityMod(score);
-                const saveProf = !!character.saveProfs[key];
-                const saveBonus = mod + (saveProf ? pb : 0);
-                return (
-                  <div
-                    key={key}
-                    className="rounded-[var(--radius-lg)] border border-border bg-surface p-2.5 text-center"
-                  >
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted">
-                      {short}
-                    </div>
-                    <button
-                      type="button"
-                      title="Проверка"
-                      onClick={() => {
-                        const mode = conditionMode(
-                          character,
-                          "check",
-                          character.beastActive || character.pendingAdv
-                            ? "adv"
-                            : character.rollMode ?? "norm",
-                        );
-                        const r = rollD20(`Проверка ${short}`, mod, mode);
-                        toast.message(`${short}: ${r.total}`);
-                        addLog(`${r.label}: ${r.detail} = ${r.total}`);
-                      }}
-                      className="font-display text-2xl tabular-nums leading-none text-accent active:scale-95 sm:text-3xl"
-                    >
-                      {formatMod(mod)}
-                    </button>
-                    <Input
-                      type="number"
-                      className="mx-auto mt-1.5 h-8 w-full max-w-[4.5rem] text-center text-sm"
-                      value={score}
-                      min={1}
-                      max={30}
-                      onChange={(e) => setAbility(key, Number(e.target.value) || 1)}
-                    />
-                    <button
-                      type="button"
-                      title="Спасбросок (долгое — переключить владение)"
-                      onClick={() => {
-                        const forceAdv = character.clan === "ventrue" && key === "wis";
-                        let mode = conditionMode(
-                          character,
-                          "save",
-                          character.beastActive || character.pendingAdv
-                            ? "adv"
-                            : character.rollMode ?? "norm",
-                        );
-                        if (forceAdv) mode = mode === "dis" ? "norm" : "adv";
-                        const r = rollD20(`Спас ${short}`, saveBonus, mode);
-                        toast.message(`Спас ${short}: ${r.total}`);
-                        addLog(`${r.label}: ${r.detail} = ${r.total}`);
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        toggleSave(key);
-                      }}
-                      className={cn(
-                        "mt-1.5 w-full rounded py-1 text-[10px] font-medium",
-                        saveProf ? "bg-primary/10 text-primary" : "text-faint",
-                      )}
-                    >
-                      Спас {formatMod(saveBonus)}
-                      {saveProf ? " ●" : ""}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+            <AbilityEditor />
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
@@ -891,6 +820,7 @@ export function CharacterSheet() {
           <aside className="space-y-4 lg:col-span-4">
             <EncounterPanel />
             <RestWizard />
+            <EnvironmentHazards />
             <CombatCard />
             <ResourcePool
               label="Очки крови"
