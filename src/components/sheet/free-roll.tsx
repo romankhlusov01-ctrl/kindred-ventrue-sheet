@@ -21,6 +21,12 @@ export function FreeRoll() {
     toast.message(`${e} = ${r.total}`);
   }
 
+  function withMod(m: string) {
+    const base = expr.replace(/[+-]\d+$/, "") || "1d6";
+    const next = m === "+0" ? base : `${base}${m}`;
+    setExpr(next);
+  }
+
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <h3 className="mb-2 flex items-center gap-2 font-display text-sm">
@@ -38,6 +44,13 @@ export function FreeRoll() {
         <Button type="button" variant="secondary" className="h-12 shrink-0 px-4" onClick={() => go()}>
           Бросок
         </Button>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1">
+        {["+0", "+3", "+5", "+8"].map((m) => (
+          <Button key={m} type="button" size="sm" variant="ghost" className="h-9 text-xs" onClick={() => withMod(m)}>
+            {m}
+          </Button>
+        ))}
       </div>
       <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-5">
         {PRESETS.map((e) => (
