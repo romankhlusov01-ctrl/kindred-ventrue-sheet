@@ -47,6 +47,7 @@ import { SessionSummary } from "@/components/sheet/session-summary";
 import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
 import { AcBuilder } from "@/components/sheet/ac-builder";
 import { ExportMarkdown } from "@/components/sheet/export-markdown";
+import { ExportLog } from "@/components/sheet/export-log";
 import { RecalcHp } from "@/components/sheet/recalc-hp";
 import { StartEncounter } from "@/components/sheet/start-encounter";
 import { TorporPanel } from "@/components/sheet/torpor-panel";
@@ -305,6 +306,7 @@ export function CharacterSheet() {
               <Upload className="size-3.5" />
             </Button>
             <ExportMarkdown />
+            <ExportLog />
           </div>
         </div>
 
