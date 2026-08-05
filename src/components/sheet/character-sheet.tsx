@@ -46,6 +46,7 @@ import { OnboardingBanner } from "@/components/sheet/onboarding";
 import { SessionSummary } from "@/components/sheet/session-summary";
 import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
 import { AcBuilder } from "@/components/sheet/ac-builder";
+import { ExportMarkdown } from "@/components/sheet/export-markdown";
 
 
 
@@ -295,6 +296,7 @@ export function CharacterSheet() {
             <Button type="button" variant="secondary" size="sm" onClick={importJson}>
               <Upload className="size-3.5" />
             </Button>
+            <ExportMarkdown />
           </div>
         </div>
 
