@@ -43,6 +43,7 @@ import { InspirationToggle } from "@/components/sheet/inspiration-toggle";
 import { AbilityEditor } from "@/components/sheet/ability-editor";
 import { EnvironmentHazards } from "@/components/sheet/environment-hazards";
 import { OnboardingBanner } from "@/components/sheet/onboarding";
+import { SessionSummary } from "@/components/sheet/session-summary";
 
 
 
@@ -1407,6 +1408,7 @@ export function CharacterSheet() {
 
       {tab === "log" && (
         <div className="grid gap-4 lg:grid-cols-2">
+          <SessionSummary />
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-lg">Журнал</h2>
