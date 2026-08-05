@@ -40,6 +40,7 @@ import { ExportLog } from "@/components/sheet/export-log";
 import { Glossary } from "@/components/sheet/glossary";
 import { AbilityEditor } from "@/components/sheet/ability-editor";
 import { AcBuilder } from "@/components/sheet/ac-builder";
+import { BloodBond } from "@/components/sheet/blood-bond";
 import { useSessionStore } from "@/lib/session-store";
 
 import {
@@ -1093,6 +1094,7 @@ export function CharacterSheet() {
         <div className="grid gap-4 lg:grid-cols-2">
           <SessionNote />
           <SessionSummary />
+          <BloodBond />
           <Glossary />
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <div className="mb-3 flex items-center justify-between">

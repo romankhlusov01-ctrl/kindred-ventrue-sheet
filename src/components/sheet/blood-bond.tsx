@@ -6,8 +6,7 @@ import { useState } from "react";
 import { useCharacterStore } from "@/lib/character-store";
 
 /**
- * Track blood bond steps (1–3) for solo narrative.
- * Stored as condition tag + notes line.
+ * Track blood bond steps (1–3) for your character — self narrative.
  */
 export function BloodBond() {
   const c = useCharacterStore((s) => s.character);
@@ -37,33 +36,33 @@ export function BloodBond() {
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <h3 className="mb-2 flex items-center gap-2 font-display text-sm">
-        <Link2 className="size-4 text-primary" /> Кровная связь
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
+      <h3 className="mb-1 flex items-center gap-2 font-display text-sm">
+        <Link2 className="size-3.5 text-primary" /> Кровная связь
       </h3>
+      <p className="mb-2 text-[11px] text-muted">
+        Ступени 1–3 (вы или на вас). Сейчас:{" "}
+        <strong className="text-fg">{level || "нет"}</strong>
+      </p>
       <Input
-        className="mb-2 h-8"
-        placeholder="С кем (имя NPC)"
+        className="mb-2 h-11"
+        placeholder="С кем (имя)…"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      <div className="flex flex-wrap gap-1">
+      <div className="grid grid-cols-4 gap-1.5">
         {[0, 1, 2, 3].map((n) => (
           <Button
             key={n}
             type="button"
-            size="sm"
             variant={level === n ? "blood" : "secondary"}
-            className="h-8"
+            className="h-12"
             onClick={() => setBond(n)}
           >
-            {n === 0 ? "Нет" : `Ступень ${n}`}
+            {n === 0 ? "Нет" : n}
           </Button>
         ))}
       </div>
-      <p className="mt-2 text-[10px] text-muted">
-        1: привязанность · 2: одержимость · 3: рабство воли (нарратив PDF).
-      </p>
     </div>
   );
 }

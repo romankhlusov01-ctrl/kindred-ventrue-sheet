@@ -44,6 +44,7 @@ import { DeathPanel } from "@/components/sheet/death-panel";
 import { AbilityStrip } from "@/components/sheet/ability-strip";
 import { SelfReminders } from "@/components/sheet/self-reminders";
 import { AutoInit } from "@/components/sheet/auto-init";
+import { InspirationToggle } from "@/components/sheet/inspiration-toggle";
 import {
   getBloodMax,
   getLuckMax,
@@ -361,6 +362,7 @@ export function PlayHub() {
       <DeathPanel />
       <SelfReminders />
       <RollModeBar />
+      <InspirationToggle />
       {(showCombat || showSocial) && <AbilityStrip />}
 
       {/* Turn economy — combat + social */}
