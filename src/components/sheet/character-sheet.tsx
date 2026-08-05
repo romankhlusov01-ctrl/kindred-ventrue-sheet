@@ -52,6 +52,7 @@ import { StartEncounter } from "@/components/sheet/start-encounter";
 import { TorporPanel } from "@/components/sheet/torpor-panel";
 import { StakeHelper } from "@/components/sheet/stake-helper";
 import { Glossary } from "@/components/sheet/glossary";
+import { FullHealButton } from "@/components/sheet/full-heal";
 
 
 
@@ -482,7 +483,7 @@ export function CharacterSheet() {
           <div className="space-y-4 lg:col-span-8">
             <ScenarioBar />
             <LevelUpHelper />
-            <div className="flex flex-wrap gap-2"><RecalcHp /></div>
+            <div className="flex flex-wrap gap-2"><RecalcHp /><FullHealButton /></div>
             <StartEncounter />
             <WarlockSnippet />
             <InspirationToggle />
