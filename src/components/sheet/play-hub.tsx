@@ -523,7 +523,9 @@ export function PlayHub() {
               </div>
             </div>
             {c.attacks.length === 0 && (
-              <p className="text-xs text-muted">Добавьте атаку (билдер или +).</p>
+              <Button type="button" variant="secondary" className="h-12 w-full" onClick={addAttack}>
+                + Добавить атаку
+              </Button>
             )}
             <div className="space-y-2">
               {c.attacks.map((atk) => (
