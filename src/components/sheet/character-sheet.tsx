@@ -38,6 +38,7 @@ import { PcSaves } from "@/components/sheet/pc-saves";
 import { Passives } from "@/components/sheet/passives";
 import { ClearLog } from "@/components/sheet/clear-log";
 import { LogSearch } from "@/components/sheet/log-search";
+import { FreeRoll } from "@/components/sheet/free-roll";
 
 import { EnemyTurn } from "@/components/sheet/enemy-turn";
 import { AutoInit } from "@/components/sheet/auto-init";
@@ -874,6 +875,7 @@ export function CharacterSheet() {
             <DamageIntake />
 
 
+            <FreeRoll />
             <DicePanel />
           </div>
 
