@@ -675,6 +675,7 @@ export function CharacterSheet() {
                         toast.error("Очки Везучего кончились");
                         return;
                       }
+                      setField("pendingDis", true);
                       addLog("Везучий: помеха на атаку по тебе (−1)");
                       toast.success("Везучий → Помеха на атаку");
                     }}
