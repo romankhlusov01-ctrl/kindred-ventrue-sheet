@@ -380,7 +380,7 @@ export function PlayHub() {
             <Button
               type="button"
               size="sm"
-              variant="secondary"
+              variant={c.actionUsed && c.bonusUsed ? "blood" : "secondary"}
               className="h-10"
               onClick={() => {
                 newTurn();
