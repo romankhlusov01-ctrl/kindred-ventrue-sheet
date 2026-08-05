@@ -81,7 +81,7 @@ export function AbilityEditor() {
             </button>
             <Input
               type="number"
-              className="mx-auto mt-1.5 h-8 w-full max-w-[4.5rem] text-center text-sm"
+              className="mx-auto mt-1.5 h-10 w-full max-w-[4.5rem] text-center text-sm"
               value={score}
               min={1}
               max={30}
@@ -96,7 +96,7 @@ export function AbilityEditor() {
                 toast.message(saveProf ? "Спас снят" : "Спас владение");
               }}
               className={cn(
-                "mt-1.5 w-full rounded py-1 text-[10px] font-medium",
+                "mt-1.5 w-full rounded py-2 text-[10px] font-medium",
                 saveProf ? "bg-primary/10 text-primary" : "text-faint",
               )}
             >

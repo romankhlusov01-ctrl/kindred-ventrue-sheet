@@ -6,6 +6,7 @@ import { useCharacterStore } from "@/lib/character-store";
 import { abilityMod, formatMod, rollDie } from "@/lib/utils";
 import { rollD20 } from "@/lib/roll-engine";
 import { useSessionStore } from "@/lib/session-store";
+// undo on blood spends
 
 type Action = {
   name: string;
@@ -25,6 +26,7 @@ export function QuickActions() {
   const adjustHp = useCharacterStore((s) => s.adjustHp);
   const patch = useCharacterStore((s) => s.patch);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
+  const pushUndo = useSessionStore((s) => s.pushUndo);
   const row = getLevelData(c.level);
   const pb = effectivePb(c.level, c.multiclass);
   const cha = abilityMod(c.abilities.cha);
@@ -50,6 +52,7 @@ export function QuickActions() {
       toast.error(`Нужно ${n} очк. крови`);
       return false;
     }
+    pushUndo(`−${n} ОБК`);
     spendBlood(n);
     return true;
   }
@@ -318,7 +321,7 @@ export function QuickActions() {
   );
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <div className="mb-1 flex items-center justify-between">
         <h3 className="font-display text-base">Быстрые действия</h3>
         <span className="text-xs text-muted">Сл {dc}</span>
@@ -327,7 +330,7 @@ export function QuickActions() {
         Вентру · Хар {formatMod(cha)} · БМ {formatMod(pb)}
         {c.level >= 18 ? ` · Аура ${auraDc}` : ""}
       </p>
-      <div className="grid max-h-80 grid-cols-1 gap-1.5 overflow-y-auto scroll-thin">
+      <div className="grid max-h-96 grid-cols-1 gap-1.5 overflow-y-auto scroll-thin">
         {visible.map((a) => (
           <Button
             key={a.name}

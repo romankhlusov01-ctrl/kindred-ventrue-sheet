@@ -132,3 +132,12 @@
     display: block;
   }
 }
+
+@keyframes roll-flash {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.roll-flash {
+  animation: roll-flash 0.28s ease-out;
+}

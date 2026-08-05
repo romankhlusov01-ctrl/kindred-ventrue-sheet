@@ -25,7 +25,9 @@ export function ConcentrationHelper() {
       toast.message("Нет концентрации");
       return;
     }
-    const mode = conditionMode(c, "save", c.rollMode ?? "norm");
+    let base = c.rollMode ?? "norm";
+    if (c.beastActive || c.pendingAdv) base = base === "dis" ? "norm" : "adv";
+    const mode = conditionMode(c, "save", base);
     const r = rollD20("Концентрация", conMod, mode);
     consumeRollMode();
     const ok = r.total >= dc;
@@ -43,13 +45,13 @@ export function ConcentrationHelper() {
   const presets = ["Внушение", "Гипнотический узор", "Очаровать чудовище", "Hex", "Bless"];
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <h3 className="mb-2 flex items-center gap-2 font-display text-sm">
-        <Focus className="size-4 text-accent" /> Концентрация
+        <Focus className="size-3.5 text-accent" /> Концентрация
       </h3>
       <Input
-        className="mb-2 h-8"
-        placeholder="Эффект…"
+        className="mb-2 h-11"
+        placeholder="На чём держите…"
         value={c.concentrating}
         onChange={(e) => setField("concentrating", e.target.value)}
       />
@@ -59,8 +61,8 @@ export function ConcentrationHelper() {
             key={p}
             type="button"
             size="sm"
-            variant="ghost"
-            className="h-7 text-xs"
+            variant="outline"
+            className="h-10 text-xs"
             onClick={() => setField("concentrating", p)}
           >
             {p}
@@ -70,29 +72,32 @@ export function ConcentrationHelper() {
           type="button"
           size="sm"
           variant="ghost"
-          className="h-7 text-xs"
+          className="h-10 text-xs"
           onClick={() => setField("concentrating", "")}
         >
           Сброс
         </Button>
       </div>
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="mb-2 flex items-end gap-2">
         <label className="text-[10px] text-muted">
-          Урон (Сл max 10 / ½)
+          Урон
           <Input
             type="number"
-            className="h-8 w-20"
+            className="mt-0.5 h-11 w-24"
             value={dmg}
             onChange={(e) => setDmg(Number(e.target.value) || 0)}
           />
         </label>
-        <span className="mb-1 text-xs text-muted">
+        <div className="pb-2 text-xs text-muted">
           Сл {dc} · ТЕЛ {formatMod(conMod)}
-        </span>
-        <Button type="button" className="h-11" variant="secondary" onClick={check}>
-          Спас
+        </div>
+        <Button type="button" variant="secondary" className="h-11 flex-1" onClick={check}>
+          Проверка
         </Button>
       </div>
+      {c.concentrating && (
+        <p className="text-xs text-accent">Активно: {c.concentrating}</p>
+      )}
     </div>
   );
 }

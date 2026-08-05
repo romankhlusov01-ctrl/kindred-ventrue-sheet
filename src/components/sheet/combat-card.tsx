@@ -56,8 +56,8 @@ export function CombatCard() {
         <h3 className="font-display text-sm">Карточка для стола</h3>
         <Button
           type="button"
-          size="sm"
           variant="secondary"
+          className="h-11"
           onClick={async () => {
             const t = build();
             try {

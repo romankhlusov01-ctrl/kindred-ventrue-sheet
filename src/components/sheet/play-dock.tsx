@@ -174,7 +174,7 @@ export function PlayDock() {
             <div className="truncate text-xs text-muted">{lastRoll.label}</div>
             <div className="truncate text-[11px] text-faint">{lastRoll.detail}</div>
           </div>
-          <div className="font-display text-3xl tabular-nums leading-none text-primary">
+          <div className="roll-flash font-display text-3xl tabular-nums leading-none text-primary">
             {lastRoll.total}
           </div>
         </div>
