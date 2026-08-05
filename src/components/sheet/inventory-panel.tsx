@@ -103,6 +103,41 @@ export function InventoryPanel() {
           <span className="text-sm text-muted">зм</span>
         </div>
 
+        <div className="mb-3 flex flex-wrap gap-1">
+          {[
+            ["Деревянный кол", 1, 1],
+            ["Изысканная одежда", 1, 4],
+            ["Кинжал", 1, 1],
+            ["Рапира", 1, 2],
+            ["Знак рода", 1, 0],
+          ].map(([n, q, w]) => (
+            <Button
+              key={String(n)}
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => {
+                write(
+                  [
+                    ...parsed,
+                    {
+                      id: `it-${Date.now()}-${n}`,
+                      name: String(n),
+                      qty: Number(q),
+                      weight: Number(w),
+                      note: "",
+                    },
+                  ],
+                  gold,
+                );
+              }}
+            >
+              +{n}
+            </Button>
+          ))}
+        </div>
+
         <ul className="mb-3 space-y-1.5">
           {parsed.length === 0 && (
             <li className="text-xs text-muted">Пока пусто — добавьте предмет ниже.</li>
