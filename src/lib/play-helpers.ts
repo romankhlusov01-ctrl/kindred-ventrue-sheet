@@ -4,27 +4,37 @@ import type { RollMode } from "@/lib/roll-engine";
 /** Conditions that impose disadvantage on ability checks (2024-ish common) */
 const CHECK_DISADV = new Set([
   "Отравленный",
+  "Отравлен",
   "Испуганный",
+  "Испуган",
   "Истощение",
   "Опутанный",
+  "Обездвижен",
   "Схваченный",
+  "Схвачен",
 ]);
 
 /** Attack disadvantage */
 const ATTACK_DISADV = new Set([
   "Отравленный",
+  "Отравлен",
   "Ослеплённый",
+  "Ослеплён",
   "Испуганный",
+  "Испуган",
   "Опутанный",
+  "Обездвижен",
   "Схваченный",
+  "Схвачен",
   "Опрокинутый",
+  "Сбит с ног",
 ]);
 
 /** Attack advantage */
-const ATTACK_ADV = new Set(["Невидимый"]);
+const ATTACK_ADV = new Set(["Невидимый", "Невидим"]);
 
 /** Save disadvantage */
-const SAVE_DISADV = new Set(["Отравленный"]);
+const SAVE_DISADV = new Set(["Отравленный", "Отравлен"]);
 
 export type RollKind = "check" | "attack" | "save" | "init";
 

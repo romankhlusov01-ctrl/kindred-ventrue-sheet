@@ -34,6 +34,7 @@ import { TargetCheck } from "@/components/sheet/target-check";
 import { DamageIntake } from "@/components/sheet/damage-intake";
 import { VentrueBuilder } from "@/components/sheet/ventrue-builder";
 import { LevelUpHelper } from "@/components/sheet/level-up-helper";
+import { WarlockSnippet } from "@/components/sheet/warlock-snippet";
 
 
 
@@ -460,6 +461,7 @@ export function CharacterSheet() {
           <div className="space-y-4 lg:col-span-8">
             <ScenarioBar />
             <LevelUpHelper />
+            <WarlockSnippet />
 
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {ABILITY_KEYS.map(({ key, short }) => {
