@@ -2,7 +2,8 @@ import { toast } from "sonner";
 import { FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { abilityMod, formatMod } from "@/lib/utils";
-import { getLevelData, KINDRED_FEATS, VENTRUE_FEATURES, unlockedCore } from "@/data/kindred-ru";
+import { getLevelData, KINDRED_FEATS } from "@/data/kindred-ru";
+import { effectivePb } from "@/lib/level-utils";
 import {
   getBloodMax,
   getLuckMax,
@@ -14,7 +15,7 @@ import { originFeatById } from "@/data/origin-ru";
 
 export function ExportMarkdown() {
   const c = useCharacterStore((s) => s.character);
-  const pb = getLevelData(c.level).pb;
+  const pb = effectivePb(c.level, c.multiclass);
 
   function md() {
     const skills = SKILLS.map((sk) => {
