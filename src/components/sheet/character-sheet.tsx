@@ -209,9 +209,26 @@ export function CharacterSheet() {
     const voice = character.customResources.find((r) => /голос/i.test(r.name));
     if (voice && voice.max !== pb) {
       updateResource(voice.id, { max: pb, current: Math.min(voice.current, pb) });
+    } else if (
+      !voice &&
+      character.level >= 3 &&
+      (character.clan === "ventrue" || character.clan === "none")
+    ) {
+      useCharacterStore.getState().patch({
+        customResources: [
+          ...character.customResources,
+          {
+            id: `voice-${Date.now()}`,
+            name: "Голос",
+            max: pb,
+            current: pb,
+            note: "Приказ / Внушение · LR",
+          },
+        ],
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [character.level, pb]);
+  }, [character.level, pb, character.clan]);
 
   function exportJson() {
     const blob = new Blob([JSON.stringify(exportLibrary(), null, 2)], {
