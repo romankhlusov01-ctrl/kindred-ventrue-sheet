@@ -118,7 +118,7 @@ export function Hotkeys() {
   }, []);
 
   return (
-    <p className="hidden sm:block "hidden text-[10px] text-faint sm:block">
+    <p className="hidden text-[10px] text-faint sm:block">
       Клавиши: <kbd className="rounded border border-border px-1">N</kbd> ход ·{" "}
       <kbd className="rounded border border-border px-1">A</kbd> атака ·{" "}
       <kbd className="rounded border border-border px-1">F</kbd> питание ·{" "}
