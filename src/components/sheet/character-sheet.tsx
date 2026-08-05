@@ -282,12 +282,18 @@ export function CharacterSheet() {
               {character.name || "Сородич"}
             </h1>
             <p className="mt-0.5 text-sm text-muted">
-              {character.species} · {CLAN_RU[character.clan] ?? character.clan} · Сородич{" "}
-              {character.level}
-              {character.multiclass ? ` / ${character.multiclass}` : ""} · БМ {formatMod(pb)} ·
-              Сл {spellDc}
+              <span className="sm:hidden">
+                {CLAN_RU[character.clan] ?? character.clan} {character.level}
+                {character.multiclass ? ` / ${character.multiclass}` : ""} · Сл {spellDc}
+              </span>
+              <span className="hidden sm:inline">
+                {character.species} · {CLAN_RU[character.clan] ?? character.clan} · Сородич{" "}
+                {character.level}
+                {character.multiclass ? ` / ${character.multiclass}` : ""} · БМ {formatMod(pb)} ·
+                Сл {spellDc}
+              </span>
             </p>
-            <p className="mt-0.5 text-xs text-faint">
+            <p className={cn("mt-0.5 text-xs text-faint", tab === "play" && "hidden sm:block")}>
               {character.background || "—"} · {originFeat?.name ?? "—"} + {bgFeat?.name ?? "—"}
             </p>
           </div>
