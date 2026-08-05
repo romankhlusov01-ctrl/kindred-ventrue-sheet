@@ -699,6 +699,7 @@ export function CharacterSheet() {
                             : character.rollMode ?? "norm",
                         );
                         const r = rollD20(sk.nameRu, bonus, mode);
+                        useCharacterStore.getState().consumeRollMode();
                         useSessionStore.getState().setLastRoll({
                           label: r.label,
                           total: r.total,
