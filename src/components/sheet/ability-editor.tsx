@@ -75,7 +75,7 @@ export function AbilityEditor() {
             <button
               type="button"
               onClick={() => rollCheck(key, short)}
-              className="font-display text-2xl tabular-nums leading-none text-accent active:scale-95 sm:text-3xl"
+              className="mx-auto flex h-12 w-full items-center justify-center font-display text-2xl tabular-nums leading-none text-accent active:scale-95 sm:text-3xl"
             >
               {formatMod(mod)}
             </button>
