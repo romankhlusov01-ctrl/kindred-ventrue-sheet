@@ -45,9 +45,23 @@ export function QuickCondition() {
         })}
       </div>
       {c.conditions.length > 0 && (
-        <p className="mt-2 text-[11px] text-muted">
-          Активно: {c.conditions.join(", ")} · тап чтобы снять
-        </p>
+        <>
+          <p className="mt-2 text-[11px] text-muted">
+            Активно: {c.conditions.join(", ")} · тап чтобы снять
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            className="mt-1 h-10 w-full text-xs"
+            onClick={() => {
+              useCharacterStore.getState().setField("conditions", []);
+              useCharacterStore.getState().setField("hunger", false);
+              toast.message("Все состояния сняты");
+            }}
+          >
+            Снять все
+          </Button>
+        </>
       )}
     </div>
   );

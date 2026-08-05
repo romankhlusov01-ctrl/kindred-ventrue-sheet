@@ -10,8 +10,8 @@ export function ClearLog() {
   return (
     <Button
       type="button"
-      size="sm"
       variant="ghost"
+      className="h-11"
       onClick={() => {
         if (!n) {
           toast.message("Журнал пуст");
@@ -22,7 +22,7 @@ export function ClearLog() {
         toast.message("Журнал очищен");
       }}
     >
-      <Eraser className="size-3.5" /> Очистить лог
+      <Eraser className="size-3.5" /> Очистить
     </Button>
   );
 }
