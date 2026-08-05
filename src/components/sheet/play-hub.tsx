@@ -151,8 +151,8 @@ export function PlayHub() {
 
   return (
     <div className="mx-auto max-w-lg space-y-2.5 sm:max-w-3xl sm:space-y-3 lg:max-w-none">
-      {/* Scenario chips — primary phone filter */}
-      <div className="grid grid-cols-4 gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-1">
+      {/* Scenario chips — sticky under HUD */}
+      <div className="sticky top-[3.25rem] z-10 grid grid-cols-4 gap-1 rounded-[var(--radius-lg)] border border-border bg-surface/95 p-1 shadow-sm backdrop-blur sm:static sm:shadow-none">
         {SCENARIOS.map((s) => (
           <button
             key={s.id}
