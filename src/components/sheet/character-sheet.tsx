@@ -36,6 +36,8 @@ import { AsiHelper } from "@/components/sheet/asi-helper";
 import { BloodBond } from "@/components/sheet/blood-bond";
 import { PcSaves } from "@/components/sheet/pc-saves";
 import { Passives } from "@/components/sheet/passives";
+import { ClearLog } from "@/components/sheet/clear-log";
+
 
 
 
@@ -1498,18 +1500,22 @@ export function CharacterSheet() {
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-lg">Журнал</h2>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  const t = prompt("Заметка:");
-                  if (t) addLog(t);
-                }}
-              >
-                <Plus className="size-3.5" /> Запись
-              </Button>
+              <div className="flex gap-1">
+                <ClearLog />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    const t = prompt("Заметка:");
+                    if (t) addLog(t);
+                  }}
+                >
+                  <Plus className="size-3.5" /> Запись
+                </Button>
+              </div>
             </div>
+
             <ul className="max-h-[28rem] space-y-2 overflow-y-auto scroll-thin">
               {character.sessionLog.length === 0 && (
                 <li className="text-sm text-muted">Пусто — броски и отдых появятся здесь.</li>
@@ -1530,8 +1536,11 @@ export function CharacterSheet() {
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-sm text-muted">
             <h3 className="mb-2 font-display text-base text-fg">Подсказки сессии</h3>
             <ul className="list-disc space-y-2 pl-4">
-              <li>Нижняя панель: ХП, ОБК, иниц, ход, зверь, питание, атака — одним пальцем.</li>
+              <li>Нижняя панель: ХП, ОБК, иниц, ход, зверь, Lucky/Prot, питание, атака.</li>
+              <li>Старт боя: патруль / охота / сородич · враг «Атака вас» и спас vs Сл.</li>
+              <li>Клавиши (ПК): N ход · A атака · F питание · B зверь · I иниц · H/J ±ХП.</li>
               <li>Тап по модификатору СИЛ/ЛОВ… = проверка; по «Спас» = спасбросок.</li>
+
               <li>Состояния (Отравленный, Голод…) дают помеху автоматически.</li>
               <li>Везучий и Защищённый — два пула = БМ.</li>
               <li>Долгий отдых с ≥1 ОБК: хиты, вдохновение, оба пула удачи.</li>
