@@ -1065,7 +1065,7 @@ function HudStat({
   blood?: boolean;
 }) {
   return (
-    <div className="min-w-[3.25rem]">
+    <div className="min-w-[3.25rem] shrink-0">
       <div className="text-[9px] font-semibold uppercase tracking-wider text-faint">{label}</div>
       <div
         className={cn(
