@@ -32,6 +32,10 @@ import { ScenarioBar } from "@/components/sheet/scenario-bar";
 import { PlayDock } from "@/components/sheet/play-dock";
 import { Hotkeys } from "@/components/sheet/hotkeys";
 import { RoundBanner } from "@/components/sheet/round-banner";
+import { AsiHelper } from "@/components/sheet/asi-helper";
+import { BloodBond } from "@/components/sheet/blood-bond";
+
+
 
 
 import { TargetCheck } from "@/components/sheet/target-check";
@@ -504,7 +508,9 @@ export function CharacterSheet() {
             <ScenarioBar />
 
             <LevelUpHelper />
+            <AsiHelper />
             <div className="flex flex-wrap gap-2"><RecalcHp /><FullHealButton /></div>
+
             <StartEncounter />
             <WarlockSnippet />
             <InspirationToggle />
@@ -862,7 +868,9 @@ export function CharacterSheet() {
             <TempHp />
             <QuickCondition />
             <FeedWizard />
+            <BloodBond />
             <EncounterPanel />
+
 
 
 

@@ -1,14 +1,16 @@
 import { useCharacterStore, getBloodMax, getLuckMax } from "@/lib/character-store";
 import { getLevelData } from "@/data/kindred-ru";
 import { useSessionStore } from "@/lib/session-store";
-import { abilityMod, formatMod } from "@/lib/utils";
+import { abilityMod } from "@/lib/utils";
+import { effectivePb } from "@/lib/level-utils";
 
 export function SessionSummary() {
   const c = useCharacterStore((s) => s.character);
   const enemies = useSessionStore((s) => s.enemies);
   const effects = useSessionStore((s) => s.effects);
   const lastRoll = useSessionStore((s) => s.lastRoll);
-  const pb = getLevelData(c.level).pb;
+  const note = useSessionStore((s) => s.sessionNote);
+  const pb = effectivePb(c.level, c.multiclass);
   const alive = enemies.filter((e) => e.hp > 0).length;
 
   return (
@@ -19,10 +21,15 @@ export function SessionSummary() {
           <span className="text-fg">{c.name}</span> · ур.{c.level} · раунд {c.round ?? 1}
           {c.initiative != null ? ` · иниц ${c.initiative}` : ""}
         </li>
+        {note && (
+          <li className="text-fg">
+            Цель: <span className="text-accent">{note}</span>
+          </li>
+        )}
         <li>
           ХП {c.hpCurrent}/{c.hpMax}
           {c.tempHp ? ` (+${c.tempHp})` : ""} · ОБК {c.bloodCurrent}/{getBloodMax(c)} · Зверь{" "}
-          {pb - c.beastUsed}/{pb}
+          {Math.max(0, pb - c.beastUsed)}/{pb}
         </li>
         <li>
           Удача {getLuckMax(c.level) - c.luckyUsed}/{getLuckMax(c.level)} +{" "}
@@ -53,6 +60,9 @@ export function SessionSummary() {
         <li>
           Сл {8 + pb + abilityMod(c.abilities.cha)} · Bane: {c.preferredBlood || "—"}
         </li>
+        {c.conditions.length > 0 && (
+          <li>Состояния: {c.conditions.join(", ")}</li>
+        )}
       </ul>
     </div>
   );
