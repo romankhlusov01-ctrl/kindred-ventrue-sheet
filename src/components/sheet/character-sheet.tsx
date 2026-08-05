@@ -921,7 +921,7 @@ export function CharacterSheet() {
                   type="button"
                   onClick={() => toggleFeat(f.id)}
                   className={cn(
-                    "rounded-[var(--radius-lg)] border p-4 text-left transition-colors",
+                    "min-h-20 w-full rounded-[var(--radius-lg)] border p-4 text-left transition-colors active:scale-[0.99]",
                     on
                       ? "border-primary bg-primary/10"
                       : "border-border bg-surface hover:bg-surface-2",
@@ -933,10 +933,10 @@ export function CharacterSheet() {
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{f.body}</p>
                   {FEAT_RECS[f.id] && (
-                    <p className="mt-1 text-[11px] text-accent">★ {FEAT_RECS[f.id]!.note}</p>
+                    <p className="mt-1 text-[11px] text-accent">{FEAT_RECS[f.id]!.note}</p>
                   )}
                   <div className="mt-2 text-xs font-medium text-primary">
-                    {on ? "✓ Взято — нажми, чтобы снять" : "Нажми, чтобы отметить"}
+                    {on ? "Взято — снять" : "Взять"}
                   </div>
                 </button>
               );
