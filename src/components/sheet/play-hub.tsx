@@ -227,6 +227,53 @@ export function PlayHub() {
           <MiniStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
         </div>
 
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              const on = !c.inspiration;
+              setField("inspiration", on);
+              if (on) toast.message("+вдохновение");
+              else {
+                setField("pendingAdv", true);
+                toast.message("Вдохновение → преим.");
+              }
+            }}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-medium",
+              c.inspiration
+                ? "border-accent bg-accent/20 text-accent"
+                : "border-border bg-surface-2 text-muted",
+            )}
+          >
+            Вдохн.
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              useCharacterStore.getState().toggleCondition("Голод");
+              toast.message(c.hunger || c.conditions.includes("Голод") ? "Голод снят" : "Голод");
+            }}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-medium",
+              c.hunger
+                ? "border-primary bg-primary/20 text-primary"
+                : "border-border bg-surface-2 text-muted",
+            )}
+          >
+            Голод
+          </button>
+          {c.beastActive && (
+            <span className="rounded-full border border-beast/40 bg-beast/15 px-3 py-1.5 text-xs text-beast">
+              Зверь★
+            </span>
+          )}
+          {c.concentrating && (
+            <span className="max-w-[10rem] truncate rounded-full border border-border bg-surface-2 px-3 py-1.5 text-xs text-muted">
+              Конц: {c.concentrating}
+            </span>
+          )}
+        </div>
         {atZero && (
           <Button
             type="button"
