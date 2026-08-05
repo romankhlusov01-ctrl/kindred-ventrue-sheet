@@ -13,6 +13,7 @@ import {
   Trash2,
   Upload,
   Users,
+  User,
   Zap,
   Crown,
   Clover,
@@ -31,6 +32,7 @@ import { ScenarioBar } from "@/components/sheet/scenario-bar";
 import { PlayDock } from "@/components/sheet/play-dock";
 import { TargetCheck } from "@/components/sheet/target-check";
 import { DamageIntake } from "@/components/sheet/damage-intake";
+import { VentrueBuilder } from "@/components/sheet/ventrue-builder";
 
 
 
@@ -91,7 +93,7 @@ const CLAN_RU: Record<string, string> = {
   none: "—",
 };
 
-type Tab = "combat" | "skills" | "features" | "feats" | "gear" | "log";
+type Tab = "builder" | "combat" | "skills" | "features" | "feats" | "gear" | "log";
 
 export function CharacterSheet() {
   const character = useCharacterStore((s) => s.character);
@@ -126,7 +128,7 @@ export function CharacterSheet() {
   const spendLucky = useCharacterStore((s) => s.spendLucky);
   const spendProtected = useCharacterStore((s) => s.spendProtected);
 
-  const [tab, setTab] = useState<Tab>("combat");
+  const [tab, setTab] = useState<Tab>("builder");
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [openFeature, setOpenFeature] = useState<string | null>(null);
 
@@ -235,6 +237,7 @@ export function CharacterSheet() {
   }
 
   const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
+    { id: "builder", label: "Билдер", icon: <User className="size-3.5" /> },
     { id: "combat", label: "Бой", icon: <Swords className="size-3.5" /> },
     { id: "skills", label: "Навыки", icon: <Zap className="size-3.5" /> },
     { id: "features", label: "Способности", icon: <Crown className="size-3.5" /> },
@@ -448,6 +451,8 @@ export function CharacterSheet() {
           </button>
         ))}
       </div>
+
+      {tab === "builder" && <VentrueBuilder />}
 
       {tab === "combat" && (
         <div className="grid gap-4 lg:grid-cols-12">
