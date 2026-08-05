@@ -79,12 +79,12 @@ export function DamageIntake() {
         {c.tempHp > 0 && (
           <span className="mb-1 text-xs text-accent">врем. {c.tempHp}</span>
         )}
-        <Button type="button" size="sm" variant="blood" onClick={apply}>
+        <Button type="button" className="h-12" variant="blood" onClick={apply}>
           Применить
         </Button>
         <Button
           type="button"
-          size="sm"
+          className="h-12"
           variant="secondary"
           onClick={() => {
             if (!spendProtected()) {
