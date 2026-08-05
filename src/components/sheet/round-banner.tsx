@@ -1,4 +1,5 @@
 import { useCharacterStore } from "@/lib/character-store";
+import { Button } from "@/components/ui/button";
 import { useSessionStore } from "@/lib/session-store";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,13 @@ export function RoundBanner() {
       )}
       {effects.length > 0 && <span>эфф. {effects.length}</span>}
       {c.hpCurrent <= 0 && <span className="font-semibold">0 ХП · Protected?</span>}
+      <button
+        type="button"
+        className="ml-auto text-[10px] text-faint underline"
+        onClick={() => useCharacterStore.getState().setField("round", 1)}
+      >
+        R→1
+      </button>
     </div>
   );
 }
