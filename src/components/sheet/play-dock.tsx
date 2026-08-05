@@ -292,7 +292,7 @@ export function PlayDock() {
         onClick={() => setMore((v) => !v)}
         className="mx-auto mb-1 flex items-center gap-1 py-1 text-[10px] text-muted"
       >
-        {more ? "Меньше" : "Ещё (удача · отдых · d20)"}
+        {more ? "Свернуть доп." : "Удача · отдых · d20"}
         {more ? <ChevronDown className="size-3" /> : <ChevronUp className="size-3" />}
       </button>
     </div>
