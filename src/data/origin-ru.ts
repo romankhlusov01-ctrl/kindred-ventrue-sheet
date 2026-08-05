@@ -88,6 +88,21 @@ export const ORIGIN_FEATS: OriginFeatDef[] = [
   FEAT_LUCKY,
   FEAT_PROTECTED,
   {
+    id: "magic-initiate",
+    name: "Посвящённый в магию",
+    nameEn: "Magic Initiate",
+    source: "PHB 2024 · dnd.su",
+    body: "Два заговора + заклинание 1 круга из списка класса (жрец/друид/волшебник и т.д.). 1/LR без ячейки. Для листа: укажите выбранные заклинания в заметках.",
+  },
+  {
+    id: "well-read",
+    name: "Начитанный",
+    nameEn: "Well Read / Skill Expert-style PDF stub",
+    source: "Bound by Blood / table",
+    body: "Владение навыком и экспертиза или инструмент — уточните у мастера. В билдере для Scholar можно заменить на Защищённый при dual-luck билде.",
+  },
+
+  {
     id: "healthy",
     name: "Здоровый",
     nameEn: "Healthy",

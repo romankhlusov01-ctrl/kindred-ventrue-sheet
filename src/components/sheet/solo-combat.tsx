@@ -98,6 +98,21 @@ export function SoloCombat() {
             Зверь активен: преимущество на d20 (сброс на «Новый ход»).
           </p>
         )}
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setField("conditions", []);
+              setField("hunger", false);
+              toast.message("Состояния сброшены");
+            }}
+          >
+            Снять состояния
+          </Button>
+        </div>
+
       </div>
 
       {/* Concentration + HD */}
