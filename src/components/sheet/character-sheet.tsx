@@ -836,7 +836,7 @@ export function CharacterSheet() {
               уровня. Меняй уровень в шапке, чтобы крутить прогрессию.
             </p>
             <Input
-              className="sticky top-14 z-10 mt-3 border-border bg-surface shadow-sm"
+              className="sticky top-16 z-10 mt-3 h-11 border-border bg-surface shadow-sm"
               placeholder="Поиск по способностям…"
               value={featureQ}
               onChange={(e) => setFeatureQ(e.target.value)}
@@ -996,7 +996,7 @@ export function CharacterSheet() {
               {FEAT_PROTECTED.name}.
             </p>
             <Input
-              className="sticky top-14 z-10 mt-3 border-border bg-surface shadow-sm"
+              className="sticky top-16 z-10 mt-3 h-11 border-border bg-surface shadow-sm"
               placeholder="Поиск черты…"
               value={featureQ}
               onChange={(e) => setFeatureQ(e.target.value)}

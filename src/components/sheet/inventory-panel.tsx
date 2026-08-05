@@ -168,16 +168,16 @@ export function InventoryPanel() {
           ))}
         </ul>
 
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
           <Input
-            className="col-span-3 h-11"
+            className="col-span-2 h-12 sm:col-span-3"
             placeholder="Предмет"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <Input
             type="number"
-            className="col-span-1 h-11"
+            className="col-span-1 h-12"
             placeholder="шт"
             value={qty}
             min={1}
@@ -185,7 +185,7 @@ export function InventoryPanel() {
           />
           <Input
             type="number"
-            className="col-span-1 h-11"
+            className="col-span-1 h-12"
             placeholder="lb"
             value={weight}
             min={0}
@@ -195,7 +195,7 @@ export function InventoryPanel() {
           <Button
             type="button"
             size="sm"
-            className="col-span-1 h-11"
+            className="col-span-1 h-12"
             variant="secondary"
             onClick={() => {
               if (!name.trim()) return;

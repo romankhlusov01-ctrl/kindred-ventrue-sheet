@@ -10,6 +10,7 @@ import { useSessionStore } from "@/lib/session-store";
 export function BloodPips() {
   const c = useCharacterStore((s) => s.character);
   const setField = useCharacterStore((s) => s.setField);
+  const fillBlood = useCharacterStore((s) => s.fillBlood);
   const pushUndo = useSessionStore((s) => s.pushUndo);
   const max = getBloodMax(c);
 
@@ -32,17 +33,28 @@ export function BloodPips() {
         <div className="flex gap-1">
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded border border-border bg-surface-2 text-sm font-bold"
+            className="flex h-10 w-10 items-center justify-center rounded border border-border bg-surface-2 text-sm font-bold"
             onClick={() => setTo(Math.max(0, c.bloodCurrent - 1))}
           >
             −
           </button>
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded border border-border bg-surface-2 text-sm font-bold"
+            className="flex h-10 w-10 items-center justify-center rounded border border-border bg-surface-2 text-sm font-bold"
             onClick={() => setTo(Math.min(max, c.bloodCurrent + 1))}
           >
             +
+          </button>
+          <button
+            type="button"
+            className="flex h-10 items-center justify-center rounded border border-border bg-surface-2 px-2 text-[10px] font-medium text-muted"
+            onClick={() => {
+              pushUndo("ОБК макс");
+              fillBlood();
+              toast.message("ОБК полный");
+            }}
+          >
+            max
           </button>
         </div>
       </div>

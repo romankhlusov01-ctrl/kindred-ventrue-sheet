@@ -55,6 +55,7 @@ export function DicePanel() {
   const setField = useCharacterStore((s) => s.setField);
   const patch = useCharacterStore((s) => s.patch);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
+  const pushUndo = useSessionStore((s) => s.pushUndo);
 
   const [log, setLog] = useState<LogEntry[]>([]);
   const row = getLevelData(character.level);
@@ -186,7 +187,7 @@ export function DicePanel() {
               type="button"
               onClick={() => setRollMode(id)}
               className={cn(
-                "h-8 px-2.5 text-xs font-medium rounded-[var(--radius-sm)]",
+                "h-10 px-2.5 text-xs font-medium rounded-[var(--radius-sm)]",
                 mode === id ? "bg-primary text-primary-fg" : "text-muted hover:text-fg",
               )}
             >
@@ -198,21 +199,22 @@ export function DicePanel() {
 
       {/* Core combat rolls */}
       <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Button type="button" variant="blood" size="sm" onClick={() => rollFeed(false)}>
+        <Button type="button" variant="blood" className="h-12" onClick={() => rollFeed(false)}>
           Питание {row.feed}
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => rollFeed(true)}>
+        <Button type="button" variant="outline" className="h-12" onClick={() => rollFeed(true)}>
           Питание ½ Bane
         </Button>
         <Button
           type="button"
           variant="secondary"
-          size="sm"
+          className="h-12"
           onClick={() => {
             if (character.bloodCurrent < 1) {
               toast.error("Нет ОБК");
               return;
             }
+            pushUndo("Лечение");
             spendBlood(1);
             const r = rollDie(10) + character.level;
             adjustHp(r);
@@ -222,13 +224,13 @@ export function DicePanel() {
         >
           Лечение 1 ОБК
         </Button>
-        <Button type="button" variant="secondary" size="sm" onClick={rollInitiative}>
+        <Button type="button" variant="secondary" className="h-12" onClick={rollInitiative}>
           Инициатива
         </Button>
         <Button
           type="button"
           variant="secondary"
-          size="sm"
+          className="h-12"
           onClick={() => {
             if (!activateBeast()) {
               toast.error("Зверь исчерпан");
@@ -241,14 +243,14 @@ export function DicePanel() {
           <Sparkles className="size-3.5" /> Зверь+преим.
         </Button>
         {beastOn && (
-          <Button type="button" variant="ghost" size="sm" onClick={clearBeast}>
+          <Button type="button" variant="ghost" className="h-12" onClick={clearBeast}>
             Снять Зверя
           </Button>
         )}
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          className="h-12"
           onClick={() => {
             if (!spendLucky()) {
               toast.error("Нет очков Везучего");
@@ -264,7 +266,7 @@ export function DicePanel() {
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          className="h-12"
           onClick={() => {
             if (!spendLucky()) {
               toast.error("Нет очков Везучего");
@@ -280,7 +282,7 @@ export function DicePanel() {
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          className="h-12"
           onClick={() => doD20("Атака закл.", chaMod + pb, { kind: "attack" })}
         >
           Атака закл.
@@ -288,7 +290,7 @@ export function DicePanel() {
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          className="h-12"
           onClick={() => {
             const dc = 8 + pb + chaMod;
             push("Сл заклинаний", `8+БМ+Хар`, dc, "other");
