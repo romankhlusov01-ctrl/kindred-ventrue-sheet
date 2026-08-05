@@ -122,7 +122,7 @@ export function PlayDock() {
 
   if (!open) {
     return (
-      <div className="fixed inset-x-0 bottom-0 z-40 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="fixed inset-x-0 bottom-14 z-40 p-2 sm:bottom-0 sm:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -144,7 +144,7 @@ export function PlayDock() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_32px_rgb(0_0_0_/_0.45)] backdrop-blur-md">
+    <div className="fixed inset-x-0 bottom-14 z-40 border-t border-border bg-bg/95 pb-1 pt-2 shadow-[0_-8px_32px_rgb(0_0_0_/_0.45)] backdrop-blur-md sm:bottom-0 sm:pb-[max(0.35rem,env(safe-area-inset-bottom))]">
       {atZero && (
         <div className="mx-3 mb-1 flex items-center justify-between gap-2 rounded-[var(--radius)] border border-primary bg-primary/20 px-3 py-2 text-sm">
           <span className="font-medium text-primary">0 ХП</span>

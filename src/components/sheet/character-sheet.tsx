@@ -251,7 +251,7 @@ export function CharacterSheet() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 pb-36 pt-3 sm:px-5 sm:pb-28 sm:pt-5">
+    <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 pb-52 pt-3 sm:px-5 sm:pb-28 sm:pt-5">
 
       <OnboardingBanner />
       <header className="mb-4 space-y-3">
@@ -452,8 +452,8 @@ export function CharacterSheet() {
         </div>
       </div>
 
-      <div className="mb-4 flex max-w-full gap-1 overflow-x-auto overscroll-x-contain scroll-thin rounded-[var(--radius)] border border-border bg-surface p-1">
-
+      {/* Desktop tabs */}
+      <div className="mb-4 hidden max-w-full gap-1 overflow-x-auto overscroll-x-contain scroll-thin rounded-[var(--radius)] border border-border bg-surface p-1 sm:flex">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -977,6 +977,27 @@ export function CharacterSheet() {
           </div>
         </div>
       )}
+
+      
+      {/* Mobile bottom tabs — thumb zone */}
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-bg/98 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-7 gap-0 px-0.5 py-1">
+          {tabs.map((tb) => (
+            <button
+              key={tb.id}
+              type="button"
+              onClick={() => setTab(tb.id)}
+              className={cn(
+                "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-sm)] text-[9px] font-medium",
+                tab === tb.id ? "bg-primary/15 text-primary" : "text-muted",
+              )}
+            >
+              {tb.icon}
+              <span className="max-w-full truncate px-0.5">{tb.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
 
       {(tab === "play" || tab === "skills") && (
         <>
