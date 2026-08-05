@@ -32,8 +32,9 @@ export function SessionSummary() {
           {Math.max(0, pb - c.beastUsed)}/{pb}
         </li>
         <li>
-          Удача {getLuckMax(c.level) - c.luckyUsed}/{getLuckMax(c.level)} +{" "}
-          {getLuckMax(c.level) - c.protectedUsed}/{getLuckMax(c.level)} · вдохн.{" "}
+          Удача {getLuckMax(c.level, c.multiclass) - c.luckyUsed}/{getLuckMax(c.level, c.multiclass)} +{" "}
+          {getLuckMax(c.level, c.multiclass) - c.protectedUsed}/{getLuckMax(c.level, c.multiclass)} · вдохн.{" "}
+
           {c.inspiration ? "да" : "нет"}
         </li>
         <li>

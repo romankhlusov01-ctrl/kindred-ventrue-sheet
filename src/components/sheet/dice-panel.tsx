@@ -61,7 +61,8 @@ export function DicePanel() {
   const pb = effectivePb(character.level, character.multiclass);
   const conMod = abilityMod(character.abilities.con);
   const chaMod = abilityMod(character.abilities.cha);
-  const luckMax = getLuckMax(character.level);
+  const luckMax = getLuckMax(character.level, character.multiclass);
+
   const mode = character.rollMode ?? "norm";
   const beastOn = !!character.beastActive;
 

@@ -2,7 +2,8 @@ import { toast } from "sonner";
 import { Moon, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCharacterStore, getLuckMax } from "@/lib/character-store";
-import { getLevelData } from "@/data/kindred-ru";
+import { effectivePb } from "@/lib/level-utils";
+
 
 export function RestWizard() {
   const c = useCharacterStore((s) => s.character);
@@ -10,8 +11,9 @@ export function RestWizard() {
   const longRest = useCharacterStore((s) => s.longRest);
   const spendHitDie = useCharacterStore((s) => s.spendHitDie);
   const addLog = useCharacterStore((s) => s.addLog);
-  const pb = getLevelData(c.level).pb;
-  const luckMax = getLuckMax(c.level);
+  const luckMax = getLuckMax(c.level, c.multiclass);
+  const pb = effectivePb(c.level, c.multiclass);
+
   const hdLeft = c.level - c.hitDiceUsed;
 
   return (

@@ -9,12 +9,14 @@ import {
 import { useState } from "react";
 import { cn, abilityMod, rollDie } from "@/lib/utils";
 import { getLevelData } from "@/data/kindred-ru";
+import { effectivePb } from "@/lib/level-utils";
 import {
   getBloodMax,
   getLuckMax,
   skillBonus,
   useCharacterStore,
 } from "@/lib/character-store";
+
 import { rollD20, rollDamage } from "@/lib/roll-engine";
 import { conditionMode } from "@/lib/play-helpers";
 import { SKILLS } from "@/data/skills";
@@ -43,9 +45,11 @@ export function PlayDock() {
     null,
   );
 
-  const pb = getLevelData(c.level).pb;
+  const pb = effectivePb(c.level, c.multiclass);
   const bloodMax = getBloodMax(c);
-  const luckMax = getLuckMax(c.level);
+  const luckMax = getLuckMax(c.level, c.multiclass);
+
+
   const luckyLeft = Math.max(0, luckMax - (c.luckyUsed ?? 0));
   const protectedLeft = Math.max(0, luckMax - (c.protectedUsed ?? 0));
   const primary = c.attacks[0];

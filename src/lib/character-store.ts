@@ -5,6 +5,8 @@ import { getLevelData } from "@/data/kindred-ru";
 import type { ProfLevel, SkillId } from "@/data/skills";
 import { BLANK_TEMPLATE, PRESET_VENTRUE_PLAYER } from "@/data/presets";
 import type { RollMode } from "@/lib/roll-engine";
+import { effectivePb } from "@/lib/level-utils";
+
 
 export type Abilities = {
   str: number;
@@ -335,10 +337,11 @@ export const useCharacterStore = create<LibraryState>()(
       useBeast: () =>
         set((s) =>
           updateActive(s, (c) => {
-            const pb = getLevelData(c.level).pb;
+            const pb = effectivePb(c.level, c.multiclass);
             return { ...c, beastUsed: Math.min(pb, c.beastUsed + 1) };
           }),
         ),
+
       resetBeast: () =>
         set((s) => updateActive(s, (c) => ({ ...c, beastUsed: 0 }))),
       adjustHp: (delta) =>
@@ -523,25 +526,26 @@ export const useCharacterStore = create<LibraryState>()(
         ),
       spendLucky: () => {
         const c = get().character;
-        const pb = getLevelData(c.level).pb;
+        const pb = effectivePb(c.level, c.multiclass);
         if (c.luckyUsed >= pb) return false;
         set((s) => updateActive(s, (ch) => ({ ...ch, luckyUsed: ch.luckyUsed + 1 })));
         return true;
       },
       spendProtected: () => {
         const c = get().character;
-        const pb = getLevelData(c.level).pb;
+        const pb = effectivePb(c.level, c.multiclass);
         if (c.protectedUsed >= pb) return false;
         set((s) =>
           updateActive(s, (ch) => ({ ...ch, protectedUsed: ch.protectedUsed + 1 })),
         );
         return true;
       },
+
       restoreLuck: () =>
         set((s) => updateActive(s, (c) => ({ ...c, luckyUsed: 0, protectedUsed: 0 }))),
       activateBeast: () => {
         const c = get().character;
-        const pb = getLevelData(c.level).pb;
+        const pb = effectivePb(c.level, c.multiclass);
         if (c.beastUsed >= pb) return false;
         set((s) =>
           updateActive(s, (ch) => ({
@@ -553,6 +557,7 @@ export const useCharacterStore = create<LibraryState>()(
         );
         return true;
       },
+
       clearBeast: () =>
         set((s) =>
           updateActive(s, (c) => ({
@@ -673,9 +678,11 @@ export function getBloodMax(c: CharacterSheet) {
   return bpMax(c.level, c.abilities.con, c.selectedFeats ?? []);
 }
 
-export function getLuckMax(level: number) {
+export function getLuckMax(level: number, multiclass = "") {
+  if (multiclass) return effectivePb(level, multiclass);
   return getLevelData(level).pb;
 }
+
 
 export function encodeSharePayload(character: CharacterSheet): string {
   const json = JSON.stringify(character);

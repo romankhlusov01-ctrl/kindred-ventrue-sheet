@@ -179,7 +179,8 @@ export function CharacterSheet() {
   const row = getLevelData(character.level);
   const pb = effectivePb(character.level, character.multiclass);
   const bloodMax = getBloodMax(character);
-  const luckMax = getLuckMax(character.level);
+  const luckMax = getLuckMax(character.level, character.multiclass);
+
   const beastMax = pb;
   const beastLeft = Math.max(0, beastMax - character.beastUsed);
   const luckyLeft = Math.max(0, luckMax - (character.luckyUsed ?? 0));

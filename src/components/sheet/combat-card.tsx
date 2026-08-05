@@ -20,7 +20,8 @@ export function CombatCard() {
   const cha = abilityMod(c.abilities.cha);
   const dc = 8 + pb + cha;
   const bloodMax = getBloodMax(c);
-  const luckMax = getLuckMax(c.level);
+  const luckMax = getLuckMax(c.level, c.multiclass);
+
 
   function build() {
     const skills = SKILLS.filter((sk) => c.skillProfs[sk.id])
