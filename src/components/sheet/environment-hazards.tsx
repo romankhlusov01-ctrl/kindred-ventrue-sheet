@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { Sun, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCharacterStore } from "@/lib/character-store";
+import { useSessionStore } from "@/lib/session-store";
 
 /** Kindred environment damage helpers */
 export function EnvironmentHazards() {
@@ -10,6 +11,7 @@ export function EnvironmentHazards() {
   const addLog = useCharacterStore((s) => s.addLog);
   const spendBlood = useCharacterStore((s) => s.spendBlood);
   const daywalker = c.selectedFeats.includes("daywalker");
+  const pushUndo = useSessionStore((s) => s.pushUndo);
 
   function take(label: string, base: number, vuln = true) {
     // Vulnerability to fire/radiant: double (Daywalker may reduce sun)
@@ -17,7 +19,7 @@ export function EnvironmentHazards() {
     if (daywalker && label.startsWith("Солнце")) {
       dmg = Math.floor(dmg / 2);
     }
-    // adjustHp absorbs temp HP for negative delta
+    pushUndo(label);
     adjustHp(-dmg);
     addLog(
       `${label}: ${base}${vuln ? "×2" : ""}${daywalker && label.startsWith("Солнце") ? " · Daywalker ½" : ""} → −${dmg}`,
@@ -26,16 +28,16 @@ export function EnvironmentHazards() {
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <h3 className="mb-2 font-display text-sm">Опасности Kindred</h3>
       <p className="mb-2 text-[10px] text-muted">
         Уязвимость к Огню и Лучу (×2). Солнце: 5 лучистого в начале хода.
         {daywalker ? " · Daywalker активен." : ""}
       </p>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         <Button
           type="button"
-          className="h-11"
+          className="h-12"
           variant="secondary"
           onClick={() => take("Солнце", 5, true)}
         >
@@ -43,7 +45,7 @@ export function EnvironmentHazards() {
         </Button>
         <Button
           type="button"
-          className="h-11"
+          className="h-12"
           variant="blood"
           onClick={() => take("Огонь", 10, true)}
         >
@@ -51,7 +53,7 @@ export function EnvironmentHazards() {
         </Button>
         <Button
           type="button"
-          className="h-11"
+          className="h-12"
           variant="outline"
           onClick={() => take("Луч (закл.)", 8, true)}
         >
@@ -59,7 +61,7 @@ export function EnvironmentHazards() {
         </Button>
         <Button
           type="button"
-          className="h-11"
+          className="h-12"
           variant="outline"
           onClick={() => {
             if (c.bloodCurrent < 1) {

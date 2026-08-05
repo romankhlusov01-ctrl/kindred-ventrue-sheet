@@ -1,0 +1,11 @@
+{
+  "name": "Лист Вентру · Bound by Blood",
+  "short_name": "Вентру",
+  "description": "Мобильный лист Kindred Ventrue — только за себя",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0809",
+  "theme_color": "#0a0809",
+  "lang": "ru",
+  "orientation": "any"
+}
