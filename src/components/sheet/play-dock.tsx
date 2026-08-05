@@ -270,6 +270,21 @@ export function PlayDock() {
             toast.message("Короткий отдых");
           }}
         />
+        <DockBtn
+          label={c.inspiration ? "Вдохн.✓" : "Вдохн."}
+          accent={c.inspiration}
+          onClick={() => {
+            if (c.inspiration) {
+              setField("inspiration", false);
+              setField("pendingAdv", true);
+              toast.success("Вдохновение → преим.");
+            } else {
+              setField("inspiration", true);
+              toast.message("Вдохновение");
+            }
+          }}
+        />
+
       </div>
     </div>
   );
