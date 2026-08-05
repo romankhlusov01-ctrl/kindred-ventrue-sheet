@@ -271,7 +271,7 @@ export function CharacterSheet() {
     <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 pb-52 pt-3 sm:px-5 sm:pb-28 sm:pt-5">
 
       <OnboardingBanner />
-      <header className="mb-4 space-y-3">
+      <header className={cn("mb-4 space-y-3", tab === "play" && "mb-2")}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="mb-1 hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-muted sm:block">

@@ -43,11 +43,11 @@ export function DominateDc() {
       <h3 className="mb-2 flex items-center gap-2 font-display text-sm">
         <Crown className="size-4 text-primary" /> Доминирование · Сл
       </h3>
-      <div className="mb-3 font-display text-3xl tabular-nums text-primary">
-        {dc}
-        <span className="ml-2 text-xs font-sans font-normal text-muted">
+      <div className="mb-3">
+        <div className="font-display text-4xl tabular-nums leading-none text-primary">{dc}</div>
+        <div className="mt-1 text-[11px] text-muted">
           8 + БМ {formatMod(pb)} + ХАР {formatMod(cha)}
-        </span>
+        </div>
       </div>
       <ul className="mb-3 space-y-1 text-xs text-muted">
         <li>
