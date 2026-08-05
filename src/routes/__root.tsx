@@ -52,7 +52,8 @@ function RootDocument() {
           <Outlet />
           <Toaster
             theme="dark"
-            position="bottom-center"
+            position="top-center"
+            offset={12}
             toastOptions={{
               className: "border border-border bg-surface text-fg",
             }}
