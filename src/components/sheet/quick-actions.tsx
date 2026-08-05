@@ -333,7 +333,7 @@ export function QuickActions() {
             key={a.name}
             type="button"
             variant="secondary"
-            className="h-auto min-h-11 justify-between py-2 text-left"
+            className="h-auto min-h-12 justify-between py-2.5 text-left"
             onClick={a.run}
           >
             <span className="text-sm">{a.name}</span>
