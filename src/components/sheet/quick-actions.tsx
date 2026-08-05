@@ -109,6 +109,7 @@ export function QuickActions() {
         if (!spendRes(/голос/i, "Голос власти")) return;
         patch({ actionUsed: true });
         addLog(`Приказ · Сл ${dc}`);
+        setLastRoll({ label: `Приказ · Сл`, total: dc, detail: "Сл заклинания", at: Date.now() });
         toast.success(`Приказ · Сл ${dc}`);
       },
     },
@@ -121,6 +122,7 @@ export function QuickActions() {
         if (!spendRes(/голос/i, "Голос власти")) return;
         patch({ actionUsed: true, concentrating: c.concentrating || "Внушение" });
         addLog(`Внушение · Сл ${dc}`);
+        setLastRoll({ label: `Внушение · Сл`, total: dc, detail: "Сл заклинания", at: Date.now() });
         toast.success(`Внушение · Сл ${dc}`);
       },
     },
@@ -131,10 +133,12 @@ export function QuickActions() {
       run: () => {
         if (!spendRes(/присутств|forceful|awe/i, "Властное присутствие")) return;
         patch({ bonusUsed: true });
+        useSessionStore.getState().addEffect("Awe 10 мин", 10);
         addLog("Awe — преим. на Запугивание/Выступление/Убеждение 10 мин");
         toast.message("Awe 10 мин");
       },
     },
+
     {
       name: "Устрашение (Daunt)",
       cost: "Присутствие · БД",
@@ -252,10 +256,13 @@ export function QuickActions() {
         if (!payBp(2)) return;
         patch({ reactionUsed: true });
         const thp = 2 * c.level;
-        addLog(`Draught of Endurance: ${thp} врем. хитов`);
-        toast.success(`+${thp} врем. хитов`);
+        const next = Math.max(c.tempHp, thp);
+        setField("tempHp", next);
+        addLog(`Draught of Endurance: ${next} врем. хитов`);
+        toast.success(`+${next} врем. хитов`);
       },
     },
+
     {
       name: "Плоть мрамора (½)",
       cost: "2 ОБК · Реакция",

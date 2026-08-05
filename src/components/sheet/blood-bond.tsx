@@ -12,7 +12,6 @@ import { useCharacterStore } from "@/lib/character-store";
 export function BloodBond() {
   const c = useCharacterStore((s) => s.character);
   const setField = useCharacterStore((s) => s.setField);
-  const toggleCondition = useCharacterStore((s) => s.toggleCondition);
   const addLog = useCharacterStore((s) => s.addLog);
   const [name, setName] = useState("");
 
@@ -26,10 +25,7 @@ export function BloodBond() {
           : 0;
 
   function setBond(n: number) {
-    // strip old bond tags
-    const cleaned = c.conditions.filter(
-      (x) => !/^Кровная связь/i.test(x),
-    );
+    const cleaned = c.conditions.filter((x) => !/^Кровная связь/i.test(x));
     let tags = cleaned;
     if (n === 1) tags = [...cleaned, "Кровная связь"];
     if (n === 2) tags = [...cleaned, "Кровная связь II"];
