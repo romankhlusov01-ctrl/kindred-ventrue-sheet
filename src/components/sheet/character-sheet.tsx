@@ -35,6 +35,7 @@ import { ExportMarkdown } from "@/components/sheet/export-markdown";
 import { ExportLog } from "@/components/sheet/export-log";
 import { Glossary } from "@/components/sheet/glossary";
 import { AbilityEditor } from "@/components/sheet/ability-editor";
+import { useSessionStore } from "@/lib/session-store";
 
 import {
   featsForLevel,
@@ -129,6 +130,7 @@ export function CharacterSheet() {
   const addLog = useCharacterStore((s) => s.addLog);
   const spendLucky = useCharacterStore((s) => s.spendLucky);
   const spendProtected = useCharacterStore((s) => s.spendProtected);
+  const lastRoll = useSessionStore((s) => s.lastRoll);
 
   const [tab, setTab] = useState<Tab>(() => {
     if (typeof window === "undefined") return "play";
@@ -443,6 +445,12 @@ export function CharacterSheet() {
             <HudStat label="Раунд" value={String(character.round ?? 1)} />
           </div>
         </div>
+        {lastRoll && (
+          <div className="mt-1.5 flex items-center justify-between gap-2 rounded-[var(--radius)] border border-primary/25 bg-primary/10 px-2.5 py-1.5">
+            <span className="min-w-0 truncate text-[11px] text-muted">{lastRoll.label}</span>
+            <span className="font-display text-xl tabular-nums leading-none text-primary">{lastRoll.total}</span>
+          </div>
+        )}
         <div className="mt-2 hidden flex-wrap gap-1.5 sm:flex">
             <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(-1)}>
               −ХП
