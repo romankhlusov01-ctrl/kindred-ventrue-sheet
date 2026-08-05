@@ -48,6 +48,7 @@ import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
 import { AcBuilder } from "@/components/sheet/ac-builder";
 import { ExportMarkdown } from "@/components/sheet/export-markdown";
 import { RecalcHp } from "@/components/sheet/recalc-hp";
+import { StartEncounter } from "@/components/sheet/start-encounter";
 
 
 
@@ -478,6 +479,7 @@ export function CharacterSheet() {
             <ScenarioBar />
             <LevelUpHelper />
             <div className="flex flex-wrap gap-2"><RecalcHp /></div>
+            <StartEncounter />
             <WarlockSnippet />
             <InspirationToggle />
 
