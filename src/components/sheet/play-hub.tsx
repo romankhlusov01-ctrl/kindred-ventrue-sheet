@@ -31,6 +31,8 @@ import { TempHp } from "@/components/sheet/temp-hp";
 import { QuickCondition } from "@/components/sheet/quick-condition";
 import { Passives } from "@/components/sheet/passives";
 import { FreeRoll } from "@/components/sheet/free-roll";
+import { MyEffects } from "@/components/sheet/my-effects";
+import { QuickSkills } from "@/components/sheet/quick-skills";
 import { CombatCard } from "@/components/sheet/combat-card";
 import { ResourcePool } from "@/components/sheet/resource-pool";
 import { FullHealButton } from "@/components/sheet/full-heal";
@@ -368,6 +370,9 @@ export function PlayHub() {
         </div>
       </section>
 
+      {/* ── Quick skills ── */}
+      <QuickSkills />
+
       {/* ── Attacks ── */}
       <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
         <div className="mb-2 flex items-center justify-between">
@@ -441,6 +446,7 @@ export function PlayHub() {
       <DominateDc />
       <FeedWizard />
       <PcSaves />
+      <MyEffects />
       <Passives />
 
       {/* ── Powers ── */}

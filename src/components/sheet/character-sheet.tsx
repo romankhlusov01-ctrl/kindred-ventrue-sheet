@@ -257,8 +257,8 @@ export function CharacterSheet() {
       <header className="mb-4 space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted">
-              Bound by Blood · D&D 2024 · dnd.su · Настраиваемый лист
+            <div className="mb-1 hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-muted sm:block">
+              Bound by Blood · D&D 2024 · dnd.su
             </div>
             <h1 className="font-display truncate text-2xl tracking-wide text-fg sm:text-3xl">
               {character.name || "Сородич"}
@@ -364,7 +364,7 @@ export function CharacterSheet() {
           </div>
         )}
 
-        <details className="group identity-fields" open>
+        <details className="group identity-fields">
           <summary className="mb-2 cursor-pointer list-none text-xs text-muted sm:hidden">Имя · клан · уровень ▾</summary>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Имя">
@@ -413,17 +413,19 @@ export function CharacterSheet() {
           <HudStat label="КД" value={String(character.ac)} />
           <HudStat label="ОБК" value={`${character.bloodCurrent}/${bloodMax}`} blood />
           <HudStat label="Зверь" value={`${beastLeft}/${beastMax}`} />
-          <HudStat label="Везуч." value={`${luckyLeft}/${luckMax}`} />
-          <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
-          <HudStat
-            label="Иниц"
-            value={
-              character.initiative != null
-                ? String(character.initiative)
-                : formatMod(abilityMod(character.abilities.dex))
-            }
-          />
-          <HudStat label="Раунд" value={String(character.round ?? 1)} />
+          <div className="col-span-4 hidden sm:contents">
+            <HudStat label="Везуч." value={`${luckyLeft}/${luckMax}`} />
+            <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
+            <HudStat
+              label="Иниц"
+              value={
+                character.initiative != null
+                  ? String(character.initiative)
+                  : formatMod(abilityMod(character.abilities.dex))
+              }
+            />
+            <HudStat label="Раунд" value={String(character.round ?? 1)} />
+          </div>
         </div>
         <div className="mt-2 hidden flex-wrap gap-1.5 sm:flex">
             <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(-1)}>
@@ -959,18 +961,12 @@ export function CharacterSheet() {
 
           </div>
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-sm text-muted">
-            <h3 className="mb-2 font-display text-base text-fg">Подсказки сессии</h3>
-
+            <h3 className="mb-2 font-display text-base text-fg">Подсказки</h3>
             <ul className="list-disc space-y-2 pl-4">
-              <li>Нижняя панель: ХП, ОБК, иниц, ход, зверь, Lucky/Prot, питание, атака.</li>
-              <li>Старт боя: патруль / охота / сородич · враг «Атака вас» и спас vs Сл.</li>
-              <li>Клавиши (ПК): N ход · A атака · F питание · B зверь · I иниц · H/J ±ХП.</li>
-              <li>Тап по модификатору СИЛ/ЛОВ… = проверка; по «Спас» = спасбросок.</li>
-
-              <li>Состояния (Отравленный, Голод…) дают помеху автоматически.</li>
-              <li>Везучий и Защищённый — два пула = БМ.</li>
-              <li>Долгий отдых с ≥1 ОБК: хиты, вдохновение, оба пула удачи.</li>
-              <li>Bane Вентру: не «солдаты» → half Feed Dice.</li>
+              <li>Низ экрана: Атака · Питание · Зверь · Ход — основное.</li>
+              <li>«Ещё» на панели: удача, отдых, d20.</li>
+              <li>Тап по бонусу навыка = бросок.</li>
+              <li>Редкое (торпор, кол, солнце) свёрнуто в «Игра».</li>
             </ul>
           </div>
         </div>
