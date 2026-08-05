@@ -65,7 +65,54 @@ export function DominateDc() {
           <li className="text-primary">Bane / предпочтённая кровь: {c.preferredBlood}</li>
         )}
       </ul>
-      <div className="flex flex-wrap items-end gap-2">
+
+      {voice && (
+        <div className="mb-3 grid grid-cols-2 gap-1.5">
+          <Button
+            type="button"
+            variant="blood"
+            className="h-11"
+            onClick={() => {
+              if (voice.current <= 0) {
+                toast.error("Голос исчерпан");
+                return;
+              }
+              useCharacterStore.getState().updateResource(voice.id, {
+                current: voice.current - 1,
+              });
+              useCharacterStore.getState().setField("actionUsed", true);
+              addLog(`Приказ · Сл ${dc}`);
+              toast.success(`Приказ · Сл ${dc}`);
+            }}
+          >
+            Приказ (−Голос)
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-11"
+            onClick={() => {
+              if (voice.current <= 0) {
+                toast.error("Голос исчерпан");
+                return;
+              }
+              useCharacterStore.getState().updateResource(voice.id, {
+                current: voice.current - 1,
+              });
+              useCharacterStore.getState().patch({
+                actionUsed: true,
+                concentrating: c.concentrating || "Внушение",
+              });
+              addLog(`Внушение · Сл ${dc}`);
+              toast.success(`Внушение · Сл ${dc}`);
+            }}
+          >
+            Внушение (−Голос)
+          </Button>
+        </div>
+      )}
+
+            <div className="flex flex-wrap items-end gap-2">
         <label className="text-[10px] text-muted">
           Мод. спас цели
           <Input
