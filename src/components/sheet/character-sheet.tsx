@@ -227,8 +227,24 @@ export function CharacterSheet() {
         ],
       });
     }
+    const isWarlock = /колдун|warlock/i.test(character.multiclass || "");
+    const pact = character.customResources.find((r) => /пакт|pact|слот/i.test(r.name + r.note));
+    if (isWarlock && !pact) {
+      useCharacterStore.getState().patch({
+        customResources: [
+          ...useCharacterStore.getState().character.customResources,
+          {
+            id: `pact-${Date.now()}`,
+            name: "Слот пакта",
+            max: 1,
+            current: 1,
+            note: "Колдун · короткий отдых",
+          },
+        ],
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [character.level, pb, character.clan]);
+  }, [character.level, pb, character.clan, character.multiclass]);
 
   function exportJson() {
     const blob = new Blob([JSON.stringify(exportLibrary(), null, 2)], {
