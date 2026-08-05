@@ -6,7 +6,7 @@ import { getLevelData } from "@/data/kindred-ru";
 import { useCharacterStore } from "@/lib/character-store";
 import { abilityMod, rollDie } from "@/lib/utils";
 import { useSessionStore } from "@/lib/session-store";
-// undo via session
+import { PREFERRED_BLOOD_PRESETS } from "@/data/builder-ru";
 
 /** Feed yourself — Bane half dice when not preferred blood */
 export function FeedWizard() {
@@ -36,26 +36,48 @@ export function FeedWizard() {
     toast.success(`${label}: ${sum}${sixes ? ` · +${sixes} ОБК` : ""}`);
   }
 
+  const presets = PREFERRED_BLOOD_PRESETS ?? [
+    "аристократы",
+    "вино / пьяные",
+    "художники",
+    "политики",
+    "девы",
+  ];
+
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <h3 className="mb-1 flex items-center gap-2 font-display text-sm">
-        <Droplets className="size-4 text-primary" /> Питание
+        <Droplets className="size-3.5 text-primary" /> Питание
       </h3>
       <p className="mb-2 text-[11px] text-muted">
         {row.feed} · с 5 ур. как БД
         {preferred ? ` · Bane: ${preferred}` : " · укажите предпочтённую кровь"}
       </p>
       <Input
-        className="mb-2 h-10"
+        className="mb-2 h-11"
         placeholder="Предпочтённая кровь (Bane)"
         value={c.preferredBlood}
         onChange={(e) => setField("preferredBlood", e.target.value)}
       />
+      <div className="mb-2 flex flex-wrap gap-1">
+        {(Array.isArray(presets) ? presets : []).slice(0, 6).map((p) => (
+          <Button
+            key={String(p)}
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-9 text-[10px]"
+            onClick={() => setField("preferredBlood", String(p))}
+          >
+            {String(p)}
+          </Button>
+        ))}
+      </div>
       <div className="grid grid-cols-2 gap-2">
-        <Button type="button" variant="blood" className="h-12" onClick={() => feed(false)}>
+        <Button type="button" variant="blood" className="h-14" onClick={() => feed(false)}>
           Полное
         </Button>
-        <Button type="button" variant="secondary" className="h-12" onClick={() => feed(true)}>
+        <Button type="button" variant="secondary" className="h-14" onClick={() => feed(true)}>
           ½ Bane
         </Button>
       </div>

@@ -141,3 +141,10 @@
 .roll-flash {
   animation: roll-flash 0.28s ease-out;
 }
+
+/* Landscape phones: slightly tighter fixed chrome */
+@media (max-height: 480px) and (orientation: landscape) {
+  .font-display.text-3xl {
+    font-size: 1.25rem;
+  }
+}
