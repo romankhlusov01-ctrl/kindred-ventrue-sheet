@@ -154,3 +154,7 @@
     font-size: 15px;
   }
 }
+
+.safe-pad-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
