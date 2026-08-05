@@ -70,7 +70,7 @@ export function DamageIntake() {
           <span className="text-[10px] uppercase text-muted">Урон</span>
           <Input
             type="number"
-            className="w-24"
+            className="h-12 w-24"
             value={amount}
             min={0}
             onChange={(e) => setAmount(Number(e.target.value) || 0)}
