@@ -1,50 +1,160 @@
 import type { CharacterSheet } from "@/lib/character-store";
 
-/** Ventrue 8 — настраиваемый боевой/социальный пресет */
-export const PRESET_VENTRUE_8: CharacterSheet = {
-  id: "preset-ventrue-8",
+/**
+ * Основной пресет: человек · Опора (Protected) · Везучий (Lucky)
+ * Класс Сородич / клан Вентру. Статы под бил: +2 Хар / +1 Тел (Touchstone).
+ * Полностью редактируемый в листе.
+ */
+export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
+  id: "preset-ventrue-player",
   name: "Владыка крови",
   player: "",
   clan: "ventrue",
   level: 8,
   background: "Опора (Touchstone)",
+  backgroundId: "touchstone",
   species: "Человек",
   alignment: "Законно-нейтральный",
-  abilities: { str: 14, dex: 10, con: 16, int: 8, wis: 12, cha: 18 },
-  hpCurrent: 76,
-  hpMax: 76,
+  abilities: { str: 8, dex: 14, con: 16, int: 8, wis: 10, cha: 17 },
+  hpCurrent: 71,
+  hpMax: 71,
   tempHp: 0,
-  ac: 15,
+  ac: 14,
   speed: 30,
   bloodCurrent: 5,
   beastUsed: 0,
   hunger: false,
   preferredBlood: "солдаты",
   skillProfs: {
-    intimidation: "proficient",
     persuasion: "proficient",
+    survival: "proficient",
+    intimidation: "proficient",
     deception: "proficient",
     insight: "proficient",
     perception: "proficient",
-    history: "proficient",
   },
   saveProfs: { con: true, cha: true },
   selectedFeats: ["forceful", "lethal"],
+  originFeatId: "lucky",
+  backgroundFeatId: "protected",
+  luckyUsed: 0,
+  protectedUsed: 0,
+  humanSkill: "deception",
   feats:
-    "Ур. 2: Властное присутствие\nУр. 4: +2 Харизма (ASI)\nУр. 7: Смертельное тело\nУр. 8: +2 Телосложение (ASI)\nЧеловек: Удачливый\nОпора: Защищённый (Protected)",
+    "Человек · Гибкий: Везучий (Lucky) — dnd.su\nОпора · черта: Защищённый (Protected) — PDF\nУр. 2 Kindred: Властное присутствие\nУр. 4 ASI: +2 Хар → 17 (или иная настройка)\nУр. 7 Kindred: Смертельное тело\nУр. 8 ASI: по выбору\nДва пула удачи = БМ каждый (не смешиваются)",
   equipment:
-    "Нагрудник (Breastplate)\nКороткий меч\n2 кинжала\nНабор исследователя\nФлакон vitae\nПерстень дома\n15 зм",
+    "Нагрудник\nКороткий меч\n2 кинжала\nРемесленные инструменты (Опора)\nДорожная одежда\nФлакон vitae\nПерстень дома\n15 зм",
   notes:
-    "Роль: социальный контроль + захват/питание.\nСл заклинаний = 8 + БМ + Хар.\nГолос власти: Приказ/Внушение БМ/короткий отдых.\nBane: предпочтённая кровь «солдаты» — иначе half Feed Dice.\nDare Not Falter: +8 HP от Toughened (ур.6) +1 за ур.7–8.",
+    "Вид: Человек (dnd.su) — Находчивый, Умелый, Гибкий.\nБиография: Опора — Protected.\nКлан: Вентру. Bane: солдаты (½ Feed Dice иначе).\nСл заклинаний = 8 + БМ + Хар.\nВсе поля редактируются; уровень крутит прогрессию Kindred/Ventrue.",
   multiclass: "",
   attacks: [
     {
       id: "a1",
-      name: "Безоружный удар (Смертельное тело)",
+      name: "Безоружный (Смертельное тело)",
+      bonus: 2,
+      damage: "1d4+0 + 1d8",
+      type: "Дробящий",
+      notes: "Сил 8 — лучше через контроль; Lethal Body +1d8",
+    },
+    {
+      id: "a2",
+      name: "Короткий меч (Лов)",
+      bonus: 5,
+      damage: "1d6+2",
+      type: "Колющий",
+      notes: "Лёгкое · ловкость",
+    },
+    {
+      id: "a3",
+      name: "Питание (улучш.)",
+      bonus: 0,
+      damage: "3d6+3 некрот. макс. хиты",
+      type: "Некротический",
+      notes: "БД с 5 ур.; «6» → +ОБК; half если не аспект Bane",
+    },
+  ],
+  conditions: [],
+  deathSuccess: 0,
+  deathFail: 0,
+  inspiration: true,
+  concentrating: "",
+  voiceUses: 0,
+  hitDiceUsed: 0,
+  sessionLog: [],
+  customResources: [
+    {
+      id: "cr1",
+      name: "Голос власти",
+      current: 3,
+      max: 3,
+      note: "Приказ / Внушение · БМ · короткий отдых",
+    },
+    {
+      id: "cr2",
+      name: "Властное присутствие",
+      current: 3,
+      max: 3,
+      note: "Awe / Daunt · БМ · LR",
+    },
+  ],
+};
+
+/** Kindred 7 / Колдун 1 — тот же человек + Опора + двойная удача */
+export const PRESET_VENTRUE_7_WARLOCK_1: CharacterSheet = {
+  ...PRESET_VENTRUE_PLAYER,
+  id: "preset-ventrue-7-wl1",
+  name: "Владыка с пактом",
+  level: 7,
+  multiclass: "Колдун 1",
+  bloodCurrent: 4,
+  hpMax: 62,
+  hpCurrent: 62,
+  ac: 14,
+  feats:
+    "Человек: Везучий · Опора: Защищённый\nKindred 2: Властное присутствие\nKindred 4: ASI\nKindred 7: Смертельное тело\nКолдун 1: Мистический заряд + инвокация + 1 ячейка пакта",
+  notes:
+    "Сородич 7 / Колдун 1. Макс. ОБК 4, Питание 3d6.\nМистический заряд для дистанции.\nГолос власти БМ=3.",
+  attacks: [
+    {
+      id: "a1",
+      name: "Мистический заряд",
+      bonus: 6,
+      damage: "1d10",
+      type: "Силовой",
+      notes: "Заговор; +Хар если Агония",
+    },
+    {
+      id: "a2",
+      name: "Питание",
+      bonus: 2,
+      damage: "3d6+3 некрот. макс. хиты",
+      type: "Некротический",
+      notes: "БД; захват через контроль",
+    },
+  ],
+  customResources: [
+    { id: "cr1", name: "Голос власти", current: 3, max: 3, note: "Приказ/Внушение" },
+    { id: "cr2", name: "Ячейка пакта", current: 1, max: 1, note: "1 круг, короткий отдых" },
+  ],
+};
+
+/** Чистый Вентру 8 (социальный / силовой) — альтернативный пресет */
+export const PRESET_VENTRUE_8: CharacterSheet = {
+  ...PRESET_VENTRUE_PLAYER,
+  id: "preset-ventrue-8",
+  name: "Владыка крови (классика)",
+  abilities: { str: 14, dex: 10, con: 16, int: 8, wis: 12, cha: 18 },
+  hpMax: 76,
+  hpCurrent: 76,
+  ac: 15,
+  attacks: [
+    {
+      id: "a1",
+      name: "Безоружный (Смертельное тело)",
       bonus: 6,
       damage: "1d8+3 + 1d8",
       type: "Дробящий",
-      notes: "Crushing Blows + Iron Grip; помеха на побег",
+      notes: "Crushing Blows + Iron Grip",
     },
     {
       id: "a2",
@@ -56,76 +166,12 @@ export const PRESET_VENTRUE_8: CharacterSheet = {
     },
     {
       id: "a3",
-      name: "Питание (улучшенное)",
+      name: "Питание (улучш.)",
       bonus: 0,
-      damage: "3d6+3 некрот. (макс. хиты)",
-      type: "Некротический",
-      notes: "БД с 5 ур.; «6» → +ОБК; half dice если не солдат",
-    },
-  ],
-  conditions: [],
-  deathSuccess: 0,
-  deathFail: 0,
-  inspiration: false,
-  concentrating: "",
-  voiceUses: 0,
-  hitDiceUsed: 0,
-  sessionLog: [],
-  customResources: [
-    {
-      id: "cr1",
-      name: "Голос власти",
-      current: 3,
-      max: 3,
-      note: "Приказ / Внушение, короткий отдых",
-    },
-    {
-      id: "cr2",
-      name: "Властное присутствие",
-      current: 3,
-      max: 3,
-      note: "Awe / Daunt, продолжит. отдых",
-    },
-  ],
-};
-
-export const PRESET_VENTRUE_7_WARLOCK_1: CharacterSheet = {
-  ...PRESET_VENTRUE_8,
-  id: "preset-ventrue-7-wl1",
-  name: "Владыка с пактом",
-  level: 7,
-  multiclass: "Колдун 1",
-  abilities: { str: 8, dex: 14, con: 16, int: 8, wis: 10, cha: 17 },
-  bloodCurrent: 4,
-  hpMax: 62,
-  hpCurrent: 62,
-  ac: 14,
-  selectedFeats: ["forceful", "lethal"],
-  feats:
-    "Ур. 2: Властное присутствие\nУр. 4: ASI\nУр. 7: Смертельное тело / Убедительные мысли\nЧеловек: Удачливый\nОпора: Protected\nКолдун 1: Мистический заряд + 1 инвокация",
-  notes:
-    "Kindred 7 / Колдун 1. Макс. ОБК 4, Питание 3d6.\nМистический заряд для дистанции.\nГолос власти БМ=3.",
-  attacks: [
-    {
-      id: "a1",
-      name: "Мистический заряд",
-      bonus: 6,
-      damage: "1d10",
-      type: "Силовой",
-      notes: "Заговор; +Хар если Агония заряда",
-    },
-    {
-      id: "a2",
-      name: "Питание",
-      bonus: 2,
       damage: "3d6+3 некрот. макс. хиты",
       type: "Некротический",
-      notes: "БД; Сила 8 — захват через контроль",
+      notes: "БД; half dice если не Bane-аспект",
     },
-  ],
-  customResources: [
-    { id: "cr1", name: "Голос власти", current: 3, max: 3, note: "Приказ/Внушение" },
-    { id: "cr2", name: "Ячейка пакта", current: 1, max: 1, note: "1 круг, короткий отдых" },
   ],
 };
 
@@ -135,7 +181,8 @@ export const BLANK_TEMPLATE = (): CharacterSheet => ({
   player: "",
   clan: "ventrue",
   level: 3,
-  background: "",
+  background: "Опора (Touchstone)",
+  backgroundId: "touchstone",
   species: "Человек",
   alignment: "",
   abilities: { str: 10, dex: 12, con: 14, int: 10, wis: 12, cha: 15 },
@@ -150,10 +197,15 @@ export const BLANK_TEMPLATE = (): CharacterSheet => ({
   preferredBlood: "",
   skillProfs: {
     persuasion: "proficient",
-    intimidation: "proficient",
+    survival: "proficient",
   },
   saveProfs: { con: true, cha: true },
   selectedFeats: [],
+  originFeatId: "lucky",
+  backgroundFeatId: "protected",
+  luckyUsed: 0,
+  protectedUsed: 0,
+  humanSkill: "perception",
   feats: "",
   equipment: "",
   notes: "",

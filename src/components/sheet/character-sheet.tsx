@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   BookOpen,
-  Copy,
   Download,
   Droplets,
   Heart,
   Link2,
   Plus,
-  RefreshCw,
   Share2,
   Shield,
   Sparkles,
@@ -17,6 +15,8 @@ import {
   Users,
   Zap,
   Crown,
+  Clover,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -35,15 +35,26 @@ import {
   type FeatureBlock,
 } from "@/data/kindred-ru";
 import { CLANS, type ClanId } from "@/data/kindred";
-import { CONDITIONS, SKILLS, type ProfLevel } from "@/data/skills";
+import {
+  BACKGROUNDS_PDF,
+  FEAT_LUCKY,
+  FEAT_PROTECTED,
+  HUMAN_SPECIES,
+  ORIGIN_FEATS,
+  backgroundById,
+  originFeatById,
+} from "@/data/origin-ru";
+import { CONDITIONS, SKILLS, type ProfLevel, type SkillId } from "@/data/skills";
 import {
   PRESET_VENTRUE_7_WARLOCK_1,
   PRESET_VENTRUE_8,
+  PRESET_VENTRUE_PLAYER,
 } from "@/data/presets";
 import {
   decodeSharePayload,
   encodeSharePayload,
   getBloodMax,
+  getLuckMax,
   skillBonus,
   useCharacterStore,
   type Abilities,
@@ -101,6 +112,8 @@ export function CharacterSheet() {
   const updateResource = useCharacterStore((s) => s.updateResource);
   const removeResource = useCharacterStore((s) => s.removeResource);
   const addLog = useCharacterStore((s) => s.addLog);
+  const spendLucky = useCharacterStore((s) => s.spendLucky);
+  const spendProtected = useCharacterStore((s) => s.spendProtected);
 
   const [tab, setTab] = useState<Tab>("combat");
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -109,8 +122,11 @@ export function CharacterSheet() {
   const row = getLevelData(character.level);
   const pb = row.pb;
   const bloodMax = getBloodMax(character);
+  const luckMax = getLuckMax(character.level);
   const beastMax = pb;
   const beastLeft = Math.max(0, beastMax - character.beastUsed);
+  const luckyLeft = Math.max(0, luckMax - (character.luckyUsed ?? 0));
+  const protectedLeft = Math.max(0, luckMax - (character.protectedUsed ?? 0));
   const chaMod = abilityMod(character.abilities.cha);
   const spellDc = 8 + pb + chaMod;
   const passivePer =
@@ -121,6 +137,9 @@ export function CharacterSheet() {
   const core = useMemo(() => unlockedCore(character.level), [character.level]);
   const ventrue = useMemo(() => unlockedVentrue(character.level), [character.level]);
   const availableFeats = useMemo(() => featsForLevel(character.level), [character.level]);
+  const bgDef = backgroundById(character.backgroundId);
+  const originFeat = originFeatById(character.originFeatId);
+  const bgFeat = originFeatById(character.backgroundFeatId);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -134,7 +153,6 @@ export function CharacterSheet() {
     }
   }, [loadCharacter]);
 
-  // Sync Voice max with PB
   useEffect(() => {
     const voice = character.customResources.find((r) => /голос/i.test(r.name));
     if (voice && voice.max !== pb) {
@@ -191,6 +209,20 @@ export function CharacterSheet() {
     else setField("bloodCurrent", Math.min(bloodMax, next));
   }
 
+  function applyBackground(id: string) {
+    const bg = backgroundById(id);
+    if (!bg) return;
+    setField("backgroundId", bg.id);
+    setField("background", bg.name);
+    setField("backgroundFeatId", bg.featId === "magic-initiate" || bg.featId === "well-read" ? "protected" : bg.featId);
+    // map skill names roughly
+    if (bg.id === "touchstone") {
+      setSkillProf("persuasion", "proficient");
+      setSkillProf("survival", "proficient");
+    }
+    toast.success(`Предыстория: ${bg.name}`);
+  }
+
   const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
     { id: "combat", label: "Бой", icon: <Swords className="size-3.5" /> },
     { id: "skills", label: "Навыки", icon: <Zap className="size-3.5" /> },
@@ -206,15 +238,19 @@ export function CharacterSheet() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted">
-              Bound by Blood · D&D 2024 · Интерактивный лист
+              Bound by Blood · D&D 2024 · dnd.su · Настраиваемый лист
             </div>
             <h1 className="font-display truncate text-2xl tracking-wide text-fg sm:text-3xl">
               {character.name || "Сородич"}
             </h1>
             <p className="mt-0.5 text-sm text-muted">
-              {CLAN_RU[character.clan] ?? character.clan} · Сородич {character.level}
-              {character.multiclass ? ` / ${character.multiclass}` : ""} · БМ{" "}
-              {formatMod(pb)} · Сл {spellDc}
+              {character.species} · {CLAN_RU[character.clan] ?? character.clan} · Сородич{" "}
+              {character.level}
+              {character.multiclass ? ` / ${character.multiclass}` : ""} · БМ {formatMod(pb)} ·
+              Сл {spellDc}
+            </p>
+            <p className="mt-0.5 text-xs text-faint">
+              {character.background || "—"} · {originFeat?.name ?? "—"} + {bgFeat?.name ?? "—"}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -241,11 +277,11 @@ export function CharacterSheet() {
                 size="sm"
                 variant="blood"
                 onClick={() => {
-                  addCharacter({ ...PRESET_VENTRUE_8, id: `v8-${Date.now()}` });
-                  toast.success("Пресет: Вентру 8");
+                  addCharacter({ ...PRESET_VENTRUE_PLAYER, id: `vp-${Date.now()}` });
+                  toast.success("Пресет: твой Вентру (Человек + Опора + 2×удача)");
                 }}
               >
-                + Вентру 8
+                + Твой билд
               </Button>
               <Button
                 type="button"
@@ -253,10 +289,21 @@ export function CharacterSheet() {
                 variant="secondary"
                 onClick={() => {
                   addCharacter({ ...PRESET_VENTRUE_7_WARLOCK_1, id: `v7-${Date.now()}` });
-                  toast.success("Пресет: Сородич 7 / Колдун 1");
+                  toast.success("Пресет: 7 / Колдун 1");
                 }}
               >
                 + 7 / Колдун 1
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  addCharacter({ ...PRESET_VENTRUE_8, id: `v8-${Date.now()}` });
+                  toast.success("Пресет: Вентру 8 классика");
+                }}
+              >
+                + Вентру 8
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => addCharacter()}>
                 <Plus className="size-3.5" /> Пустой
@@ -341,8 +388,9 @@ export function CharacterSheet() {
           <HudStat label="КД" value={String(character.ac)} />
           <HudStat label="ОБК" value={`${character.bloodCurrent}/${bloodMax}`} blood />
           <HudStat label="Зверь" value={`${beastLeft}/${beastMax}`} />
+          <HudStat label="Везучий" value={`${luckyLeft}/${luckMax}`} />
+          <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
           <HudStat label="Иниц" value={formatMod(abilityMod(character.abilities.dex))} />
-          <HudStat label="Пас.В" value={String(passivePer)} />
           <div className="ml-auto flex flex-wrap gap-1.5">
             <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(-1)}>
               −ХП
@@ -478,8 +526,7 @@ export function CharacterSheet() {
                   />
                 </div>
                 <p className="mt-2 text-[11px] text-muted">
-                  Сородич: автоуспех death saves (Вампирская стойкость). 0 от Огня/Луча или
-                  обезглавливание — смерть.
+                  Protected: 0 хитов → 1 очко → 1 хит. Сородич: автоуспех death saves.
                 </p>
               </div>
 
@@ -505,7 +552,7 @@ export function CharacterSheet() {
                   <Field label="Сл заклинаний">
                     <Input readOnly value={spellDc} />
                   </Field>
-                  <Field label="Вдохновение">
+                  <Field label="Вдохновение (Человек)">
                     <button
                       type="button"
                       onClick={() => setField("inspiration", !character.inspiration)}
@@ -520,14 +567,131 @@ export function CharacterSheet() {
                     </button>
                   </Field>
                 </div>
-                <div className="mt-2">
-                  <Field label="Концентрация">
-                    <Input
-                      value={character.concentrating}
-                      placeholder="На чём держишь"
-                      onChange={(e) => setField("concentrating", e.target.value)}
-                    />
-                  </Field>
+                <Field label="Предпочтительная кровь (Bane)">
+                  <Input
+                    className="mt-2"
+                    value={character.preferredBlood}
+                    onChange={(e) => setField("preferredBlood", e.target.value)}
+                    placeholder="солдаты, аристократы…"
+                  />
+                </Field>
+              </div>
+            </div>
+
+            {/* Dual luck actions */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[var(--radius-lg)] border border-accent/40 bg-surface p-4">
+                <h3 className="mb-1 flex items-center gap-2 font-display text-base text-accent">
+                  <Clover className="size-4" /> Везучий · dnd.su
+                </h3>
+                <p className="mb-3 text-xs text-muted">
+                  Очки = БМ · LR. Преимущество на d20 Test / Помеха на атаку по тебе.
+                </p>
+                <div className="mb-2 font-display text-2xl tabular-nums">
+                  {luckyLeft}
+                  <span className="text-sm text-muted"> / {luckMax}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      if (!spendLucky()) {
+                        toast.error("Очки Везучего кончились");
+                        return;
+                      }
+                      addLog("Везучий: преимущество на Тест d20 (−1)");
+                      toast.success("Везучий → Преимущество");
+                    }}
+                  >
+                    d20 + Преим.
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      if (!spendLucky()) {
+                        toast.error("Очки Везучего кончились");
+                        return;
+                      }
+                      addLog("Везучий: помеха на атаку по тебе (−1)");
+                      toast.success("Везучий → Помеха на атаку");
+                    }}
+                  >
+                    Атака → Помеха
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      setField("luckyUsed", Math.max(0, (character.luckyUsed ?? 0) - 1))
+                    }
+                  >
+                    +1
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-[var(--radius-lg)] border border-primary/40 bg-surface p-4">
+                <h3 className="mb-1 flex items-center gap-2 font-display text-base text-primary">
+                  <ShieldCheck className="size-4" /> Защищённый · PDF
+                </h3>
+                <p className="mb-3 text-xs text-muted">
+                  Очки = БМ · LR. Переброс d20 при ≤9 · 0 ХП → 1 ХП.
+                </p>
+                <div className="mb-2 font-display text-2xl tabular-nums">
+                  {protectedLeft}
+                  <span className="text-sm text-muted"> / {luckMax}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="blood"
+                    onClick={() => {
+                      if (!spendProtected()) {
+                        toast.error("Очки Защищённого кончились");
+                        return;
+                      }
+                      addLog("Защищённый: переброс d20 (было ≤9) (−1)");
+                      toast.success("Protected → Переброс");
+                    }}
+                  >
+                    Переброс ≤9
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="blood"
+                    onClick={() => {
+                      if (!spendProtected()) {
+                        toast.error("Очки Защищённого кончились");
+                        return;
+                      }
+                      setField("hpCurrent", Math.max(1, character.hpCurrent || 1));
+                      if (character.hpCurrent <= 0) setField("hpCurrent", 1);
+                      addLog("Защищённый: 0 ХП → 1 ХП (−1 очко)");
+                      toast.success("Protected → 1 хит");
+                    }}
+                  >
+                    0 → 1 ХП
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      setField(
+                        "protectedUsed",
+                        Math.max(0, (character.protectedUsed ?? 0) - 1),
+                      )
+                    }
+                  >
+                    +1
+                  </Button>
                 </div>
               </div>
             </div>
@@ -536,46 +700,47 @@ export function CharacterSheet() {
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-display text-base">Атаки</h3>
                 <Button type="button" size="sm" variant="secondary" onClick={addAttack}>
-                  <Plus className="size-3.5" /> Атака
+                  <Plus className="size-3.5" />
                 </Button>
               </div>
               <div className="space-y-2">
                 {character.attacks.map((atk) => (
                   <div
                     key={atk.id}
-                    className="grid gap-2 rounded-[var(--radius)] border border-border bg-surface-2 p-3 sm:grid-cols-12"
+                    className="rounded-[var(--radius)] border border-border bg-surface-2 p-3"
                   >
+                    <div className="grid gap-2 sm:grid-cols-4">
+                      <Input
+                        value={atk.name}
+                        onChange={(e) => updateAttack(atk.id, { name: e.target.value })}
+                        placeholder="Название"
+                      />
+                      <Input
+                        type="number"
+                        value={atk.bonus}
+                        onChange={(e) =>
+                          updateAttack(atk.id, { bonus: Number(e.target.value) || 0 })
+                        }
+                        placeholder="Бонус"
+                      />
+                      <Input
+                        value={atk.damage}
+                        onChange={(e) => updateAttack(atk.id, { damage: e.target.value })}
+                        placeholder="Урон"
+                      />
+                      <Input
+                        value={atk.type}
+                        onChange={(e) => updateAttack(atk.id, { type: e.target.value })}
+                        placeholder="Тип"
+                      />
+                    </div>
                     <Input
-                      className="sm:col-span-3"
-                      value={atk.name}
-                      onChange={(e) => updateAttack(atk.id, { name: e.target.value })}
-                    />
-                    <Input
-                      className="sm:col-span-1"
-                      type="number"
-                      title="Бонус"
-                      value={atk.bonus}
-                      onChange={(e) =>
-                        updateAttack(atk.id, { bonus: Number(e.target.value) || 0 })
-                      }
-                    />
-                    <Input
-                      className="sm:col-span-2"
-                      value={atk.damage}
-                      onChange={(e) => updateAttack(atk.id, { damage: e.target.value })}
-                    />
-                    <Input
-                      className="sm:col-span-2"
-                      value={atk.type}
-                      onChange={(e) => updateAttack(atk.id, { type: e.target.value })}
-                    />
-                    <Input
-                      className="sm:col-span-3"
+                      className="mt-2"
                       value={atk.notes}
-                      placeholder="заметки"
                       onChange={(e) => updateAttack(atk.id, { notes: e.target.value })}
+                      placeholder="Заметки"
                     />
-                    <div className="flex gap-1 sm:col-span-1">
+                    <div className="mt-2 flex gap-2">
                       <Button
                         type="button"
                         size="sm"
@@ -634,6 +799,38 @@ export function CharacterSheet() {
               }}
             />
 
+            <ResourcePool
+              label={`Везучий (осталось ${luckyLeft})`}
+              current={luckyLeft}
+              max={luckMax}
+              color="beast"
+              onSpend={() => {
+                if (!spendLucky()) toast.error("Нет очков");
+              }}
+              onGain={() => setField("luckyUsed", Math.max(0, (character.luckyUsed ?? 0) - 1))}
+              onToggle={(i) => {
+                const want = luckyLeft === i + 1 ? i : i + 1;
+                setField("luckyUsed", Math.max(0, luckMax - want));
+              }}
+            />
+
+            <ResourcePool
+              label={`Защищённый (осталось ${protectedLeft})`}
+              current={protectedLeft}
+              max={luckMax}
+              color="blood"
+              onSpend={() => {
+                if (!spendProtected()) toast.error("Нет очков");
+              }}
+              onGain={() =>
+                setField("protectedUsed", Math.max(0, (character.protectedUsed ?? 0) - 1))
+              }
+              onToggle={(i) => {
+                const want = protectedLeft === i + 1 ? i : i + 1;
+                setField("protectedUsed", Math.max(0, luckMax - want));
+              }}
+            />
+
             <QuickActions />
 
             <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
@@ -683,8 +880,8 @@ export function CharacterSheet() {
                         +
                       </Button>
                       <Input
-                        className="h-8 w-14"
                         type="number"
+                        className="h-8 w-16"
                         value={r.max}
                         onChange={(e) =>
                           updateResource(r.id, { max: Number(e.target.value) || 0 })
@@ -694,8 +891,8 @@ export function CharacterSheet() {
                     <Input
                       className="mt-1 h-8 text-xs"
                       value={r.note}
-                      placeholder="заметка"
                       onChange={(e) => updateResource(r.id, { note: e.target.value })}
+                      placeholder="Заметка"
                     />
                   </div>
                 ))}
@@ -705,63 +902,26 @@ export function CharacterSheet() {
             <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
               <h3 className="mb-2 font-display text-sm">Состояния</h3>
               <div className="flex flex-wrap gap-1.5">
-                {CONDITIONS.map((cond) => {
-                  const on =
-                    character.conditions.includes(cond) ||
-                    (cond === "Голод" && character.hunger);
+                {CONDITIONS.map((c) => {
+                  const on = character.conditions.includes(c);
                   return (
                     <button
-                      key={cond}
+                      key={c}
                       type="button"
-                      onClick={() => {
-                        if (cond === "Голод") {
-                          setField("hunger", !character.hunger);
-                          return;
-                        }
-                        toggleCondition(cond);
-                      }}
+                      onClick={() => toggleCondition(c)}
                       className={cn(
-                        "rounded-full border px-2.5 py-1 text-xs font-medium",
+                        "rounded-full border px-2.5 py-1 text-[11px]",
                         on
-                          ? "border-primary bg-primary/25 text-fg"
+                          ? "border-primary bg-primary/20 text-primary"
                           : "border-border text-muted",
                       )}
                     >
-                      {cond}
+                      {c}
                     </button>
                   );
                 })}
               </div>
             </div>
-
-            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-sm">
-              <h3 className="mb-2 font-display">Профиль {character.level} ур.</h3>
-              <dl className="space-y-1.5">
-                <Row k="Макс. очк. крови" v={String(bloodMax)} />
-                <Row k="Кости питания" v={row.feed} />
-                <Row k="Кости хитов" v={`${character.level}d10`} />
-                <Row k="Фичи уровня" v={row.features} />
-              </dl>
-              <div className="mt-2">
-                <Field label="Предпочтительная кровь (Bane Вентру)">
-                  <Input
-                    value={character.preferredBlood}
-                    placeholder="солдаты, добровольцы…"
-                    onChange={(e) => setField("preferredBlood", e.target.value)}
-                  />
-                </Field>
-              </div>
-            </div>
-
-            {character.clan === "ventrue" && (
-              <div className="rounded-[var(--radius-lg)] border border-primary/30 bg-surface p-4">
-                <h3 className="mb-1 font-display text-accent">{VENTRUE_LORE.name}</h3>
-                <p className="text-xs text-muted">{VENTRUE_LORE.tagline}</p>
-                <p className="mt-2 text-sm leading-relaxed text-muted">
-                  {VENTRUE_LORE.description}
-                </p>
-              </div>
-            )}
           </aside>
         </div>
       )}
@@ -769,29 +929,20 @@ export function CharacterSheet() {
       {tab === "skills" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-            <h2 className="mb-2 font-display text-lg">Навыки</h2>
-            <p className="mb-3 text-xs text-muted">
-              Кружок: нет → владение → экспертиза. Клик по бонусу — бросок. Kindred:
-              выбери 2 из Атлетика, Обман, История, Запугивание, Внимательность, Убеждение,
-              Выживание, Скрытность (+ фоновые).
-            </p>
+            <h2 className="mb-3 font-display text-lg">Навыки</h2>
             <ul className="space-y-1">
               {SKILLS.map((sk) => {
                 const prof = character.skillProfs[sk.id] ?? "none";
-                const bonus = skillBonus(
-                  character.abilities[sk.ability],
-                  pb,
-                  prof === "none" ? undefined : prof,
-                );
+                const bonus = skillBonus(character.abilities[sk.ability], pb, prof);
                 return (
                   <li
                     key={sk.id}
-                    className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-surface-2"
+                    className="flex items-center gap-2 rounded-[var(--radius-sm)] px-1 py-1.5 hover:bg-surface-2"
                   >
                     <button
                       type="button"
                       className={cn(
-                        "flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold",
+                        "flex h-7 w-7 items-center justify-center rounded border text-[10px] font-bold",
                         prof === "expertise"
                           ? "border-accent bg-accent/20 text-accent"
                           : prof === "proficient"
@@ -839,18 +990,81 @@ export function CharacterSheet() {
                 <div className="font-display text-3xl text-accent">{passiveIns}</div>
               </div>
             </div>
-            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 space-y-2">
-              <Field label="Предыстория">
-                <Input
-                  value={character.background}
-                  onChange={(e) => setField("background", e.target.value)}
-                />
-              </Field>
+
+            <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 space-y-3">
+              <h3 className="font-display text-base">Происхождение · настройка</h3>
               <Field label="Вид">
                 <Input
                   value={character.species}
                   onChange={(e) => setField("species", e.target.value)}
                 />
+              </Field>
+              <Field label="Предыстория (PDF)">
+                <select
+                  className="flex h-10 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
+                  value={character.backgroundId}
+                  onChange={(e) => applyBackground(e.target.value)}
+                >
+                  {BACKGROUNDS_PDF.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {bgDef && (
+                <div className="rounded border border-border bg-surface-2 p-3 text-xs text-muted">
+                  <div className="font-medium text-fg">{bgDef.name}</div>
+                  <div className="mt-1">Хар-ки: {bgDef.abilityScores}</div>
+                  <div>Навыки: {bgDef.skills}</div>
+                  <div>Инструмент: {bgDef.tool}</div>
+                  <div>Черта: {bgDef.featId}</div>
+                  <p className="mt-2 leading-relaxed">{bgDef.description}</p>
+                </div>
+              )}
+              <Field label="Черта происхождения (Человек · Гибкий)">
+                <select
+                  className="flex h-10 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
+                  value={character.originFeatId}
+                  onChange={(e) => setField("originFeatId", e.target.value)}
+                >
+                  {ORIGIN_FEATS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name} ({f.nameEn})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Черта биографии">
+                <select
+                  className="flex h-10 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
+                  value={character.backgroundFeatId}
+                  onChange={(e) => setField("backgroundFeatId", e.target.value)}
+                >
+                  {ORIGIN_FEATS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Человек · Умелый (навык)">
+                <select
+                  className="flex h-10 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
+                  value={character.humanSkill || ""}
+                  onChange={(e) => {
+                    const id = e.target.value as SkillId | "";
+                    setField("humanSkill", id);
+                    if (id) setSkillProf(id, "proficient");
+                  }}
+                >
+                  <option value="">—</option>
+                  {SKILLS.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nameRu}
+                    </option>
+                  ))}
+                </select>
               </Field>
               <Field label="Мировоззрение">
                 <Input
@@ -865,12 +1079,29 @@ export function CharacterSheet() {
                 />
               </Field>
             </div>
+
             <div className="rounded-[var(--radius-lg)] border border-dashed border-border-strong p-4 text-xs text-muted">
               <div className="mb-1 flex items-center gap-1 font-medium text-fg">
-                <Link2 className="size-3.5" /> Удалённый стол
+                <Link2 className="size-3.5" /> Источники
               </div>
-              Long Story / Foundry / Discord + этот лист. Продолжительный отдых без ≥1
-              ОБК = только короткий (Awaken).
+              PDF Bound by Blood (RAW) ·{" "}
+              <a
+                className="text-accent underline"
+                href="https://next.dnd.su/feats/313-lucky/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Везучий dnd.su
+              </a>{" "}
+              ·{" "}
+              <a
+                className="text-accent underline"
+                href="https://next.dnd.su/species/human"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Человек dnd.su
+              </a>
             </div>
           </div>
         </div>
@@ -881,10 +1112,63 @@ export function CharacterSheet() {
           <div className="rounded-[var(--radius-lg)] border border-primary/30 bg-surface p-4">
             <h2 className="font-display text-lg text-accent">{VENTRUE_LORE.title}</h2>
             <p className="mt-1 text-sm text-muted">
-              Полная прогрессия Kindred + Вентру по PDF. Нажми карточку — развернуть
-              правила. Уровень листа: {character.level} (открыто всё ≤ этого уровня).
+              {VENTRUE_LORE.description} Уровень листа: {character.level} — открыто всё ≤ этого
+              уровня. Меняй уровень в шапке, чтобы крутить прогрессию.
             </p>
           </div>
+
+          {/* Human + origin feats cards */}
+          <section>
+            <h3 className="mb-2 font-display text-base">Вид · {HUMAN_SPECIES.name}</h3>
+            <div className="grid gap-2 lg:grid-cols-2">
+              {HUMAN_SPECIES.traits.map((t) => (
+                <div
+                  key={t.name}
+                  className="rounded-[var(--radius-lg)] border border-border bg-surface p-4"
+                >
+                  <div className="font-medium text-fg">{t.name}</div>
+                  <p className="mt-1 text-sm text-muted">{t.body}</p>
+                  <div className="mt-2 text-[10px] text-faint">{HUMAN_SPECIES.source}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="mb-2 font-display text-base">Черты происхождения (активные)</h3>
+            <div className="grid gap-2 lg:grid-cols-2">
+              {[originFeat, bgFeat].filter(Boolean).map((f) =>
+                f ? (
+                  <div
+                    key={f.id + f.name}
+                    className="rounded-[var(--radius-lg)] border border-accent/30 bg-surface p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-medium text-fg">
+                        {f.name} <span className="text-muted">[{f.nameEn}]</span>
+                      </span>
+                      <span className="text-[10px] text-faint">{f.source}</span>
+                    </div>
+                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-muted">
+                      {f.body}
+                    </p>
+                  </div>
+                ) : null,
+              )}
+              {!originFeat && !bgFeat && (
+                <p className="text-sm text-muted">Выбери черты на вкладке Навыки.</p>
+              )}
+            </div>
+            {character.originFeatId === "lucky" &&
+              character.backgroundFeatId === "protected" && (
+                <p className="mt-2 rounded border border-border bg-surface-2 p-3 text-xs text-muted">
+                  <strong className="text-fg">Два пула удачи (RAW):</strong> Везучий (dnd.su) и
+                  Защищённый (PDF) — оба дают «очки = БМ / LR», но <em>разные</em> эффекты. Ведём
+                  раздельно: {luckyLeft}/{luckMax} Везучий · {protectedLeft}/{luckMax}{" "}
+                  Защищённый.
+                </p>
+              )}
+          </section>
 
           <section>
             <h3 className="mb-2 font-display text-base">Базовый класс · Сородич</h3>
@@ -949,7 +1233,7 @@ export function CharacterSheet() {
                   >
                     <td className="px-3 py-1.5 font-medium">{r.level}</td>
                     <td className="px-3 py-1.5">+{r.pb}</td>
-                    <td className="px-3 py-1.5">{r.features}</td>
+                    <td className="px-3 py-1.5 text-xs">{r.features}</td>
                     <td className="px-3 py-1.5">{r.bp}</td>
                     <td className="px-3 py-1.5">{r.feed}</td>
                   </tr>
@@ -963,10 +1247,10 @@ export function CharacterSheet() {
       {tab === "feats" && (
         <div className="space-y-4">
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-            <h2 className="font-display text-lg">Черты сородича</h2>
+            <h2 className="font-display text-lg">Черты сородича + происхождение</h2>
             <p className="mt-1 text-sm text-muted">
-              Отметь взятые черты (слоты: 2, 7, 10, 13, 17 + ASI 4/8/12/16). Можно
-              настроить под себя. Доступны черты с prerequisite ≤ твоего уровня.
+              Слоты Kindred Feat: 2, 7, 10, 13, 17. На ASI (4/8/12/16) можно взять Kindred Feat
+              или обычную черту. Origin: {FEAT_LUCKY.name} + {FEAT_PROTECTED.name}.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {character.selectedFeats.map((id) => {
@@ -980,9 +1264,12 @@ export function CharacterSheet() {
                   </span>
                 );
               })}
-              {character.selectedFeats.length === 0 && (
-                <span className="text-xs text-muted">Пока ничего не выбрано</span>
-              )}
+              <span className="rounded-full border border-accent bg-accent/15 px-3 py-1 text-xs">
+                {originFeat?.name ?? "—"} (вид)
+              </span>
+              <span className="rounded-full border border-accent bg-accent/15 px-3 py-1 text-xs">
+                {bgFeat?.name ?? "—"} (био)
+              </span>
             </div>
           </div>
           <div className="grid gap-2 lg:grid-cols-2">
@@ -1018,7 +1305,7 @@ export function CharacterSheet() {
               className="mt-1 min-h-28"
               value={character.feats}
               onChange={(e) => setField("feats", e.target.value)}
-              placeholder="Ур.4: +2 Хар… Ур.8: +2 Тел…"
+              placeholder="Ур.4: +2 Хар… Ур.8: …"
             />
           </div>
         </div>
@@ -1079,67 +1366,50 @@ export function CharacterSheet() {
               ))}
             </ul>
           </div>
-          <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <Label>JSON персонажа</Label>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(JSON.stringify(character, null, 2));
-                  toast.success("Скопировано");
-                }}
-              >
-                <Copy className="size-3.5" />
-              </Button>
-            </div>
-            <pre className="max-h-[28rem] overflow-auto rounded bg-bg p-3 text-xs text-muted scroll-thin">
-              {JSON.stringify(character, null, 2)}
-            </pre>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  shortRest();
-                  toast.success("Короткий отдых");
-                }}
-              >
-                <RefreshCw className="size-3.5" /> Короткий
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  longRest();
-                  toast.message("Длинный отдых (нужен ≥1 ОБК)");
-                }}
-              >
-                Длинный
-              </Button>
-            </div>
+          <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-sm text-muted">
+            <h3 className="mb-2 font-display text-base text-fg">Подсказки сессии</h3>
+            <ul className="list-disc space-y-2 pl-4">
+              <li>Везучий и Защищённый — два разных пула, оба = БМ.</li>
+              <li>Долгий отдых с ≥1 ОБК: хиты, вдохновение (Человек), оба пула удачи.</li>
+              <li>Без ОБК: Awaken — только польза короткого (PDF).</li>
+              <li>Bane Вентру: не «солдаты» → half Feed Dice.</li>
+              <li>Ссылка в шапке шарит весь лист (localStorage + hash).</li>
+            </ul>
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 p-2 backdrop-blur sm:hidden">
-        <div className="mx-auto flex max-w-lg gap-2">
-          <Button type="button" variant="secondary" className="flex-1" onClick={() => adjustHp(-1)}>
-            −ХП
-          </Button>
-          <Button type="button" variant="blood" className="flex-1" onClick={() => spendBlood(1)}>
-            −ОБК
-          </Button>
-          <Button type="button" variant="secondary" className="flex-1" onClick={useBeast}>
-            Зверь
-          </Button>
-          <Button type="button" variant="outline" className="flex-1" onClick={() => setTab("features")}>
-            Фичи
-          </Button>
-        </div>
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-[11px] font-medium uppercase tracking-wide text-muted">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function HudStat({
+  label,
+  value,
+  blood,
+}: {
+  label: string;
+  value: string;
+  blood?: boolean;
+}) {
+  return (
+    <div className="min-w-[3.25rem]">
+      <div className="text-[9px] font-semibold uppercase tracking-wider text-faint">{label}</div>
+      <div
+        className={cn(
+          "font-display text-sm tabular-nums sm:text-base",
+          blood ? "text-primary" : "text-fg",
+        )}
+      >
+        {value}
       </div>
     </div>
   );
@@ -1163,12 +1433,21 @@ function FeatureCard({
       className={cn(
         "rounded-[var(--radius-lg)] border p-4 text-left transition-colors",
         accent ? "border-primary/40 bg-surface" : "border-border bg-surface",
-        open && "ring-1 ring-primary/40",
+        open && "ring-1 ring-primary/50",
       )}
     >
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-medium text-fg">{feature.name}</span>
-        <span className="shrink-0 text-xs text-faint">ур. {feature.level}</span>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-faint">
+            Ур. {feature.level}
+          </div>
+          <div className="font-medium text-fg">{feature.name}</div>
+        </div>
+        {feature.costs && (
+          <span className="shrink-0 rounded bg-surface-3 px-2 py-0.5 text-[10px] text-muted">
+            {feature.costs.join(" · ")}
+          </span>
+        )}
       </div>
       <p className="mt-1 text-sm text-muted">{feature.summary}</p>
       {open && (
@@ -1176,54 +1455,6 @@ function FeatureCard({
           {feature.body}
         </p>
       )}
-      {feature.costs && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {feature.costs.map((c) => (
-            <span
-              key={c}
-              className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted"
-            >
-              {c}
-            </span>
-          ))}
-        </div>
-      )}
     </button>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block space-y-1">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted">
-        {label}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function HudStat({ label, value, blood }: { label: string; value: string; blood?: boolean }) {
-  return (
-    <div className="min-w-[3.25rem]">
-      <div className="text-[9px] font-bold uppercase tracking-wider text-faint">{label}</div>
-      <div
-        className={cn(
-          "font-display text-base tabular-nums leading-tight sm:text-lg",
-          blood ? "text-primary" : "text-fg",
-        )}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between gap-3 border-b border-border/50 py-1 last:border-0">
-      <dt className="text-muted">{k}</dt>
-      <dd className="text-right font-medium text-fg">{v}</dd>
-    </div>
   );
 }

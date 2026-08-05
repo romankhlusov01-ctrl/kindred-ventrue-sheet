@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type { ClanId } from "@/data/kindred";
 import { getLevelData } from "@/data/kindred-ru";
 import type { ProfLevel, SkillId } from "@/data/skills";
-import { BLANK_TEMPLATE, PRESET_VENTRUE_8 } from "@/data/presets";
+import { BLANK_TEMPLATE, PRESET_VENTRUE_PLAYER } from "@/data/presets";
 
 export type Abilities = {
   str: number;
@@ -44,6 +44,8 @@ export type CharacterSheet = {
   clan: ClanId;
   level: number;
   background: string;
+  /** id from BACKGROUNDS_PDF */
+  backgroundId: string;
   species: string;
   alignment: string;
   abilities: Abilities;
@@ -73,6 +75,16 @@ export type CharacterSheet = {
   hitDiceUsed: number;
   sessionLog: LogEntry[];
   customResources: CustomResource[];
+  /** Origin feat from Human Versatile — default Lucky */
+  originFeatId: string;
+  /** Background origin feat — Touchstone → Protected */
+  backgroundFeatId: string;
+  /** Spent Lucky points (Везучий, dnd.su) */
+  luckyUsed: number;
+  /** Spent Protected points (Защищённый, PDF) */
+  protectedUsed: number;
+  /** Human Skillful skill id */
+  humanSkill: SkillId | "";
 };
 
 type LibraryState = {
@@ -107,6 +119,9 @@ type LibraryState = {
   updateResource: (id: string, partial: Partial<CustomResource>) => void;
   addResource: () => void;
   removeResource: (id: string) => void;
+  spendLucky: () => boolean;
+  spendProtected: () => boolean;
+  restoreLuck: () => void;
 };
 
 function clamp(n: number, min: number, max: number) {
@@ -137,6 +152,12 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     conditions: raw.conditions ?? [],
     sessionLog: raw.sessionLog ?? [],
     customResources: raw.customResources ?? [],
+    backgroundId: raw.backgroundId ?? base.backgroundId,
+    originFeatId: raw.originFeatId ?? base.originFeatId,
+    backgroundFeatId: raw.backgroundFeatId ?? base.backgroundFeatId,
+    luckyUsed: raw.luckyUsed ?? 0,
+    protectedUsed: raw.protectedUsed ?? 0,
+    humanSkill: raw.humanSkill ?? base.humanSkill,
   };
 }
 
@@ -152,7 +173,7 @@ function updateActive(
 }
 
 const initial = (() => {
-  const ventrue = migrateSheet(PRESET_VENTRUE_8);
+  const ventrue = migrateSheet(PRESET_VENTRUE_PLAYER);
   return {
     activeId: ventrue.id,
     characters: [ventrue],
@@ -303,6 +324,9 @@ export const useCharacterStore = create<LibraryState>()(
               tempHp: 0,
               beastUsed: 0,
               voiceUses: 0,
+              luckyUsed: 0,
+              protectedUsed: 0,
+              inspiration: true, // Human Resourceful
               hitDiceUsed: hasBlood ? 0 : c.hitDiceUsed,
               deathSuccess: 0,
               deathFail: 0,
@@ -312,8 +336,8 @@ export const useCharacterStore = create<LibraryState>()(
                   id: `log-${Date.now()}`,
                   at: Date.now(),
                   text: hasBlood
-                    ? "Продолжительный отдых (≥1 ОБК) — полное восстановление"
-                    : "Продолжительный отдых БЕЗ ОБК — только польза короткого (Awaken)",
+                    ? "Продолжительный отдых (≥1 ОБК) — хиты, удача Lucky+Protected, вдохновение (Человек)"
+                    : "Продолжительный отдых БЕЗ ОБК — только польза короткого (Awaken); удача Lucky+Protected восстановлена",
                 },
                 ...c.sessionLog,
               ].slice(0, 50),
@@ -419,10 +443,28 @@ export const useCharacterStore = create<LibraryState>()(
             customResources: c.customResources.filter((r) => r.id !== id),
           })),
         ),
+      spendLucky: () => {
+        const c = get().character;
+        const pb = getLevelData(c.level).pb;
+        if (c.luckyUsed >= pb) return false;
+        set((s) => updateActive(s, (ch) => ({ ...ch, luckyUsed: ch.luckyUsed + 1 })));
+        return true;
+      },
+      spendProtected: () => {
+        const c = get().character;
+        const pb = getLevelData(c.level).pb;
+        if (c.protectedUsed >= pb) return false;
+        set((s) =>
+          updateActive(s, (ch) => ({ ...ch, protectedUsed: ch.protectedUsed + 1 })),
+        );
+        return true;
+      },
+      restoreLuck: () =>
+        set((s) => updateActive(s, (c) => ({ ...c, luckyUsed: 0, protectedUsed: 0 }))),
     }),
     {
-      name: "kindred-sheet-v3-ru",
-      version: 3,
+      name: "kindred-sheet-v4-ru",
+      version: 4,
       migrate: (persisted: unknown) => {
         const p = persisted as {
           character?: CharacterSheet;
@@ -453,6 +495,10 @@ export const useCharacterStore = create<LibraryState>()(
 
 export function getBloodMax(c: CharacterSheet) {
   return bpMax(c.level, c.abilities.con, c.selectedFeats ?? []);
+}
+
+export function getLuckMax(level: number) {
+  return getLevelData(level).pb;
 }
 
 export function encodeSharePayload(character: CharacterSheet): string {
