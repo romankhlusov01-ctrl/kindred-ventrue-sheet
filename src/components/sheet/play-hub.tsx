@@ -42,6 +42,7 @@ import { RollModeBar } from "@/components/sheet/roll-mode-bar";
 import { BloodPips } from "@/components/sheet/blood-pips";
 import { DeathPanel } from "@/components/sheet/death-panel";
 import { AbilityStrip } from "@/components/sheet/ability-strip";
+import { SelfReminders } from "@/components/sheet/self-reminders";
 import {
   getBloodMax,
   getLuckMax,
@@ -342,6 +343,7 @@ export function PlayHub() {
       </section>
 
       <DeathPanel />
+      <SelfReminders />
       <RollModeBar />
       {(showCombat || showSocial) && <AbilityStrip />}
 

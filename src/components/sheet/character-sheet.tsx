@@ -156,6 +156,13 @@ export function CharacterSheet() {
     if (!tabReady) return;
     try { localStorage.setItem("kindred-tab", tab); } catch { /* */ }
   }, [tab, tabReady]);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("kindred-focus") === "1") setFocusMode(true);
+    } catch { /* */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [openFeature, setOpenFeature] = useState<string | null>(null);
   const [featureQ, setFeatureQ] = useState("");

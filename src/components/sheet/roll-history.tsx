@@ -1,4 +1,5 @@
 import { useSessionStore } from "@/lib/session-store";
+import { cn } from "@/lib/utils";
 
 export function RollHistory() {
   const hist = useSessionStore((s) => s.rollHistory);
@@ -10,10 +11,25 @@ export function RollHistory() {
         {hist.map((r, i) => (
           <li
             key={`${r.at}-${i}`}
-            className="flex items-center justify-between gap-2 text-sm"
+            className={cn(
+              "flex items-center justify-between gap-2 rounded px-1 py-1.5 text-sm",
+              i === 0 && "bg-primary/10",
+            )}
           >
-            <span className="min-w-0 truncate text-muted">{r.label}</span>
-            <span className="font-display tabular-nums text-primary">{r.total}</span>
+            <div className="min-w-0">
+              <div className="truncate text-muted">{r.label}</div>
+              {i === 0 && r.detail && (
+                <div className="truncate text-[10px] text-faint">{r.detail}</div>
+              )}
+            </div>
+            <span
+              className={cn(
+                "font-display tabular-nums text-primary",
+                i === 0 ? "text-2xl" : "text-base",
+              )}
+            >
+              {r.total}
+            </span>
           </li>
         ))}
       </ul>

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useCharacterStore } from "@/lib/character-store";
+import { buzz } from "@/lib/utils";
 
 /** Ephemeral session UI state (not in character save) */
 export type LastRoll = {
@@ -52,11 +53,13 @@ type SessionState = {
 export const useSessionStore = create<SessionState>((set, get) => ({
   lastRoll: null,
   rollHistory: [],
-  setLastRoll: (r) =>
+  setLastRoll: (r) => {
+    if (r) buzz(10);
     set((s) => ({
       lastRoll: r,
       rollHistory: r ? [r, ...s.rollHistory].slice(0, 12) : s.rollHistory,
-    })),
+    }));
+  },
   effects: [],
   addEffect: (name, rounds, note = "") =>
     set((s) => ({
@@ -84,13 +87,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     set((s) => ({ effects: s.effects.filter((e) => e.id !== id) })),
   sessionNote: "",
   setSessionNote: (n) => set({ sessionNote: n }),
-  focusMode: (() => {
-    try {
-      return typeof localStorage !== "undefined" && localStorage.getItem("kindred-focus") === "1";
-    } catch {
-      return false;
-    }
-  })(),
+  focusMode: false,
   setFocusMode: (v) => {
     try {
       localStorage.setItem("kindred-focus", v ? "1" : "0");

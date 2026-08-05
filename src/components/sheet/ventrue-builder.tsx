@@ -325,7 +325,7 @@ export function VentrueBuilder() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 overflow-x-auto scroll-thin pb-1">
+      <div className="sticky top-14 z-10 -mx-1 flex gap-1 overflow-x-auto scroll-thin bg-bg/95 px-1 py-1.5 pb-1 backdrop-blur">
         {BUILDER_STEPS.map((s, i) => (
           <button
             key={s.id}
@@ -775,7 +775,7 @@ export function VentrueBuilder() {
                     type="button"
                     onClick={() => toggleClassSkill(id)}
                     className={cn(
-                      "rounded-full border px-3 py-1.5 text-xs font-medium",
+                      "rounded-full border h-10 px-3 py-2 text-xs font-medium",
                       on
                         ? "border-primary bg-primary/20 text-primary"
                         : "border-border bg-surface-2 text-muted",

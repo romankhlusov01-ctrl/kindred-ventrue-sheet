@@ -25,3 +25,14 @@ export function rollDice(count: number, sides: number): { rolls: number[]; total
   const rolls = Array.from({ length: count }, () => rollDie(sides));
   return { rolls, total: rolls.reduce((a, b) => a + b, 0) };
 }
+
+/** Light haptic on supported phones (no-op elsewhere) */
+export function buzz(ms = 12) {
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(ms);
+    }
+  } catch {
+    /* */
+  }
+}
