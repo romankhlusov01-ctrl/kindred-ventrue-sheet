@@ -44,6 +44,7 @@ import { AbilityEditor } from "@/components/sheet/ability-editor";
 import { EnvironmentHazards } from "@/components/sheet/environment-hazards";
 import { OnboardingBanner } from "@/components/sheet/onboarding";
 import { SessionSummary } from "@/components/sheet/session-summary";
+import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
 
 
 
@@ -824,6 +825,7 @@ export function CharacterSheet() {
             <EncounterPanel />
             <RestWizard />
             <EnvironmentHazards />
+            <ConcentrationHelper />
             <CombatCard />
             <ResourcePool
               label="Очки крови"
