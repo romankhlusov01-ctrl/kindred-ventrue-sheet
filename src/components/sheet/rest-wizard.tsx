@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useCharacterStore, getLuckMax } from "@/lib/character-store";
 import { effectivePb } from "@/lib/level-utils";
 
-
 export function RestWizard() {
   const c = useCharacterStore((s) => s.character);
   const shortRest = useCharacterStore((s) => s.shortRest);
@@ -13,7 +12,6 @@ export function RestWizard() {
   const addLog = useCharacterStore((s) => s.addLog);
   const luckMax = getLuckMax(c.level, c.multiclass);
   const pb = effectivePb(c.level, c.multiclass);
-
   const hdLeft = c.level - c.hitDiceUsed;
 
   return (
@@ -33,24 +31,21 @@ export function RestWizard() {
           хитов.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <Button
           type="button"
-          size="sm"
-          className="h-12 w-full sm:w-auto"
-          className="h-12 w-full sm:w-auto"
+          className="h-12 w-full"
           variant="secondary"
           onClick={() => {
             shortRest();
-            toast.success("Короткий отдых: Зверь, Голос");
+            toast.success("Короткий: Зверь, Голос");
           }}
         >
           <Coffee className="size-3.5" /> Короткий
         </Button>
         <Button
           type="button"
-          size="sm"
-          className="h-12 w-full sm:w-auto"
+          className="h-12 w-full"
           variant="secondary"
           disabled={hdLeft <= 0}
           onClick={() => {
@@ -66,8 +61,7 @@ export function RestWizard() {
         </Button>
         <Button
           type="button"
-          size="sm"
-          className="h-12 w-full sm:w-auto"
+          className="h-12 w-full"
           variant={c.bloodCurrent >= 1 ? "blood" : "outline"}
           onClick={() => {
             const ok = c.bloodCurrent >= 1;
@@ -75,11 +69,12 @@ export function RestWizard() {
             toast.message(
               ok
                 ? "Долгий: хиты, удача, вдохновение"
-                : "Долгий БЕЗ ОБК — только короткий (Awaken)",
+                : "Долгий без ОБК — только короткий (Awaken)",
             );
           }}
         >
-          <Moon className="size-3.5" /> Долгий{c.bloodCurrent < 1 ? " ⚠" : ""}
+          <Moon className="size-3.5" /> Долгий
+          {c.bloodCurrent < 1 ? " · нет ОБК" : ""}
         </Button>
       </div>
     </div>
