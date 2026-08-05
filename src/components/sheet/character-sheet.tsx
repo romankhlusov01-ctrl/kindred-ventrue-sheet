@@ -451,6 +451,20 @@ export function CharacterSheet() {
             <span className="font-display text-xl tabular-nums leading-none text-primary">{lastRoll.total}</span>
           </div>
         )}
+        {character.conditions.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {character.conditions.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => toggleCondition(c)}
+                className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] text-primary"
+              >
+                {c} ×
+              </button>
+            ))}
+          </div>
+        )}
         <div className="mt-2 hidden flex-wrap gap-1.5 sm:flex">
             <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(-1)}>
               −ХП
