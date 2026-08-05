@@ -132,17 +132,21 @@ export function CharacterSheet() {
   const spendProtected = useCharacterStore((s) => s.spendProtected);
   const lastRoll = useSessionStore((s) => s.lastRoll);
 
-  const [tab, setTab] = useState<Tab>(() => {
-    if (typeof window === "undefined") return "play";
+  const [tab, setTab] = useState<Tab>("play");
+  const [tabReady, setTabReady] = useState(false);
+  useEffect(() => {
     try {
       const s = localStorage.getItem("kindred-tab") as Tab | null;
-      if (s && ["play","builder","skills","features","feats","gear","log"].includes(s)) return s;
+      if (s && ["play","builder","skills","features","feats","gear","log"].includes(s)) {
+        setTab(s);
+      }
     } catch { /* */ }
-    return "play";
-  });
+    setTabReady(true);
+  }, []);
   useEffect(() => {
+    if (!tabReady) return;
     try { localStorage.setItem("kindred-tab", tab); } catch { /* */ }
-  }, [tab]);
+  }, [tab, tabReady]);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [openFeature, setOpenFeature] = useState<string | null>(null);
   const [featureQ, setFeatureQ] = useState("");
