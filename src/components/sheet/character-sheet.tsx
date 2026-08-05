@@ -35,6 +35,8 @@ import { RoundBanner } from "@/components/sheet/round-banner";
 import { AsiHelper } from "@/components/sheet/asi-helper";
 import { BloodBond } from "@/components/sheet/blood-bond";
 import { PcSaves } from "@/components/sheet/pc-saves";
+import { Passives } from "@/components/sheet/passives";
+
 
 
 
@@ -871,7 +873,9 @@ export function CharacterSheet() {
             <SessionNote />
             <DominateDc />
             <TempHp />
+            <Passives />
             <QuickCondition />
+
             <FeedWizard />
             <BloodBond />
             <EncounterPanel />
