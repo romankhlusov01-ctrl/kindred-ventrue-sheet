@@ -134,7 +134,11 @@ export function DicePanel() {
       sum,
       "damage",
     );
-    toast.message(`Питание: ${sum} некрот. (макс. хиты)`);
+    toast.message(
+      half
+        ? `Питание ½ Bane: ${sum}`
+        : `Питание: ${sum} · Bane: «${character.preferredBlood || "?"}»? иначе ½ кости`,
+    );
   }
 
   function rollInitiative() {
