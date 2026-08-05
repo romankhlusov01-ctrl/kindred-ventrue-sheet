@@ -264,6 +264,16 @@ export function PlayDock() {
           }}
         />
         <DockBtn
+          label="d20"
+          onClick={() => {
+            const m = modeFor("check");
+            const r = rollD20("d20", 0, m);
+            consumeRollMode();
+            show(r.label, r.total, r.detail);
+            toast.message(`d20: ${r.total}`);
+          }}
+        />
+        <DockBtn
           label="Отдых"
           onClick={() => {
             shortRest();
