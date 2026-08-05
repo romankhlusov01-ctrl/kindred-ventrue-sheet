@@ -4,6 +4,7 @@ import { getLevelData } from "@/data/kindred-ru";
 import { useCharacterStore } from "@/lib/character-store";
 import { abilityMod, formatMod, rollDie } from "@/lib/utils";
 import { rollD20 } from "@/lib/roll-engine";
+import { useSessionStore } from "@/lib/session-store";
 
 type Action = {
   name: string;
@@ -22,6 +23,7 @@ export function QuickActions() {
   const addLog = useCharacterStore((s) => s.addLog);
   const adjustHp = useCharacterStore((s) => s.adjustHp);
   const patch = useCharacterStore((s) => s.patch);
+  const setLastRoll = useSessionStore((s) => s.setLastRoll);
   const row = getLevelData(c.level);
   const pb = row.pb;
   const cha = abilityMod(c.abilities.cha);
@@ -55,6 +57,7 @@ export function QuickActions() {
     const mod = abilityMod(c.abilities[ability]) + pb + skillBonusExtra;
     const r = rollD20(name, mod, c.beastActive || c.pendingAdv ? "adv" : c.rollMode);
     addLog(`${r.label}: ${r.detail} = ${r.total}`);
+    setLastRoll({ label: r.label, total: r.total, detail: r.detail, at: Date.now() });
     toast.message(`${name}: ${r.total}`);
     return r;
   }

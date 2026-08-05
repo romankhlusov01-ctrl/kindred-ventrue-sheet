@@ -1,0 +1,81 @@
+import { toast } from "sonner";
+import { Moon, Coffee } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCharacterStore, getLuckMax } from "@/lib/character-store";
+import { getLevelData } from "@/data/kindred-ru";
+
+export function RestWizard() {
+  const c = useCharacterStore((s) => s.character);
+  const shortRest = useCharacterStore((s) => s.shortRest);
+  const longRest = useCharacterStore((s) => s.longRest);
+  const spendHitDie = useCharacterStore((s) => s.spendHitDie);
+  const addLog = useCharacterStore((s) => s.addLog);
+  const pb = getLevelData(c.level).pb;
+  const luckMax = getLuckMax(c.level);
+  const hdLeft = c.level - c.hitDiceUsed;
+
+  return (
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+      <h3 className="mb-2 font-display text-sm">Отдых</h3>
+      <div className="mb-3 space-y-1 text-xs text-muted">
+        <p>
+          Зверь: {Math.max(0, pb - c.beastUsed)}/{pb} · HD: {hdLeft}/{c.level} · ОБК:{" "}
+          {c.bloodCurrent}
+        </p>
+        <p>
+          Удача: Везучий {luckMax - c.luckyUsed}/{luckMax} · Защищ.{" "}
+          {luckMax - c.protectedUsed}/{luckMax}
+        </p>
+        <p>
+          Awaken: долгий отдых требует <strong className="text-fg">≥1 ОБК</strong> для полных
+          хитов.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => {
+            shortRest();
+            toast.success("Короткий отдых: Зверь, Голос");
+          }}
+        >
+          <Coffee className="size-3.5" /> Короткий
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={hdLeft <= 0}
+          onClick={() => {
+            const h = spendHitDie();
+            if (h == null) toast.error("Нет HD");
+            else {
+              addLog(`HD: +${h}`);
+              toast.success(`+${h} ХП (HD)`);
+            }
+          }}
+        >
+          HD d8
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="blood"
+          onClick={() => {
+            const ok = c.bloodCurrent >= 1;
+            longRest();
+            toast.message(
+              ok
+                ? "Долгий: хиты, удача, вдохновение"
+                : "Долгий БЕЗ ОБК — только короткий (Awaken)",
+            );
+          }}
+        >
+          <Moon className="size-3.5" /> Долгий
+        </Button>
+      </div>
+    </div>
+  );
+}

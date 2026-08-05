@@ -37,6 +37,8 @@ import { LevelUpHelper } from "@/components/sheet/level-up-helper";
 import { WarlockSnippet } from "@/components/sheet/warlock-snippet";
 import { EncounterPanel } from "@/components/sheet/encounter-panel";
 import { InventoryPanel } from "@/components/sheet/inventory-panel";
+import { RestWizard } from "@/components/sheet/rest-wizard";
+import { CombatCard } from "@/components/sheet/combat-card";
 
 
 
@@ -135,6 +137,7 @@ export function CharacterSheet() {
   const [tab, setTab] = useState<Tab>("builder");
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [openFeature, setOpenFeature] = useState<string | null>(null);
+  const [featureQ, setFeatureQ] = useState("");
 
   const row = getLevelData(character.level);
   const pb = row.pb;
@@ -885,6 +888,8 @@ export function CharacterSheet() {
 
           <aside className="space-y-4 lg:col-span-4">
             <EncounterPanel />
+            <RestWizard />
+            <CombatCard />
             <ResourcePool
               label="Очки крови"
               current={character.bloodCurrent}
@@ -1234,6 +1239,12 @@ export function CharacterSheet() {
               {VENTRUE_LORE.description} Уровень листа: {character.level} — открыто всё ≤ этого
               уровня. Меняй уровень в шапке, чтобы крутить прогрессию.
             </p>
+            <Input
+              className="mt-3"
+              placeholder="Поиск по способностям…"
+              value={featureQ}
+              onChange={(e) => setFeatureQ(e.target.value)}
+            />
           </div>
 
           {/* Human + origin feats cards */}
@@ -1292,7 +1303,15 @@ export function CharacterSheet() {
           <section>
             <h3 className="mb-2 font-display text-base">Базовый класс · Сородич</h3>
             <div className="grid gap-2 lg:grid-cols-2">
-              {core.map((f) => (
+              {core
+                .filter(
+                  (f) =>
+                    !featureQ.trim() ||
+                    `${f.name} ${f.summary} ${f.body}`
+                      .toLowerCase()
+                      .includes(featureQ.toLowerCase()),
+                )
+                .map((f) => (
                 <FeatureCard
                   key={f.id}
                   feature={f}
@@ -1307,7 +1326,15 @@ export function CharacterSheet() {
             <section>
               <h3 className="mb-2 font-display text-base">Клан Вентру · прогрессия</h3>
               <div className="grid gap-2 lg:grid-cols-2">
-                {ventrue.map((f) => (
+                {ventrue
+                  .filter(
+                    (f) =>
+                      !featureQ.trim() ||
+                      `${f.name} ${f.summary} ${f.body}`
+                        .toLowerCase()
+                        .includes(featureQ.toLowerCase()),
+                  )
+                  .map((f) => (
                   <FeatureCard
                     key={f.id}
                     feature={f}
