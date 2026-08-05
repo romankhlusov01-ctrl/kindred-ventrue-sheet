@@ -1522,26 +1522,16 @@ export function CharacterSheet() {
               </div>
             </div>
 
-            <ul className="max-h-[28rem] space-y-2 overflow-y-auto scroll-thin">
-              {character.sessionLog.length === 0 && (
-                <li className="text-sm text-muted">Пусто — броски и отдых появятся здесь.</li>
-              )}
-              {character.sessionLog.map((e) => (
-                <li
-                  key={e.id}
-                  className="rounded border border-border bg-surface-2 px-3 py-2 text-sm"
-                >
-                  <div className="text-[10px] text-faint">
-                    {new Date(e.at).toLocaleTimeString("ru-RU")}
-                  </div>
-                  <div>{e.text}</div>
-                </li>
-              ))}
-            </ul>
+            {character.sessionLog.length === 0 ? (
+              <p className="text-sm text-muted">Пусто — броски и отдых появятся здесь.</p>
+            ) : (
+              <LogSearch />
+            )}
 
           </div>
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-sm text-muted">
             <h3 className="mb-2 font-display text-base text-fg">Подсказки сессии</h3>
+
             <ul className="list-disc space-y-2 pl-4">
               <li>Нижняя панель: ХП, ОБК, иниц, ход, зверь, Lucky/Prot, питание, атака.</li>
               <li>Старт боя: патруль / охота / сородич · враг «Атака вас» и спас vs Сл.</li>
