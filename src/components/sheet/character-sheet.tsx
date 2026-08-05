@@ -430,24 +430,18 @@ export function CharacterSheet() {
       </header>
 
       {/* Sticky HUD */}
-      <div className="sticky top-0 z-20 -mx-3 mb-4 border-y border-border bg-bg/95 px-3 py-2 backdrop-blur sm:mx-0 sm:rounded-[var(--radius-lg)] sm:border sm:px-4">
-        <div className="grid grid-cols-4 gap-x-2 gap-y-1 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-          <HudStat label="ХП" value={`${character.hpCurrent}/${character.hpMax}`} />
-          <HudStat label="КД" value={String(character.ac)} />
-          <HudStat label="ОБК" value={`${character.bloodCurrent}/${bloodMax}`} blood />
-          <HudStat label="Зверь" value={`${beastLeft}/${beastMax}`} />
-          <div className="col-span-4 hidden sm:contents">
-            <HudStat label="Везуч." value={`${luckyLeft}/${luckMax}`} />
-            <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
-            <HudStat
-              label="Иниц"
-              value={
-                character.initiative != null
-                  ? String(character.initiative)
-                  : formatMod(abilityMod(character.abilities.dex))
-              }
-            />
-            <HudStat label="Раунд" value={String(character.round ?? 1)} />
+      <div className="sticky top-0 z-20 -mx-3 mb-3 border-b border-border bg-bg/95 px-3 py-2 backdrop-blur sm:mx-0 sm:mb-4 sm:rounded-[var(--radius-lg)] sm:border">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 gap-3 overflow-x-auto scroll-thin">
+            <HudStat label="ХП" value={`${character.hpCurrent}/${character.hpMax}`} />
+            <HudStat label="КД" value={String(character.ac)} />
+            <HudStat label="ОБК" value={`${character.bloodCurrent}/${bloodMax}`} blood />
+            <HudStat label="Зверь" value={`${beastLeft}/${beastMax}`} />
+            <HudStat label="Сл" value={String(spellDc)} />
+            <span className="hidden sm:contents">
+              <HudStat label="Везуч." value={`${luckyLeft}/${luckMax}`} />
+              <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
+            </span>
           </div>
         </div>
         {lastRoll && (
@@ -470,23 +464,6 @@ export function CharacterSheet() {
             ))}
           </div>
         )}
-        <div className="mt-2 hidden flex-wrap gap-1.5 sm:flex">
-            <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(-1)}>
-              −ХП
-            </Button>
-            <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(1)}>
-              +ХП
-            </Button>
-            <Button type="button" size="sm" variant="blood" onClick={() => spendBlood(1)}>
-              −ОБК
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={shortRest}>
-              Короткий
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={longRest}>
-              Длинный
-            </Button>
-        </div>
       </div>
 
       {/* Desktop tabs */}
