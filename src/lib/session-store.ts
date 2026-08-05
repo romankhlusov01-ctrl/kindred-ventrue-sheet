@@ -43,6 +43,7 @@ export type EnemyTemplate = {
 type SessionState = {
   lastRoll: LastRoll | null;
   setLastRoll: (r: LastRoll | null) => void;
+  rollHistory: LastRoll[];
   effects: EffectTimer[];
   addEffect: (name: string, rounds: number | null, note?: string) => void;
   tickEffects: () => void;
@@ -146,7 +147,12 @@ export const ENEMY_TEMPLATES: EnemyTemplate[] = [
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   lastRoll: null,
-  setLastRoll: (r) => set({ lastRoll: r }),
+  rollHistory: [],
+  setLastRoll: (r) =>
+    set((s) => ({
+      lastRoll: r,
+      rollHistory: r ? [r, ...s.rollHistory].slice(0, 8) : s.rollHistory,
+    })),
   effects: [],
   addEffect: (name, rounds, note = "") =>
     set((s) => ({

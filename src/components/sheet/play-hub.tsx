@@ -34,6 +34,7 @@ import { FreeRoll } from "@/components/sheet/free-roll";
 import { MyEffects } from "@/components/sheet/my-effects";
 import { QuickSkills } from "@/components/sheet/quick-skills";
 import { PrimaryPowers } from "@/components/sheet/primary-powers";
+import { RollHistory } from "@/components/sheet/roll-history";
 import { CombatCard } from "@/components/sheet/combat-card";
 import { ResourcePool } from "@/components/sheet/resource-pool";
 import { FullHealButton } from "@/components/sheet/full-heal";
@@ -419,6 +420,7 @@ export function PlayHub() {
       </section>
 
       {/* ── Quick skills ── */}
+      <RollHistory />
       <QuickSkills />
 
       <PrimaryPowers />
