@@ -31,6 +31,7 @@ import { VentrueBuilder } from "@/components/sheet/ventrue-builder";
 import { InventoryPanel } from "@/components/sheet/inventory-panel";
 import { OnboardingBanner } from "@/components/sheet/onboarding";
 import { SessionSummary } from "@/components/sheet/session-summary";
+import { SessionNote } from "@/components/sheet/session-note";
 import { ExportMarkdown } from "@/components/sheet/export-markdown";
 import { ExportLog } from "@/components/sheet/export-log";
 import { Glossary } from "@/components/sheet/glossary";
@@ -973,6 +974,7 @@ export function CharacterSheet() {
 
       {tab === "log" && (
         <div className="grid gap-4 lg:grid-cols-2">
+          <SessionNote />
           <SessionSummary />
           <Glossary />
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
