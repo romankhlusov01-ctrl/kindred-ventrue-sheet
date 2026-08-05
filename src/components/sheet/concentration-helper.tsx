@@ -78,6 +78,20 @@ export function ConcentrationHelper() {
           Сброс
         </Button>
       </div>
+      <div className="mb-2 grid grid-cols-4 gap-1">
+        {[5, 10, 20, 40].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setDmg(n)}
+            className={`h-10 rounded border text-xs font-semibold ${
+              dmg === n ? "border-primary bg-primary/20 text-primary" : "border-border bg-surface-2"
+            }`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
       <div className="mb-2 flex items-end gap-2">
         <label className="text-[10px] text-muted">
           Урон
