@@ -50,6 +50,7 @@ import { ExportMarkdown } from "@/components/sheet/export-markdown";
 import { RecalcHp } from "@/components/sheet/recalc-hp";
 import { StartEncounter } from "@/components/sheet/start-encounter";
 import { TorporPanel } from "@/components/sheet/torpor-panel";
+import { StakeHelper } from "@/components/sheet/stake-helper";
 
 
 
@@ -836,6 +837,7 @@ export function CharacterSheet() {
             <ConcentrationHelper />
             <AcBuilder />
             <TorporPanel />
+            <StakeHelper />
             <CombatCard />
             <ResourcePool
               label="Очки крови"
