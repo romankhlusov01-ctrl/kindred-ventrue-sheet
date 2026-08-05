@@ -20,6 +20,7 @@ export function DamageIntake() {
 
   function apply() {
     let dmg = Math.max(0, amount);
+    if (fireRadiant) dmg = dmg * 2; // Kindred vulnerability
     if (halve) dmg = Math.floor(dmg / 2);
 
     let temp = c.tempHp;

@@ -62,7 +62,7 @@ export function RestWizard() {
         <Button
           type="button"
           size="sm"
-          variant="blood"
+          variant={c.bloodCurrent >= 1 ? "blood" : "outline"}
           onClick={() => {
             const ok = c.bloodCurrent >= 1;
             longRest();
@@ -73,7 +73,7 @@ export function RestWizard() {
             );
           }}
         >
-          <Moon className="size-3.5" /> Долгий
+          <Moon className="size-3.5" /> Долгий{c.bloodCurrent < 1 ? " ⚠" : ""}
         </Button>
       </div>
     </div>
