@@ -273,21 +273,25 @@ export function CharacterSheet() {
               {character.background || "—"} · {originFeat?.name ?? "—"} + {bgFeat?.name ?? "—"}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" size="sm" onClick={() => setLibraryOpen((v) => !v)}>
-              <Users className="size-3.5" /> Персонажи
+          <div className="flex flex-wrap gap-1.5">
+            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={() => setLibraryOpen((v) => !v)}>
+              <Users className="size-3.5" />
+              <span className="hidden sm:inline">Персонажи</span>
             </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={copyShareLink}>
-              <Share2 className="size-3.5" /> Ссылка
+            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={copyShareLink}>
+              <Share2 className="size-3.5" />
+              <span className="hidden sm:inline">Ссылка</span>
             </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={exportJson}>
+            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={exportJson}>
               <Download className="size-3.5" />
             </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={importJson}>
+            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={importJson}>
               <Upload className="size-3.5" />
             </Button>
-            <ExportMarkdown />
-            <ExportLog />
+            <span className="hidden sm:contents">
+              <ExportMarkdown />
+              <ExportLog />
+            </span>
           </div>
         </div>
 
@@ -364,7 +368,8 @@ export function CharacterSheet() {
           </div>
         )}
 
-        <details className="group identity-fields">
+        {tab !== "play" && (
+        <details className="group identity-fields" open>
           <summary className="mb-2 cursor-pointer list-none text-xs text-muted sm:hidden">Имя · клан · уровень ▾</summary>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Имя">
@@ -404,6 +409,7 @@ export function CharacterSheet() {
           </Field>
         </div>
         </details>
+        )}
       </header>
 
       {/* Sticky HUD */}
