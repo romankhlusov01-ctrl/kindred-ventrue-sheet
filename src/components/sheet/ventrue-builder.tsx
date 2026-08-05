@@ -6,12 +6,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  Minus,
+  Plus,
   Sparkles,
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn, formatMod } from "@/lib/utils";
 import {
   ABILITY_LABELS,
@@ -32,8 +33,6 @@ import {
 } from "@/data/builder-ru";
 import {
   BACKGROUNDS_PDF,
-  FEAT_LUCKY,
-  FEAT_PROTECTED,
   HUMAN_SPECIES,
   ORIGIN_FEATS,
   backgroundById,
@@ -52,15 +51,7 @@ import {
   type Abilities,
   type CharacterSheet,
 } from "@/lib/character-store";
-
-const emptyScores = (): Abilities => ({
-  str: 10,
-  dex: 10,
-  con: 10,
-  int: 10,
-  wis: 10,
-  cha: 10,
-});
+import { BUILD_PRESETS, defaultAttacks, type BuildPreset } from "@/data/builder-presets";
 
 export function VentrueBuilder() {
   const character = useCharacterStore((s) => s.character);
@@ -71,7 +62,7 @@ export function VentrueBuilder() {
   const addLog = useCharacterStore((s) => s.addLog);
 
   const [step, setStep] = useState<BuilderStepId>("concept");
-  const [method, setMethod] = useState<"array" | "point" | "manual">("array");
+  const [method, setMethod] = useState<"array" | "point" | "manual" | "roll">("array");
   const [baseScores, setBaseScores] = useState<Abilities>(() => ({
     str: 8,
     dex: 14,
@@ -80,56 +71,160 @@ export function VentrueBuilder() {
     wis: 10,
     cha: 13,
   }));
-  /** Background ASI: +2 and +1 keys from the three allowed */
   const [asiPlus2, setAsiPlus2] = useState<keyof Abilities>("cha");
   const [asiPlus1, setAsiPlus1] = useState<keyof Abilities>("con");
+  /** Extra ASI from levels 4/8/... as freeform +2 total points applied to finals after bg */
+  const [asiExtra, setAsiExtra] = useState<Partial<Record<keyof Abilities, number>>>({});
   const [classSkills, setClassSkills] = useState<SkillId[]>(["intimidation", "insight"]);
-  const [openGuide, setOpenGuide] = useState<string | null>("feed");
+  const [openGuide, setOpenGuide] = useState<string | null>("ventrue");
+  const [arrayPool, setArrayPool] = useState<number[]>([...STANDARD_ARRAY]);
+  const [pickedArray, setPickedArray] = useState<number | null>(null);
+  const [rolledPool, setRolledPool] = useState<number[] | null>(null);
 
   const level = character.level;
   const bg = backgroundById(character.backgroundId) ?? BACKGROUNDS_PDF[0]!;
   const featSlots = kindredFeatSlots(level);
   const pb = getLevelData(level).pb;
-
   const bgAbilityKeys = useMemo(() => parseBgAbilities(bg.abilityScores), [bg]);
 
   const finalScores = useMemo(() => {
     const s = { ...baseScores };
-    // apply +2/+1 if keys distinct and in bg list
     if (asiPlus2 !== asiPlus1) {
       s[asiPlus2] = Math.min(20, s[asiPlus2] + 2);
       s[asiPlus1] = Math.min(20, s[asiPlus1] + 1);
     }
+    for (const k of Object.keys(asiExtra) as (keyof Abilities)[]) {
+      s[k] = Math.min(20, s[k] + (asiExtra[k] ?? 0));
+    }
     return s;
-  }, [baseScores, asiPlus2, asiPlus1]);
+  }, [baseScores, asiPlus2, asiPlus1, asiExtra]);
 
   const spent = pointBuySpent(Object.values(baseScores));
   const hpPreview = calcKindredHp(level, finalScores.con, level >= 6);
   const bpPreview = getLevelData(level).bp;
   const spellDc = 8 + pb + abilityMod(finalScores.cha);
-
   const bgSkillIds = useMemo(() => skillsFromBg(bg.skills), [bg]);
   const humanSkill = (character.humanSkill || "deception") as SkillId;
-
   const stepIndex = BUILDER_STEPS.findIndex((s) => s.id === step);
+  const asiPtsLeft =
+    asiCount(level) * 2 -
+    Object.values(asiExtra).reduce((a, b) => a + (b ?? 0), 0);
+
+  const validation = useMemo(() => {
+    const issues: string[] = [];
+    if (!character.name.trim()) issues.push("Нет имени");
+    if (method === "point" && spent > POINT_BUY_BUDGET)
+      issues.push(`Point buy ${spent}/${POINT_BUY_BUDGET}`);
+    if (classSkills.length !== 2) issues.push("Нужно 2 навыка класса");
+    if (character.selectedFeats.length > featSlots)
+      issues.push(`Черт сородича ${character.selectedFeats.length}/${featSlots}`);
+    if (asiPtsLeft < 0) issues.push("Слишком много ASI");
+    if (!character.preferredBlood.trim()) issues.push("Не выбран Bane (кровь)");
+    if (asiPlus2 === asiPlus1) issues.push("+2 и +1 биографии на одну характеристику");
+    return issues;
+  }, [
+    character.name,
+    character.selectedFeats,
+    character.preferredBlood,
+    method,
+    spent,
+    classSkills,
+    featSlots,
+    asiPtsLeft,
+    asiPlus2,
+    asiPlus1,
+  ]);
 
   function go(delta: number) {
     const next = BUILDER_STEPS[stepIndex + delta];
     if (next) setStep(next.id);
   }
 
-  function applyStandardArray() {
-    // Optimal-ish Ventrue social: CHA>CON>DEX>WIS>INT>STR
-    setBaseScores({
-      str: 8,
-      dex: 14,
-      con: 15,
-      int: 10,
-      wis: 12,
-      cha: 13,
-    });
+  function applyPreset(p: BuildPreset) {
+    setBaseScores({ ...p.baseScores });
+    setAsiPlus2(p.asiPlus2);
+    setAsiPlus1(p.asiPlus1);
+    setClassSkills([...p.classSkills]);
+    setAsiExtra({});
     setMethod("array");
-    toast.message("Стандартный массив 15/14/13/12/10/8 разложен под Вентру");
+    setField("level", p.level);
+    setField("multiclass", p.multiclass);
+    setField("backgroundId", p.backgroundId);
+    setField("background", backgroundById(p.backgroundId)?.name ?? p.backgroundId);
+    setField("originFeatId", p.originFeatId);
+    setField("humanSkill", p.humanSkill);
+    setField("preferredBlood", p.preferredBlood);
+    setField("name", p.nameSuggestion);
+    // feats
+    const current = new Set(character.selectedFeats);
+    // clear then set via patch
+    patch({
+      selectedFeats: [...p.selectedFeats],
+      backgroundFeatId:
+        p.backgroundId === "touchstone"
+          ? "protected"
+          : backgroundById(p.backgroundId)?.featId === "healthy"
+            ? "healthy"
+            : "protected",
+    });
+    toast.success(`Пресет: ${p.name}`);
+  }
+
+  function bumpScore(key: keyof Abilities, delta: number) {
+    setBaseScores((s) => {
+      const next = Math.min(15, Math.max(8, s[key] + delta));
+      if (method === "point") {
+        const trial = { ...s, [key]: next };
+        if (pointBuySpent(Object.values(trial)) > POINT_BUY_BUDGET && delta > 0) {
+          toast.error("Не хватает очков point buy");
+          return s;
+        }
+      }
+      if (method !== "point" && method !== "manual") {
+        // still allow adjust
+      }
+      return { ...s, [key]: method === "manual" ? Math.min(20, Math.max(3, s[key] + delta)) : next };
+    });
+  }
+
+  function assignArrayTo(key: keyof Abilities) {
+    if (pickedArray == null) {
+      toast.message("Сначала выберите число из массива");
+      return;
+    }
+    const prev = baseScores[key];
+    setBaseScores((s) => ({ ...s, [key]: pickedArray }));
+    setArrayPool((pool) => {
+      const without = pool.filter((n, i) => n !== pickedArray || pool.indexOf(pickedArray) !== i);
+      // put old score back if it was from standard
+      if (STANDARD_ARRAY.includes(prev as (typeof STANDARD_ARRAY)[number])) {
+        return [...without, prev].sort((a, b) => b - a);
+      }
+      return without;
+    });
+    // simpler: rebuild pool as unused
+    setPickedArray(null);
+    setMethod("array");
+  }
+
+  function roll4d6() {
+    const scores: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      const dice = [1, 2, 3, 4].map(() => Math.floor(Math.random() * 6) + 1);
+      dice.sort((a, b) => a - b);
+      scores.push(dice[1]! + dice[2]! + dice[3]!);
+    }
+    scores.sort((a, b) => b - a);
+    setRolledPool(scores);
+    setMethod("roll");
+    // auto assign CHA>CON>DEX>WIS>INT>STR
+    const order: (keyof Abilities)[] = ["cha", "con", "dex", "wis", "int", "str"];
+    const next = { ...baseScores };
+    order.forEach((k, i) => {
+      next[k] = scores[i] ?? 10;
+    });
+    setBaseScores(next);
+    toast.message(`4d6: ${scores.join(", ")} (разложено под Вентру)`);
   }
 
   function toggleClassSkill(id: SkillId) {
@@ -144,23 +239,18 @@ export function VentrueBuilder() {
   }
 
   function applyToSheet() {
-    // Skills: class 2 + bg 2 + human 1
+    if (validation.length) {
+      toast.error(validation[0]);
+    }
     const skillProfs: CharacterSheet["skillProfs"] = {};
     for (const id of classSkills) skillProfs[id] = "proficient";
     for (const id of bgSkillIds) skillProfs[id] = "proficient";
     if (humanSkill) skillProfs[humanSkill] = "proficient";
 
     const originFeat = character.originFeatId || "lucky";
-    const bgFeat = character.backgroundFeatId || bg.featId;
-    // remap unknown feats to protected for sheet
-    const bgFeatSafe =
-      originFeatById(bgFeat) || bgFeat === "protected" || bgFeat === "lucky"
-        ? bgFeat === "magic-initiate" || bgFeat === "well-read"
-          ? "protected"
-          : bgFeat
-        : "protected";
+    let bgFeat = character.backgroundFeatId || bg.featId;
+    if (bgFeat === "magic-initiate" || bgFeat === "well-read") bgFeat = "protected";
 
-    const ventrue = level >= 3;
     const resources = [
       {
         id: "cr-voice",
@@ -170,20 +260,20 @@ export function VentrueBuilder() {
         note: "Приказ / Внушение · короткий",
       },
     ];
-    if (character.selectedFeats.includes("forceful") || level >= 2) {
-      // suggest Forceful Presence resource if feat selected
-      if (character.selectedFeats.includes("forceful")) {
-        resources.push({
-          id: "cr-presence",
-          name: "Властное присутствие",
-          current: pb,
-          max: pb,
-          note: "Awe / Daunt · LR",
-        });
-      }
+    if (character.selectedFeats.includes("forceful")) {
+      resources.push({
+        id: "cr-presence",
+        name: "Властное присутствие",
+        current: pb,
+        max: pb,
+        note: "Awe / Daunt · LR",
+      });
     }
 
-    const hp = calcKindredHp(level, finalScores.con, level >= 6 && ventrue);
+    const hp = calcKindredHp(level, finalScores.con, level >= 6);
+    const attacks = defaultAttacks(level, finalScores, character.selectedFeats);
+    const dexMod = abilityMod(finalScores.dex);
+    const ac = 10 + dexMod + (level >= 1 ? 2 : 0); // studded-ish
 
     patch({
       abilities: finalScores,
@@ -194,34 +284,45 @@ export function VentrueBuilder() {
       background: bg.name,
       backgroundId: bg.id,
       originFeatId: originFeat,
-      backgroundFeatId: bgFeatSafe === "magic-initiate" || bgFeatSafe === "well-read" ? "protected" : bgFeatSafe,
+      backgroundFeatId: bgFeat,
       humanSkill,
       hpMax: hp,
       hpCurrent: hp,
       bloodCurrent: bpPreview,
-      ac: 10 + abilityMod(finalScores.dex) + (finalScores.dex >= 14 ? 2 : 1), // rough light armor-ish
+      ac,
       speed: 30,
       inspiration: true,
       luckyUsed: 0,
       protectedUsed: 0,
       customResources: resources,
       preferredBlood: character.preferredBlood || "солдаты / военные",
-      feats: buildFeatNotes(level, character.selectedFeats, originFeat, bgFeatSafe),
-      equipment: character.equipment || bg.equipment,
+      attacks,
+      feats: [
+        `Человек · ${originFeatById(originFeat)?.name ?? originFeat}`,
+        `Био · ${originFeatById(bgFeat)?.name ?? bgFeat}`,
+        ...character.selectedFeats.map(
+          (id) => KINDRED_FEATS.find((f) => f.id === id)?.name ?? id,
+        ),
+        `Ур. ${level}${character.multiclass ? " / " + character.multiclass : ""}`,
+      ].join("\n"),
+      equipment:
+        character.equipment ||
+        `${bg.equipment}\nНагрудник или кожа + плащ\nОружие ближнего боя\nСимвол дома`,
+      notes:
+        character.notes ||
+        `Сл ${spellDc}. Bane: ${character.preferredBlood}. Dual luck: Везучий + Защищённый.`,
     });
 
-    // also write final scores via setAbility for reactivity
     (Object.keys(finalScores) as (keyof Abilities)[]).forEach((k) =>
       setAbility(k, finalScores[k]),
     );
 
-    addLog("Билдер: персонаж применён");
-    toast.success("Билд применён к листу");
+    addLog("Билдер: билд применён");
+    toast.success("Билд на листе · открой «Бой»");
   }
 
   return (
     <div className="space-y-4">
-      {/* Step nav */}
       <div className="flex gap-1 overflow-x-auto scroll-thin pb-1">
         {BUILDER_STEPS.map((s, i) => (
           <button
@@ -237,7 +338,7 @@ export function VentrueBuilder() {
                   : "border-border bg-surface text-muted",
             )}
           >
-            {i < stepIndex ? <Check className="size-3.5" /> : <span className="opacity-60">{i + 1}</span>}
+            {i < stepIndex ? <Check className="size-3.5" /> : i + 1}
             {s.short}
           </button>
         ))}
@@ -248,30 +349,57 @@ export function VentrueBuilder() {
           <div className="flex size-10 items-center justify-center rounded-[var(--radius)] bg-primary/15 text-primary">
             <User className="size-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="font-display text-xl tracking-wide">
               Билдер · {VENTRUE_LORE.name}
             </h2>
             <p className="text-sm text-muted">
-              {VENTRUE_LORE.tagline}. Шаг {stepIndex + 1}/{BUILDER_STEPS.length}:{" "}
-              {BUILDER_STEPS[stepIndex]?.title}
+              {BUILDER_STEPS[stepIndex]?.title} · шаг {stepIndex + 1}/
+              {BUILDER_STEPS.length}
             </p>
           </div>
+        </div>
+
+        {/* Live preview strip */}
+        <div className="mb-4 grid grid-cols-3 gap-2 rounded-[var(--radius)] border border-border bg-surface-2 p-2 text-center text-xs sm:grid-cols-6">
+          {ABILITY_LABELS.map(({ key, short }) => (
+            <div key={key}>
+              <div className="text-faint">{short}</div>
+              <div className="font-display text-lg text-accent">{finalScores[key]}</div>
+              <div className="text-muted">{formatMod(abilityMod(finalScores[key]))}</div>
+            </div>
+          ))}
         </div>
 
         {step === "concept" && (
           <div className="space-y-4">
             <InfoBox>
-              Создаём <strong>Сородича (Kindred)</strong> клана <strong>Вентру</strong>. В Мире
-              Тьмы рекомендуется начинать с 3 уровня (подкласс). Источники: Bound by Blood PDF +
-              dnd.su (PHB 2024: человек, Lucky).
+              Класс <strong>Сородич (Kindred)</strong>, клан <strong>Вентру</strong>. Источники:
+              Bound by Blood + dnd.su (человек, Lucky). Рекомендуется старт с 3 ур.
             </InfoBox>
+
+            <div>
+              <h3 className="mb-2 text-sm font-medium">Быстрые пресеты</h3>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {BUILD_PRESETS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => applyPreset(p)}
+                    className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-left hover:border-primary/50"
+                  >
+                    <div className="font-medium text-fg">{p.name}</div>
+                    <p className="mt-1 text-xs text-muted">{p.blurb}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Имя">
                 <Input
                   value={character.name}
                   onChange={(e) => setField("name", e.target.value)}
-                  placeholder="Имя персонажа"
                 />
               </Field>
               <Field label="Игрок">
@@ -280,42 +408,33 @@ export function VentrueBuilder() {
                   onChange={(e) => setField("player", e.target.value)}
                 />
               </Field>
-              <Field label="Уровень Kindred (1–20)">
+              <Field label="Уровень Kindred">
                 <Input
                   type="number"
                   min={1}
                   max={20}
                   value={level}
                   onChange={(e) =>
-                    setField("level", Math.min(20, Math.max(1, Number(e.target.value) || 1)))
+                    setField(
+                      "level",
+                      Math.min(20, Math.max(1, Number(e.target.value) || 1)),
+                    )
                   }
                 />
               </Field>
-              <Field label="Мультикласс (опционально)">
+              <Field label="Мультикласс">
                 <Input
                   value={character.multiclass}
                   onChange={(e) => setField("multiclass", e.target.value)}
-                  placeholder="напр. Колдун 1"
+                  placeholder="Колдун 1"
                 />
-              </Field>
-              <Field label="Мировоззрение">
-                <Input
-                  value={character.alignment}
-                  onChange={(e) => setField("alignment", e.target.value)}
-                />
-              </Field>
-              <Field label="Клан">
-                <Input value="Вентру" disabled />
               </Field>
             </div>
-            <div className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm">
-              <div className="font-medium text-accent">На уровне {level}</div>
-              <ul className="mt-1 space-y-1 text-muted">
-                <li>БМ {formatMod(pb)} · ОБК {bpPreview} · Питание {getLevelData(level).feed}</li>
-                <li>Черты сородича: {featSlots} слот(ов)</li>
-                <li>ASI: {asiCount(level)} ({ASI_LEVELS.filter((l) => level >= l).join(", ") || "—"})</li>
-                <li>{KINDRED_TABLE[level - 1]?.features}</li>
-              </ul>
+            <div className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm text-muted">
+              <strong className="text-fg">Ур. {level}:</strong> БМ {formatMod(pb)} · ОБК{" "}
+              {bpPreview} · Питание {getLevelData(level).feed} · черты сородича {featSlots} ·
+              ASI×{asiCount(level)}
+              <div className="mt-1 text-xs">{KINDRED_TABLE[level - 1]?.features}</div>
             </div>
           </div>
         )}
@@ -323,23 +442,21 @@ export function VentrueBuilder() {
         {step === "origin" && (
           <div className="space-y-4">
             <section>
-              <h3 className="mb-2 font-display text-base">Вид · Человек</h3>
+              <h3 className="mb-2 font-display text-base">Человек</h3>
               <InfoBox source={HUMAN_SPECIES.source}>
-                Для Вентру-социала человек — лучший старт: вдохновение каждый LR + skill + origin
-                feat (Везучий).
+                Находчивый (вдохновение на LR) · Умелый (1 навык) · Гибкий (origin feat →
+                Везучий).
               </InfoBox>
-              <ul className="mt-2 space-y-2">
-                {HUMAN_SPECIES.traits.map((t) => (
-                  <li
-                    key={t.name}
-                    className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm"
-                  >
-                    <div className="font-medium text-fg">{t.name}</div>
-                    <p className="mt-1 text-muted">{t.body}</p>
-                  </li>
-                ))}
-              </ul>
-              <Field label="Навык от Умелого (Skillful)" className="mt-3">
+              {HUMAN_SPECIES.traits.map((t) => (
+                <div
+                  key={t.name}
+                  className="mt-2 rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm"
+                >
+                  <div className="font-medium">{t.name}</div>
+                  <p className="mt-1 text-muted">{t.body}</p>
+                </div>
+              ))}
+              <Field label="Навык Skillful" className="mt-3">
                 <select
                   className="h-10 w-full rounded-[var(--radius)] border border-border bg-bg px-3"
                   value={humanSkill}
@@ -347,7 +464,7 @@ export function VentrueBuilder() {
                 >
                   {SKILLS.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.nameRu}
+                      {s.nameRu} ({s.ability.toUpperCase()})
                     </option>
                   ))}
                 </select>
@@ -356,55 +473,44 @@ export function VentrueBuilder() {
 
             <section>
               <h3 className="mb-2 font-display text-base">Биография</h3>
-              <div className="grid gap-2">
-                {BACKGROUNDS_PDF.map((b) => {
-                  const active = character.backgroundId === b.id;
-                  return (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => {
-                        setField("backgroundId", b.id);
-                        setField("background", b.name);
-                        const feat =
-                          b.featId === "magic-initiate" || b.featId === "well-read"
-                            ? "protected"
-                            : b.featId;
-                        setField("backgroundFeatId", feat in { lucky: 1, protected: 1, healthy: 1, nocturnal: 1, "thin-blooded": 1 } ? feat : "protected");
-                        // default ASI picks first two from list
-                        const keys = parseBgAbilities(b.abilityScores);
-                        if (keys[0]) setAsiPlus2(keys[0]);
-                        if (keys[1]) setAsiPlus1(keys[1]);
-                      }}
-                      className={cn(
-                        "rounded-[var(--radius)] border p-3 text-left transition-colors",
-                        active
-                          ? "border-primary bg-primary/10"
-                          : "border-border bg-surface-2 hover:border-border-strong",
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{b.name}</span>
-                        {active && <Check className="size-4 text-primary" />}
-                      </div>
-                      <p className="mt-1 text-xs text-muted">{b.description}</p>
-                      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-faint">
-                        <span>Статы: {b.abilityScores}</span>
-                        <span>Навыки: {b.skills}</span>
-                        <span>Черта: {originFeatById(b.featId)?.name ?? b.featId}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              <InfoBox className="mt-3">
-                <strong>Опора</strong> даёт черту <strong>Защищённый</strong> (PDF) — вторая удача
-                рядом с Везучим человека. Для «двух удач» выберите Опору + origin feat Везучий.
-              </InfoBox>
+              {BACKGROUNDS_PDF.map((b) => {
+                const active = character.backgroundId === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => {
+                      setField("backgroundId", b.id);
+                      setField("background", b.name);
+                      const feat =
+                        b.featId === "magic-initiate" || b.featId === "well-read"
+                          ? "protected"
+                          : ORIGIN_FEATS.some((f) => f.id === b.featId)
+                            ? b.featId
+                            : "protected";
+                      setField("backgroundFeatId", feat);
+                      const keys = parseBgAbilities(b.abilityScores);
+                      if (keys[0]) setAsiPlus2(keys[0]);
+                      if (keys[1]) setAsiPlus1(keys[1]);
+                    }}
+                    className={cn(
+                      "mb-2 w-full rounded-[var(--radius)] border p-3 text-left",
+                      active ? "border-primary bg-primary/10" : "border-border bg-surface-2",
+                    )}
+                  >
+                    <div className="font-medium">{b.name}</div>
+                    <p className="mt-1 text-xs text-muted">{b.description}</p>
+                    <div className="mt-2 text-[11px] text-faint">
+                      {b.abilityScores} · {b.skills} ·{" "}
+                      {originFeatById(b.featId)?.name ?? b.featId}
+                    </div>
+                  </button>
+                );
+              })}
             </section>
 
             <section>
-              <h3 className="mb-2 font-display text-base">Черта происхождения (Versatile)</h3>
+              <h3 className="mb-2 font-display text-base">Origin feat (Versatile)</h3>
               <div className="grid gap-2 sm:grid-cols-2">
                 {ORIGIN_FEATS.map((f) => (
                   <button
@@ -420,7 +526,7 @@ export function VentrueBuilder() {
                   >
                     <div className="font-medium">{f.name}</div>
                     <div className="text-[10px] text-faint">{f.source}</div>
-                    <p className="mt-1 line-clamp-3 text-xs text-muted">{f.body}</p>
+                    <p className="mt-1 line-clamp-4 text-xs text-muted">{f.body}</p>
                   </button>
                 ))}
               </div>
@@ -431,18 +537,35 @@ export function VentrueBuilder() {
         {step === "abilities" && (
           <div className="space-y-4">
             <InfoBox>
-              PHB 2024: после выбора массива/покупки биография даёт{" "}
-              <strong>+2 к одной и +1 к другой</strong> из трёх перечисленных (сейчас:{" "}
-              {bg.abilityScores}).
+              Сначала базовые значения, затем биография <strong>+2 / +1</strong> из{" "}
+              {bg.abilityScores}
+              {asiCount(level) > 0 && (
+                <>
+                  , затем ASI уровней ({ASI_LEVELS.filter((l) => level >= l).join(", ")}):{" "}
+                  {asiCount(level) * 2} очков (+1 = 1 очко, макс 20)
+                </>
+              )}
+              .
             </InfoBox>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
                 size="sm"
                 variant={method === "array" ? "blood" : "secondary"}
-                onClick={applyStandardArray}
+                onClick={() => {
+                  setMethod("array");
+                  setBaseScores({
+                    str: 8,
+                    dex: 14,
+                    con: 15,
+                    int: 10,
+                    wis: 12,
+                    cha: 13,
+                  });
+                  setArrayPool([...STANDARD_ARRAY]);
+                }}
               >
-                Стандартный массив
+                Массив 15–8
               </Button>
               <Button
                 type="button"
@@ -453,7 +576,15 @@ export function VentrueBuilder() {
                   setBaseScores({ str: 8, dex: 13, con: 14, int: 8, wis: 10, cha: 15 });
                 }}
               >
-                Point buy (27)
+                Point buy
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={method === "roll" ? "blood" : "secondary"}
+                onClick={roll4d6}
+              >
+                4d6dl
               </Button>
               <Button
                 type="button"
@@ -465,16 +596,15 @@ export function VentrueBuilder() {
               </Button>
             </div>
             {method === "point" && (
-              <p
-                className={cn(
-                  "text-sm",
-                  spent > POINT_BUY_BUDGET ? "text-primary" : "text-success",
-                )}
-              >
-                Потрачено {spent} / {POINT_BUY_BUDGET}
-                {spent > POINT_BUY_BUDGET && " — перебор!"}
+              <p className={cn("text-sm", spent > POINT_BUY_BUDGET ? "text-primary" : "text-success")}>
+                Point buy: {spent}/{POINT_BUY_BUDGET}
+                {spent === 27 && " · как стандартный массив"}
               </p>
             )}
+            {rolledPool && (
+              <p className="text-xs text-muted">Бросок: {rolledPool.join(", ")}</p>
+            )}
+
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {ABILITY_LABELS.map(({ key, ru, short }) => (
                 <div
@@ -482,35 +612,46 @@ export function VentrueBuilder() {
                   className="rounded-[var(--radius)] border border-border bg-surface-2 p-3"
                 >
                   <div className="text-xs font-semibold text-muted">
-                    {ru} ({short})
+                    {ru} · {short}
                   </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={3}
-                      max={20}
-                      className="h-10 w-20 text-center font-display text-lg"
-                      value={baseScores[key]}
-                      onChange={(e) =>
-                        setBaseScores((s) => ({
-                          ...s,
-                          [key]: Math.min(20, Math.max(3, Number(e.target.value) || 8)),
-                        }))
-                      }
-                    />
-                    <span className="font-display text-xl text-faint">→</span>
-                    <div className="text-center">
-                      <div className="font-display text-2xl text-accent">{finalScores[key]}</div>
-                      <div className="text-xs text-muted">
-                        {formatMod(abilityMod(finalScores[key]))}
-                      </div>
-                    </div>
+                  <div className="mt-2 flex items-center justify-center gap-1">
+                    <button
+                      type="button"
+                      className="flex size-9 items-center justify-center rounded border border-border bg-bg"
+                      onClick={() => bumpScore(key, -1)}
+                    >
+                      <Minus className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="min-w-[3rem] font-display text-2xl text-fg"
+                      onClick={() => method === "array" && assignArrayTo(key)}
+                      title="Назначить выбранное из массива"
+                    >
+                      {baseScores[key]}
+                    </button>
+                    <button
+                      type="button"
+                      className="flex size-9 items-center justify-center rounded border border-border bg-bg"
+                      onClick={() => bumpScore(key, 1)}
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </div>
+                  <div className="mt-1 text-center text-xs text-muted">
+                    итог {finalScores[key]} ({formatMod(abilityMod(finalScores[key]))})
+                    {method === "point" && (
+                      <span className="block text-faint">
+                        cost {POINT_BUY_COST[baseScores[key]] ?? "—"}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
+
             <div className="rounded-[var(--radius)] border border-border p-3">
-              <div className="mb-2 text-sm font-medium">Бонусы биографии (+2 / +1)</div>
+              <div className="mb-2 text-sm font-medium">Биография +2 / +1</div>
               <div className="flex flex-wrap gap-3 text-sm">
                 <label className="flex items-center gap-2">
                   +2
@@ -544,10 +685,58 @@ export function VentrueBuilder() {
                 </label>
               </div>
             </div>
+
+            {asiCount(level) > 0 && (
+              <div className="rounded-[var(--radius)] border border-border p-3">
+                <div className="mb-2 text-sm font-medium">
+                  ASI уровней (осталось очков: {asiPtsLeft})
+                </div>
+                <p className="mb-2 text-xs text-muted">
+                  Каждый ASI = 2 очка (+2 к одной или +1 к двум). Не заменяет черту сородича.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ABILITY_LABELS.map(({ key, short }) => (
+                    <div key={key} className="flex items-center gap-1 rounded border border-border px-2 py-1">
+                      <span className="text-xs text-muted">{short}</span>
+                      <button
+                        type="button"
+                        className="size-7 rounded bg-surface-2 text-sm"
+                        onClick={() =>
+                          setAsiExtra((e) => ({
+                            ...e,
+                            [key]: Math.max(0, (e[key] ?? 0) - 1),
+                          }))
+                        }
+                      >
+                        −
+                      </button>
+                      <span className="w-4 text-center text-sm">{asiExtra[key] ?? 0}</span>
+                      <button
+                        type="button"
+                        className="size-7 rounded bg-surface-2 text-sm"
+                        onClick={() => {
+                          if (asiPtsLeft <= 0) {
+                            toast.error("Нет очков ASI");
+                            return;
+                          }
+                          setAsiExtra((e) => ({
+                            ...e,
+                            [key]: (e[key] ?? 0) + 1,
+                          }));
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-2 text-center text-sm">
-              <StatChip label="ХП (прогноз)" value={String(hpPreview)} />
-              <StatChip label="Сл закл." value={String(spellDc)} />
-              <StatChip label="Иниц" value={formatMod(abilityMod(finalScores.dex))} />
+              <StatChip label="ХП" value={String(hpPreview)} />
+              <StatChip label="Сл" value={String(spellDc)} />
+              <StatChip label="ОБК" value={String(bpPreview)} />
             </div>
           </div>
         )}
@@ -555,105 +744,92 @@ export function VentrueBuilder() {
         {step === "skills" && (
           <div className="space-y-4">
             <InfoBox>
-              Выберите <strong>2 навыка класса</strong>. Биография и Skillful добавляются
-              автоматически (нельзя «снять», только сменить Skillful на шаге происхождения).
+              <strong>2 навыка класса</strong>. Биография и Skillful добавляются сами.
             </InfoBox>
-            <div>
-              <h3 className="mb-2 text-sm font-medium">
-                Класс Сородич ({classSkills.length}/2)
-              </h3>
-              <div className="flex flex-wrap gap-1.5">
-                {KINDRED_CLASS_SKILLS.map((id) => {
-                  const sk = SKILLS.find((s) => s.id === id)!;
-                  const on = classSkills.includes(id);
-                  const locked = bgSkillIds.includes(id) || id === humanSkill;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => toggleClassSkill(id)}
-                      className={cn(
-                        "rounded-full border px-3 py-1.5 text-xs font-medium",
-                        on
-                          ? "border-primary bg-primary/20 text-primary"
-                          : "border-border bg-surface-2 text-muted",
-                        locked && "ring-1 ring-accent/40",
+            <div className="flex flex-wrap gap-1.5">
+              {KINDRED_CLASS_SKILLS.map((id) => {
+                const sk = SKILLS.find((s) => s.id === id)!;
+                const on = classSkills.includes(id);
+                const locked = bgSkillIds.includes(id) || id === humanSkill;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => toggleClassSkill(id)}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-xs font-medium",
+                      on
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-border bg-surface-2 text-muted",
+                      locked && "ring-1 ring-accent/50",
+                    )}
+                  >
+                    {sk.nameRu}
+                    <span className="ml-1 text-faint">
+                      {formatMod(
+                        abilityMod(finalScores[sk.ability]) +
+                          (on || locked ? pb : 0),
                       )}
-                    >
-                      {sk.nameRu}
-                      {locked ? " · био/чел" : ""}
-                    </button>
-                  );
-                })}
-              </div>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm">
-              <div className="font-medium">Итого владения</div>
-              <ul className="mt-2 space-y-1 text-muted">
-                {classSkills.map((id) => (
-                  <li key={id}>• {SKILLS.find((s) => s.id === id)?.nameRu} (класс)</li>
-                ))}
-                {bgSkillIds.map((id) => (
-                  <li key={id}>• {SKILLS.find((s) => s.id === id)?.nameRu} (биография)</li>
-                ))}
-                <li>• {SKILLS.find((s) => s.id === humanSkill)?.nameRu} (человек)</li>
-              </ul>
-            </div>
-            <p className="text-xs text-muted">
-              Expertise (×2 БМ) можно выставить позже во вкладке Навыки — RAW Kindred сам по себе
-              expertise не даёт (кроме отдельных черт/фич).
-            </p>
+            <ul className="space-y-1 text-sm text-muted">
+              {classSkills.map((id) => (
+                <li key={id}>• {SKILLS.find((s) => s.id === id)?.nameRu} — класс</li>
+              ))}
+              {bgSkillIds.map((id) => (
+                <li key={`b-${id}`}>• {SKILLS.find((s) => s.id === id)?.nameRu} — био</li>
+              ))}
+              <li>• {SKILLS.find((s) => s.id === humanSkill)?.nameRu} — человек</li>
+            </ul>
           </div>
         )}
 
         {step === "feats" && (
           <div className="space-y-4">
             <InfoBox>
-              Слоты <strong>черт сородича</strong> на ур. 2, 7, 10, 13, 17 — сейчас доступно:{" "}
-              <strong>{featSlots}</strong>. Это не ASI. Выбрано:{" "}
+              Слоты черт сородича (ур. 2/7/10/13/17): <strong>{featSlots}</strong>. Выбрано:{" "}
               {character.selectedFeats.length}.
             </InfoBox>
             <div className="grid gap-2">
               {KINDRED_FEATS.filter((f) => f.levelMin <= level).map((f) => {
                 const on = character.selectedFeats.includes(f.id);
-                const over = !on && character.selectedFeats.length >= featSlots && !f.repeatable;
+                const full =
+                  !on && character.selectedFeats.length >= featSlots && !f.repeatable;
                 return (
                   <button
                     key={f.id}
                     type="button"
-                    disabled={over}
-                    onClick={() => {
-                      if (on) toggleFeat(f.id);
-                      else if (character.selectedFeats.length < featSlots || f.repeatable)
-                        toggleFeat(f.id);
-                      else toast.error(`Макс. ${featSlots} черт сородича`);
-                    }}
+                    disabled={full}
+                    onClick={() => toggleFeat(f.id)}
                     className={cn(
                       "rounded-[var(--radius)] border p-3 text-left text-sm disabled:opacity-40",
                       on ? "border-primary bg-primary/10" : "border-border bg-surface-2",
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex justify-between gap-2">
                       <span className="font-medium">{f.name}</span>
-                      <span className="text-[10px] text-faint">с {f.levelMin} ур.</span>
+                      <span className="text-[10px] text-faint">≥{f.levelMin}</span>
                     </div>
-                    <p className="mt-1 text-xs text-muted">{f.prereq}</p>
-                    <p className="mt-1 text-xs text-fg/80">{f.body}</p>
+                    <p className="mt-1 text-xs text-muted">{f.body}</p>
                   </button>
                 );
               })}
             </div>
-            <div className="rounded-[var(--radius)] border border-border p-3">
+            <div>
               <h3 className="mb-2 font-display text-sm">Bane · предпочтённая кровь</h3>
               <div className="flex flex-wrap gap-1.5">
                 {PREFERRED_BLOOD_PRESETS.map((p) => (
                   <button
                     key={p}
                     type="button"
-                    onClick={() => setField("preferredBlood", p.replace("…", ""))}
+                    onClick={() => setField("preferredBlood", p.replace("…", "").trim())}
                     className={cn(
                       "rounded-full border px-2.5 py-1 text-xs",
-                      character.preferredBlood.includes(p.slice(0, 6))
+                      character.preferredBlood &&
+                        p.startsWith(character.preferredBlood.slice(0, 5))
                         ? "border-primary bg-primary/15 text-primary"
                         : "border-border text-muted",
                     )}
@@ -666,21 +842,13 @@ export function VentrueBuilder() {
                 className="mt-2"
                 value={character.preferredBlood}
                 onChange={(e) => setField("preferredBlood", e.target.value)}
-                placeholder="Свой тип крови…"
               />
-              <p className="mt-2 text-xs text-muted">
-                Не тот тип → half Feed Dice (мин. 1). Выберите тему, которая бьёт по истории
-                персонажа.
-              </p>
             </div>
           </div>
         )}
 
         {step === "mechanics" && (
-          <div className="space-y-3">
-            <InfoBox>
-              Краткие RAW-объяснения для соло и стола. Полные тексты также во вкладке Способности.
-            </InfoBox>
+          <div className="space-y-2">
             {MECHANICS_GUIDE.map((g) => (
               <button
                 key={g.id}
@@ -698,12 +866,12 @@ export function VentrueBuilder() {
               </button>
             ))}
             <div className="rounded-[var(--radius)] border border-primary/30 bg-primary/5 p-3 text-sm">
-              <div className="font-display text-base text-primary">{VENTRUE_LORE.title}</div>
+              <div className="font-display text-primary">{VENTRUE_LORE.title}</div>
               <p className="mt-1 text-muted">{VENTRUE_LORE.description}</p>
               <ul className="mt-2 space-y-1 text-xs text-faint">
                 {VENTRUE_FEATURES.filter((f) => f.level <= level).map((f) => (
                   <li key={f.id}>
-                    ур.{f.level} · {f.name}
+                    ур.{f.level} · {f.name} — {f.summary}
                   </li>
                 ))}
               </ul>
@@ -713,6 +881,21 @@ export function VentrueBuilder() {
 
         {step === "finish" && (
           <div className="space-y-4">
+            {validation.length > 0 && (
+              <div className="rounded-[var(--radius)] border border-primary/40 bg-primary/10 p-3 text-sm text-primary">
+                <div className="font-medium">Проверьте:</div>
+                <ul className="mt-1 list-disc pl-4">
+                  {validation.map((v) => (
+                    <li key={v}>{v}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {validation.length === 0 && (
+              <div className="rounded-[var(--radius)] border border-success/40 bg-success/10 p-3 text-sm text-success">
+                Билд валиден — можно применять.
+              </div>
+            )}
             <div className="rounded-[var(--radius)] border border-accent/40 bg-accent/5 p-4">
               <h3 className="font-display text-lg">{character.name || "Без имени"}</h3>
               <p className="text-sm text-muted">
@@ -732,35 +915,34 @@ export function VentrueBuilder() {
               </div>
               <ul className="mt-3 space-y-1 text-sm text-muted">
                 <li>
-                  ХП ≈ {hpPreview} · ОБК {bpPreview} · Сл {spellDc} · БМ {formatMod(pb)}
+                  ХП {hpPreview} · ОБК {bpPreview} · Сл {spellDc} · БМ {formatMod(pb)}
                 </li>
-                <li>Био: {bg.name} · Origin: {originFeatById(character.originFeatId)?.name}</li>
                 <li>
-                  Черты сородича:{" "}
+                  {bg.name} · {originFeatById(character.originFeatId)?.name} +{" "}
+                  {originFeatById(character.backgroundFeatId)?.name}
+                </li>
+                <li>
+                  Черты:{" "}
                   {character.selectedFeats
                     .map((id) => KINDRED_FEATS.find((f) => f.id === id)?.name ?? id)
                     .join(", ") || "—"}
                 </li>
-                <li>Bane: {character.preferredBlood || "не выбран"}</li>
+                <li>Bane: {character.preferredBlood || "—"}</li>
               </ul>
             </div>
-            <Button type="button" variant="blood" className="h-12 w-full text-base" onClick={applyToSheet}>
-              <Sparkles className="size-4" />
-              Применить билд к листу
+            <Button
+              type="button"
+              variant="blood"
+              className="h-12 w-full text-base"
+              onClick={applyToSheet}
+            >
+              <Sparkles className="size-4" /> Применить билд к листу
             </Button>
-            <p className="text-center text-xs text-muted">
-              После применения играйте во вкладке Бой. Можно вернуться в билдер и пересобрать.
-            </p>
           </div>
         )}
 
         <div className="mt-6 flex justify-between gap-2 border-t border-border pt-4">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={stepIndex === 0}
-            onClick={() => go(-1)}
-          >
+          <Button type="button" variant="secondary" disabled={stepIndex === 0} onClick={() => go(-1)}>
             <ChevronLeft className="size-4" /> Назад
           </Button>
           {step !== "finish" ? (
@@ -802,21 +984,6 @@ function skillsFromBg(skillsRu: string): SkillId[] {
     .map((x) => x.trim())
     .map((ru) => map[ru])
     .filter(Boolean) as SkillId[];
-}
-
-function buildFeatNotes(
-  level: number,
-  feats: string[],
-  origin: string,
-  bgFeat: string,
-) {
-  const lines = [
-    `Человек · origin: ${originFeatById(origin)?.name ?? origin}`,
-    `Био · ${originFeatById(bgFeat)?.name ?? bgFeat}`,
-    ...feats.map((id) => KINDRED_FEATS.find((f) => f.id === id)?.name ?? id),
-    `Уровень ${level}`,
-  ];
-  return lines.join("\n");
 }
 
 function Field({

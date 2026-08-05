@@ -33,6 +33,7 @@ import { PlayDock } from "@/components/sheet/play-dock";
 import { TargetCheck } from "@/components/sheet/target-check";
 import { DamageIntake } from "@/components/sheet/damage-intake";
 import { VentrueBuilder } from "@/components/sheet/ventrue-builder";
+import { LevelUpHelper } from "@/components/sheet/level-up-helper";
 
 
 
@@ -458,6 +459,7 @@ export function CharacterSheet() {
         <div className="grid gap-4 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-8">
             <ScenarioBar />
+            <LevelUpHelper />
 
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {ABILITY_KEYS.map(({ key, short }) => {
@@ -1492,7 +1494,7 @@ export function CharacterSheet() {
         </div>
       )}
 
-      <PlayDock />
+      {(tab === "combat" || tab === "skills") && <PlayDock />}
     </div>
   );
 }
