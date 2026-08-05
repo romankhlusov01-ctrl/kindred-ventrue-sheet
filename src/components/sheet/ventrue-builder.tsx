@@ -320,7 +320,7 @@ export function VentrueBuilder() {
     );
 
     addLog("Билдер: билд применён");
-    toast.success("Билд на листе · открой «Бой»");
+    toast.success("Билд на листе · открой «Игра»");
   }
 
   return (
@@ -968,11 +968,11 @@ export function VentrueBuilder() {
         )}
 
         <div className="mt-6 flex justify-between gap-2 border-t border-border pt-4">
-          <Button type="button" variant="secondary" disabled={stepIndex === 0} onClick={() => go(-1)}>
+          <Button type="button" className="h-12" variant="secondary" disabled={stepIndex === 0} onClick={() => go(-1)}>
             <ChevronLeft className="size-4" /> Назад
           </Button>
           {step !== "finish" ? (
-            <Button type="button" variant="blood" onClick={() => go(1)}>
+            <Button className="h-12" type="button" variant="blood" onClick={() => go(1)}>
               Далее <ChevronRight className="size-4" />
             </Button>
           ) : (
