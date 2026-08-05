@@ -38,6 +38,8 @@ import { PcSaves } from "@/components/sheet/pc-saves";
 import { Passives } from "@/components/sheet/passives";
 import { ClearLog } from "@/components/sheet/clear-log";
 import { EnemyTurn } from "@/components/sheet/enemy-turn";
+import { AutoInit } from "@/components/sheet/auto-init";
+
 
 
 
@@ -884,7 +886,9 @@ export function CharacterSheet() {
             <BloodBond />
             <EncounterPanel />
             <EnemyTurn />
+            <AutoInit />
             <InitOrder />
+
             <RestWizard />
 
             <EnvironmentHazards />

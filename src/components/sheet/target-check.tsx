@@ -37,6 +37,20 @@ export function TargetCheck() {
           <strong className="text-primary">{lastRoll.total}</strong>
         </p>
       )}
+      <div className="mb-2 flex flex-wrap gap-1">
+        {[10, 12, 13, 15, 16, 18].map((n) => (
+          <Button
+            key={n}
+            type="button"
+            size="sm"
+            variant={target === n ? "blood" : "ghost"}
+            className="h-7 px-2 text-xs"
+            onClick={() => setTarget(n)}
+          >
+            {n}
+          </Button>
+        ))}
+      </div>
       <div className="flex flex-wrap items-end gap-2">
         <label className="block">
           <span className="text-[10px] uppercase text-muted">КД или Сл</span>
