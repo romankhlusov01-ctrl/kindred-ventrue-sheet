@@ -1031,7 +1031,7 @@ export function CharacterSheet() {
         </div>
       </nav>
 
-      {(tab === "play" || tab === "skills") && (
+      {tab === "play" && (
         <>
           <PlayDock />
           <Hotkeys />
