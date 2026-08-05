@@ -87,23 +87,29 @@ export function AbilityEditor() {
               max={30}
               onChange={(e) => setAbility(key, Number(e.target.value) || 1)}
             />
-            <button
-              type="button"
-              onClick={() => rollSave(key, short)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                toggleSave(key);
-                toast.message(saveProf ? "Спас снят" : "Спас владение");
-              }}
-              className={cn(
-                "mt-1.5 w-full rounded py-2 text-[10px] font-medium",
-                saveProf ? "bg-primary/10 text-primary" : "text-faint",
-              )}
-            >
-              Спас {formatMod(saveBonus)}
-              {saveProf ? " ●" : ""}
-              {c.clan === "ventrue" && key === "wis" ? " ★" : ""}
-            </button>
+            <div className="mt-1.5 grid grid-cols-2 gap-0.5">
+              <button
+                type="button"
+                onClick={() => rollSave(key, short)}
+                className={cn(
+                  "rounded py-2 text-[10px] font-medium",
+                  saveProf ? "bg-primary/10 text-primary" : "bg-surface-2 text-faint",
+                )}
+              >
+                Спас {formatMod(saveBonus)}
+                {c.clan === "ventrue" && key === "wis" ? "★" : ""}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  toggleSave(key);
+                  toast.message(saveProf ? "Спас снят" : "Владение");
+                }}
+                className="rounded bg-surface-2 py-2 text-[10px] text-muted"
+              >
+                {saveProf ? "В" : "—"}
+              </button>
+            </div>
           </div>
         );
       })}
