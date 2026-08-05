@@ -3,6 +3,7 @@ import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { abilityMod, formatMod } from "@/lib/utils";
 import { getLevelData } from "@/data/kindred-ru";
+import { effectivePb } from "@/lib/level-utils";
 import {
   getBloodMax,
   getLuckMax,
@@ -16,7 +17,7 @@ import { originFeatById } from "@/data/origin-ru";
 export function CombatCard() {
   const c = useCharacterStore((s) => s.character);
   const row = getLevelData(c.level);
-  const pb = row.pb;
+  const pb = effectivePb(c.level, c.multiclass);
   const cha = abilityMod(c.abilities.cha);
   const dc = 8 + pb + cha;
   const bloodMax = getBloodMax(c);

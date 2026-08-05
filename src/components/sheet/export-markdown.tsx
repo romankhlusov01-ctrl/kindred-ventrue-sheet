@@ -40,7 +40,7 @@ export function ExportMarkdown() {
 - **ОБК** ${c.bloodCurrent}/${getBloodMax(c)} · **Питание** ${getLevelData(c.level).feed}
 - **Сл** ${8 + pb + abilityMod(c.abilities.cha)} · **БМ** ${formatMod(pb)}
 - **Bane** ${c.preferredBlood || "—"}
-- **Удача** Везучий ${getLuckMax(c.level) - c.luckyUsed}/${getLuckMax(c.level)} · Защищ. ${getLuckMax(c.level) - c.protectedUsed}/${getLuckMax(c.level)}
+- **Удача** Везучий ${getLuckMax(c.level, c.multiclass) - c.luckyUsed}/${getLuckMax(c.level, c.multiclass)} · Защищ. ${getLuckMax(c.level, c.multiclass) - c.protectedUsed}/${getLuckMax(c.level, c.multiclass)}
 
 ## Навыки
 ${skills.join("\n") || "_нет_"}
