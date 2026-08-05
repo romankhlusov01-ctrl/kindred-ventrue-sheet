@@ -38,6 +38,7 @@ export function PlayDock() {
   const consumeRollMode = useCharacterStore((s) => s.consumeRollMode);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
   const shortRest = useCharacterStore((s) => s.shortRest);
+  const tickEffects = useSessionStore((s) => s.tickEffects);
   const spendLucky = useCharacterStore((s) => s.spendLucky);
   const spendProtected = useCharacterStore((s) => s.spendProtected);
   const [open, setOpen] = useState(true);
@@ -218,7 +219,8 @@ export function PlayDock() {
           label="Ход"
           onClick={() => {
             newTurn();
-            toast.message("Новый ход");
+            tickEffects();
+            toast.message("Новый ход · эффекты −1");
           }}
         />
         <DockBtn
