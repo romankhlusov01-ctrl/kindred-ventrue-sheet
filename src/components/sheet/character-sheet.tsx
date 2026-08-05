@@ -49,6 +49,7 @@ import { AcBuilder } from "@/components/sheet/ac-builder";
 import { ExportMarkdown } from "@/components/sheet/export-markdown";
 import { RecalcHp } from "@/components/sheet/recalc-hp";
 import { StartEncounter } from "@/components/sheet/start-encounter";
+import { TorporPanel } from "@/components/sheet/torpor-panel";
 
 
 
@@ -834,6 +835,7 @@ export function CharacterSheet() {
             <EnvironmentHazards />
             <ConcentrationHelper />
             <AcBuilder />
+            <TorporPanel />
             <CombatCard />
             <ResourcePool
               label="Очки крови"
