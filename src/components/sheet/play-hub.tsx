@@ -373,6 +373,13 @@ export function PlayHub() {
       {/* ── Quick skills ── */}
       <QuickSkills />
 
+      <DominateDc />
+      <FeedWizard />
+      <PcSaves />
+      <MyEffects />
+      <Passives />
+
+      
       {/* ── Attacks ── */}
       <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
         <div className="mb-2 flex items-center justify-between">
@@ -435,7 +442,10 @@ export function PlayHub() {
                 className="h-12 w-full"
                 onClick={() => rollAttack(atk.id)}
               >
-                Атака + урон
+                {atk.name || "Атака"}{" "}
+                <span className="ml-1 tabular-nums opacity-80">
+                  {atk.bonus >= 0 ? `+${atk.bonus}` : atk.bonus} · {atk.damage}
+                </span>
               </Button>
             </div>
           ))}
@@ -443,12 +453,7 @@ export function PlayHub() {
       </section>
 
       {/* ── Feed / Dominate / Saves — primary Kindred ── */}
-      <DominateDc />
-      <FeedWizard />
-      <PcSaves />
-      <MyEffects />
-      <Passives />
-
+      
       {/* ── Powers ── */}
       <Collapsible title="Силы Kindred" icon={<Zap className="size-3.5 text-beast" />}>
         <QuickActions />

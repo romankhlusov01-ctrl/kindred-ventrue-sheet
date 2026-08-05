@@ -29,12 +29,12 @@ export function DominateDc() {
     const total = d + npcMod;
     const ok = total >= dc;
     setLastRoll({
-      label: `NPC спас vs Сл ${dc}`,
+      label: `Спас цели vs Сл ${dc}`,
       total,
       detail: `d20 ${d}${formatMod(npcMod)}`,
       at: Date.now(),
     });
-    addLog(`NPC спас ${total} vs Сл ${dc} → ${ok ? "успех" : "провал"}`);
+    addLog(`Спас цели ${total} vs Сл ${dc} → ${ok ? "успех" : "провал"}`);
     toast.message(ok ? `Спас ${total} ≥ ${dc}` : `Провал ${total} < ${dc}`);
   }
 
@@ -67,7 +67,7 @@ export function DominateDc() {
       </ul>
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-[10px] text-muted">
-          Мод. спас. NPC
+          Мод. спас цели
           <Input
             type="number"
             className="h-8 w-20"
@@ -76,7 +76,7 @@ export function DominateDc() {
           />
         </label>
         <Button type="button" size="sm" variant="blood" onClick={rollNpcSave}>
-          Бросок спас. NPC
+          Спас цели vs Сл
         </Button>
         <Button
           type="button"
