@@ -42,6 +42,7 @@ import { CombatCard } from "@/components/sheet/combat-card";
 import { InspirationToggle } from "@/components/sheet/inspiration-toggle";
 import { AbilityEditor } from "@/components/sheet/ability-editor";
 import { EnvironmentHazards } from "@/components/sheet/environment-hazards";
+import { OnboardingBanner } from "@/components/sheet/onboarding";
 
 
 
@@ -258,6 +259,7 @@ export function CharacterSheet() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-3 pb-36 pt-3 sm:px-5 sm:pb-28 sm:pt-5">
+      <OnboardingBanner />
       <header className="mb-4 space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
