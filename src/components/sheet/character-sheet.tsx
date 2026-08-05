@@ -883,12 +883,10 @@ export function CharacterSheet() {
             <FeedWizard />
             <BloodBond />
             <EncounterPanel />
-
-
-
-
+            <EnemyTurn />
             <InitOrder />
             <RestWizard />
+
             <EnvironmentHazards />
             <ConcentrationHelper />
             <AcBuilder />
