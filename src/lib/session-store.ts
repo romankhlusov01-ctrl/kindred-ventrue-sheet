@@ -114,7 +114,26 @@ export const ENEMY_TEMPLATES: EnemyTemplate[] = [
     atkBonus: 6,
     damage: "1d8+3",
   },
+  {
+    name: "Жрец",
+    hp: 27,
+    ac: 13,
+    notes: "cleric · radiant · turn undead",
+    init: 10,
+    atkBonus: 5,
+    damage: "1d8+2",
+  },
+  {
+    name: "Маг",
+    hp: 22,
+    ac: 12,
+    notes: "mage · fire bolt · shield",
+    init: 12,
+    atkBonus: 5,
+    damage: "1d10",
+  },
 ];
+
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   lastRoll: null,

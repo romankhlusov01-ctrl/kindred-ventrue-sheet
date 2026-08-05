@@ -15,7 +15,11 @@ export function StartEncounter() {
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
   const clearEncounter = useSessionStore((s) => s.clearEncounter);
 
-  function start(kind: "patrol" | "hunt" | "kindred") {
+  function tpl(name: string) {
+    return ENEMY_TEMPLATES.find((t) => t.name === name)!;
+  }
+
+  function start(kind: "patrol" | "hunt" | "kindred" | "chapel") {
     clearEncounter();
     const mode = hasAlacrity(c.selectedFeats) ? "adv" : "norm";
     const r = rollD20("Инициатива", abilityMod(c.abilities.dex), mode);
@@ -32,24 +36,23 @@ export function StartEncounter() {
     setLastRoll({ label: r.label, total: r.total, detail: r.detail, at: Date.now() });
 
     if (kind === "patrol") {
-      const guard = ENEMY_TEMPLATES.find((t) => t.name === "Страж")!;
-      const civ = ENEMY_TEMPLATES.find((t) => t.name === "Горожанин")!;
-      addEnemyFromTemplate(guard);
-      addEnemyFromTemplate(civ);
+      addEnemyFromTemplate(tpl("Страж"));
+      addEnemyFromTemplate(tpl("Горожанин"));
       addLog(`Старт: патруль · иниц ${r.total}`);
       toast.success(`Патруль! Иниц ${r.total}`);
     } else if (kind === "hunt") {
-      const hunter = ENEMY_TEMPLATES.find((t) => t.name === "Охотник")!;
-      const wolf = ENEMY_TEMPLATES.find((t) => t.name === "Волк")!;
-      addEnemyFromTemplate(hunter);
-      addEnemyFromTemplate(wolf);
+      addEnemyFromTemplate(tpl("Охотник"));
+      addEnemyFromTemplate(tpl("Волк"));
       addLog(`Старт: охота · иниц ${r.total}`);
       toast.success(`Охота! Иниц ${r.total}`);
+    } else if (kind === "chapel") {
+      addEnemyFromTemplate(tpl("Жрец"));
+      addEnemyFromTemplate(tpl("Маг"));
+      addLog(`Старт: часовня · иниц ${r.total}`);
+      toast.success(`Часовня! Иниц ${r.total}`);
     } else {
-      const k = ENEMY_TEMPLATES.find((t) => t.name === "Сородич-враг")!;
-      const knight = ENEMY_TEMPLATES.find((t) => t.name === "Рыцарь")!;
-      addEnemyFromTemplate(k);
-      addEnemyFromTemplate(knight);
+      addEnemyFromTemplate(tpl("Сородич-враг"));
+      addEnemyFromTemplate(tpl("Рыцарь"));
       addLog(`Старт: сородич · иниц ${r.total}`);
       toast.success(`Сородич-враг! Иниц ${r.total}`);
     }
@@ -66,12 +69,15 @@ export function StartEncounter() {
       >
         <Play className="size-3.5" /> Патруль (Страж + горожанин)
       </Button>
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5">
         <Button type="button" size="sm" variant="secondary" onClick={() => start("hunt")}>
           Охота
         </Button>
         <Button type="button" size="sm" variant="secondary" onClick={() => start("kindred")}>
           Сородич
+        </Button>
+        <Button type="button" size="sm" variant="secondary" onClick={() => start("chapel")}>
+          Часовня
         </Button>
       </div>
     </div>
