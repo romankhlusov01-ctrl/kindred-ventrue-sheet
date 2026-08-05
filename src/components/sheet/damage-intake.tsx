@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCharacterStore } from "@/lib/character-store";
 import { useSessionStore } from "@/lib/session-store";
+import { cn } from "@/lib/utils";
 
 /**
- * Solo: apply incoming damage with temp HP, Kindred notes, Protected.
+ * Apply incoming damage to yourself — temp HP, fire vuln, Protected.
  */
 export function DamageIntake() {
   const c = useCharacterStore((s) => s.character);
@@ -18,12 +19,12 @@ export function DamageIntake() {
   const pushUndo = useSessionStore((s) => s.pushUndo);
   const [amount, setAmount] = useState(10);
   const [fireRadiant, setFireRadiant] = useState(false);
-  const [halve, setHalve] = useState(false); // Flesh of Marble half
+  const [halve, setHalve] = useState(false);
 
-  function apply() {
-    pushUndo(`Урон ${amount}`);
-    let dmg = Math.max(0, amount);
-    if (fireRadiant) dmg = dmg * 2; // Kindred vulnerability
+  function apply(n = amount) {
+    pushUndo(`Урон ${n}`);
+    let dmg = Math.max(0, n);
+    if (fireRadiant) dmg = dmg * 2;
     if (halve) dmg = Math.floor(dmg / 2);
 
     const raw = dmg;
@@ -41,7 +42,7 @@ export function DamageIntake() {
     setField("tempHp", temp);
     setField("hpCurrent", hp);
     const parts = [
-      `Урон ${amount}`,
+      `Урон ${n}`,
       fireRadiant ? "огонь/луч ×2" : null,
       halve ? "½ мрамор" : null,
       `= ${raw}`,
@@ -64,65 +65,95 @@ export function DamageIntake() {
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
       <h3 className="mb-2 flex items-center gap-2 font-display text-sm">
-        <Flame className="size-4 text-primary" /> Получить урон
+        <Flame className="size-3.5 text-primary" /> Получить урон
       </h3>
-      <div className="flex flex-wrap items-end gap-2">
-        <label>
-          <span className="text-[10px] uppercase text-muted">Урон</span>
+
+      <div className="mb-2 grid grid-cols-4 gap-1.5">
+        {[4, 6, 8, 10, 12, 14, 16, 20].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setAmount(n)}
+            className={cn(
+              "flex h-11 items-center justify-center rounded-[var(--radius)] border text-sm font-semibold tabular-nums active:scale-[0.97]",
+              amount === n
+                ? "border-primary bg-primary/20 text-primary"
+                : "border-border bg-surface-2 text-fg",
+            )}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-2 flex flex-wrap items-end gap-2">
+        <label className="flex-1">
+          <span className="text-[10px] uppercase text-muted">Свой</span>
           <Input
             type="number"
-            className="h-12 w-24"
+            className="h-12"
             value={amount}
             min={0}
             onChange={(e) => setAmount(Number(e.target.value) || 0)}
           />
         </label>
         {c.tempHp > 0 && (
-          <span className="mb-1 text-xs text-accent">врем. {c.tempHp}</span>
+          <span className="mb-2 text-xs text-accent">врем. {c.tempHp}</span>
         )}
-        <Button type="button" className="h-12" variant="blood" onClick={apply}>
-          Применить
+        <Button type="button" className="h-12 min-w-[7rem]" variant="blood" onClick={() => apply()}>
+          −{amount} ХП
         </Button>
-        <Button
+      </div>
+
+      <div className="mb-2 grid grid-cols-2 gap-1.5">
+        <button
           type="button"
-          className="h-12"
-          variant="secondary"
-          onClick={() => {
-            if (!spendProtected()) {
-              toast.error("Нет Защищённого");
-              return;
-            }
-            setField("hpCurrent", 1);
-            patch({ deathSuccess: 0, deathFail: 0 });
-            addLog("Protected: 0→1");
-            toast.success("1 хит");
-          }}
+          onClick={() => setHalve((v) => !v)}
+          className={cn(
+            "flex h-11 items-center justify-center rounded-[var(--radius)] border text-xs font-medium",
+            halve
+              ? "border-accent bg-accent/15 text-accent"
+              : "border-border bg-surface-2 text-muted",
+          )}
         >
-          <Shield className="size-3.5" /> 0→1
-        </Button>
+          ½ Плоть мрамора
+        </button>
+        <button
+          type="button"
+          onClick={() => setFireRadiant((v) => !v)}
+          className={cn(
+            "flex h-11 items-center justify-center rounded-[var(--radius)] border text-xs font-medium",
+            fireRadiant
+              ? "border-primary bg-primary/20 text-primary"
+              : "border-border bg-surface-2 text-muted",
+          )}
+        >
+          Огонь / Луч ×2
+        </button>
       </div>
-      <div className="mt-2 flex flex-wrap gap-3 text-xs">
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={halve}
-            onChange={(e) => setHalve(e.target.checked)}
-          />
-          ½ (Плоть мрамора)
-        </label>
-        <label className="flex items-center gap-1.5">
-          <input
-            type="checkbox"
-            checked={fireRadiant}
-            onChange={(e) => setFireRadiant(e.target.checked)}
-          />
-          Огонь / Луч
-        </label>
-      </div>
+
+      <Button
+        type="button"
+        className="h-11 w-full"
+        variant="secondary"
+        onClick={() => {
+          pushUndo("Protected 0→1");
+          if (!spendProtected()) {
+            toast.error("Нет Защищённого");
+            return;
+          }
+          setField("hpCurrent", 1);
+          patch({ deathSuccess: 0, deathFail: 0 });
+          addLog("Protected: 0→1");
+          toast.success("1 хит");
+        }}
+      >
+        <Shield className="size-3.5" /> Protected 0→1
+      </Button>
       <p className="mt-2 text-[10px] text-muted">
-        Сначала снимает временные хиты. Сородич: 0 хитов ≠ смерть (кроме огня/луча/обезглавливания).
+        Сначала временные хиты. 0 хитов ≠ смерть (кроме огня/луча/обезглавливания).
       </p>
     </div>
   );
