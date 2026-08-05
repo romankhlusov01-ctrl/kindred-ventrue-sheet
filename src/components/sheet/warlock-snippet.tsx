@@ -38,18 +38,18 @@ export function WarlockSnippet() {
               c.beastActive ? "adv" : c.rollMode ?? "norm",
             );
             const r = rollD20("Мистический заряд", atk, mode);
-            const dmg = rollDie(10) + (c.level >= 5 ? rollDie(10) : 0);
-            // simple: 1 beam at low level
-            const beams = Math.max(1, Math.ceil((c.level + 1) / 6));
-            let total = 0;
+            const wl = (c.multiclass.match(/(\d+)/) || [])[1];
+            const charLevel = c.level + (wl ? Number(wl) : 0);
+            const beams = charLevel >= 17 ? 4 : charLevel >= 11 ? 3 : charLevel >= 5 ? 2 : 1;
+            let dmgTotal = 0;
             const parts: number[] = [];
             for (let i = 0; i < beams; i++) {
               const d = rollDie(10);
               parts.push(d);
-              total += d;
+              dmgTotal += d;
             }
-            addLog(`EB: hit ${r.total}, урон ${parts.join("+")}=${total}`);
-            toast.success(`EB ${r.total} → ${total} силовой (${beams} луч.)`);
+            addLog(`EB: hit ${r.total}, урон ${parts.join("+")}=${dmgTotal}`);
+            toast.success(`EB ${r.total} → ${dmgTotal} силовой (${beams} луч.)`);
           }}
         >
           Мист. заряд

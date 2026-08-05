@@ -47,6 +47,7 @@ import { SessionSummary } from "@/components/sheet/session-summary";
 import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
 import { AcBuilder } from "@/components/sheet/ac-builder";
 import { ExportMarkdown } from "@/components/sheet/export-markdown";
+import { RecalcHp } from "@/components/sheet/recalc-hp";
 
 
 
@@ -476,6 +477,7 @@ export function CharacterSheet() {
           <div className="space-y-4 lg:col-span-8">
             <ScenarioBar />
             <LevelUpHelper />
+            <div className="flex flex-wrap gap-2"><RecalcHp /></div>
             <WarlockSnippet />
             <InspirationToggle />
 
