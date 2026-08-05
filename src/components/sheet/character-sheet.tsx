@@ -67,6 +67,7 @@ import {
   type FeatureBlock,
 } from "@/data/kindred-ru";
 import { CLANS, type ClanId } from "@/data/kindred";
+import { FEAT_RECS } from "@/data/feat-recommendations";
 import {
   BACKGROUNDS_PDF,
   FEAT_LUCKY,
@@ -1409,6 +1410,9 @@ export function CharacterSheet() {
                     <span className="text-[10px] text-faint">{f.prereq}</span>
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{f.body}</p>
+                  {FEAT_RECS[f.id] && (
+                    <p className="mt-1 text-[11px] text-accent">★ {FEAT_RECS[f.id]!.note}</p>
+                  )}
                   <div className="mt-2 text-xs font-medium text-primary">
                     {on ? "✓ Взято — нажми, чтобы снять" : "Нажми, чтобы отметить"}
                   </div>
