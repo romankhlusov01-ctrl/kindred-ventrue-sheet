@@ -4,6 +4,7 @@ import { Flame, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCharacterStore } from "@/lib/character-store";
+import { useSessionStore } from "@/lib/session-store";
 
 /**
  * Solo: apply incoming damage with temp HP, Kindred notes, Protected.
@@ -14,11 +15,13 @@ export function DamageIntake() {
   const addLog = useCharacterStore((s) => s.addLog);
   const spendProtected = useCharacterStore((s) => s.spendProtected);
   const patch = useCharacterStore((s) => s.patch);
+  const pushUndo = useSessionStore((s) => s.pushUndo);
   const [amount, setAmount] = useState(10);
   const [fireRadiant, setFireRadiant] = useState(false);
   const [halve, setHalve] = useState(false); // Flesh of Marble half
 
   function apply() {
+    pushUndo(`Урон ${amount}`);
     let dmg = Math.max(0, amount);
     if (fireRadiant) dmg = dmg * 2; // Kindred vulnerability
     if (halve) dmg = Math.floor(dmg / 2);

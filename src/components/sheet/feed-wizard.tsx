@@ -6,6 +6,7 @@ import { getLevelData } from "@/data/kindred-ru";
 import { useCharacterStore } from "@/lib/character-store";
 import { abilityMod, rollDie } from "@/lib/utils";
 import { useSessionStore } from "@/lib/session-store";
+// undo via session
 
 /** Feed yourself — Bane half dice when not preferred blood */
 export function FeedWizard() {
@@ -14,6 +15,7 @@ export function FeedWizard() {
   const setField = useCharacterStore((s) => s.setField);
   const addLog = useCharacterStore((s) => s.addLog);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
+  const pushUndo = useSessionStore((s) => s.pushUndo);
   const row = getLevelData(c.level);
   const preferred = (c.preferredBlood || "").trim();
 
@@ -24,7 +26,10 @@ export function FeedWizard() {
     const sixes = rolls.filter((x) => x === 6).length;
     const con = Math.max(1, abilityMod(c.abilities.con));
     const sum = rolls.reduce((a, b) => a + b, 0) + con;
-    if (sixes) gainBlood(sixes);
+    if (sixes) {
+      pushUndo("Питание ОБК");
+      gainBlood(sixes);
+    }
     const label = half ? "Питание (½ Bane)" : "Питание";
     setLastRoll({ label, total: sum, detail: `${rolls.join("+")}+Тел`, at: Date.now() });
     addLog(`${label}: ${sum} [${rolls.join("+")}] · +${sixes} ОБК`);

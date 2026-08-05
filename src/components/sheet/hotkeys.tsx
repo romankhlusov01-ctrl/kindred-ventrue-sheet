@@ -8,8 +8,9 @@ import { conditionMode } from "@/lib/play-helpers";
 import { useSessionStore } from "@/lib/session-store";
 
 /**
- * Desktop solo hotkeys (ignored when typing in inputs).
- * Space — new turn · A — primary attack · F — feed · B — beast · I — init
+ * Desktop self hotkeys (ignored when typing).
+ * Space/N — turn · A — attack · F — feed · B — beast · I — init · Z — undo · H/J — HP
+ * 1–4 — scenario combat/social/feed/rest
  */
 export function Hotkeys() {
   useEffect(() => {
@@ -28,21 +29,50 @@ export function Hotkeys() {
 
       const store = useCharacterStore.getState();
       const c = store.character;
-      const setLast = useSessionStore.getState().setLastRoll;
-      const pb = getLevelData(c.level).pb;
+      const session = useSessionStore.getState();
+      const setLast = session.setLastRoll;
 
       const key = e.key.toLowerCase();
+
+      if (key === "1") {
+        store.setField("scenario", "combat");
+        toast.message("Бой");
+        return;
+      }
+      if (key === "2") {
+        store.setField("scenario", "social");
+        toast.message("Социал");
+        return;
+      }
+      if (key === "3") {
+        store.setField("scenario", "feed");
+        toast.message("Питание");
+        return;
+      }
+      if (key === "4") {
+        store.setField("scenario", "rest");
+        toast.message("Отдых");
+        return;
+      }
+
+      if (key === "z") {
+        e.preventDefault();
+        if (session.undo()) toast.message("Отменено");
+        else toast.error("Нечего отменять");
+        return;
+      }
 
       if (key === " " || key === "n") {
         e.preventDefault();
         store.newTurn();
-        useSessionStore.getState().tickEffects();
+        session.tickEffects();
         toast.message("Новый ход");
         return;
       }
 
       if (key === "b") {
         e.preventDefault();
+        session.pushUndo("Зверь");
         if (!store.activateBeast()) toast.error("Зверь исчерпан");
         else toast.success("Зверь");
         return;
@@ -50,7 +80,7 @@ export function Hotkeys() {
       if (key === "i") {
         e.preventDefault();
         const mode = conditionMode(c, "init", c.rollMode ?? "norm");
-        const force = c.selectedFeats.includes("alacrity") ? "adv" as const : mode;
+        const force = c.selectedFeats.includes("alacrity") ? ("adv" as const) : mode;
         const r = rollD20("Инициатива", abilityMod(c.abilities.dex), force);
         store.consumeRollMode();
         store.setField("initiative", r.total);
@@ -69,7 +99,7 @@ export function Hotkeys() {
         const mode = conditionMode(
           c,
           "attack",
-          c.beastActive || c.pendingAdv ? "adv" : c.rollMode ?? "norm",
+          c.beastActive || c.pendingAdv ? "adv" : (c.rollMode ?? "norm"),
         );
         const r = rollD20(primary.name, primary.bonus, mode);
         store.consumeRollMode();
@@ -77,6 +107,12 @@ export function Hotkeys() {
         let total = dmg.total;
         if (r.crit) total += rollDamage(primary.damage).total;
         setLast({ label: r.label, total: r.total, detail: r.detail, at: Date.now() });
+        setLast({
+          label: `Урон · ${primary.name}`,
+          total,
+          detail: dmg.detail + (r.crit ? " · крит" : ""),
+          at: Date.now(),
+        });
         store.addLog(`${primary.name}: ${r.total} → ${total}`);
         toast.success(`${primary.name}: ${r.total} → ${total}`);
         return;
@@ -88,7 +124,10 @@ export function Hotkeys() {
         const sixes = rolls.filter((x) => x === 6).length;
         const con = Math.max(1, abilityMod(c.abilities.con));
         const sum = rolls.reduce((a, b) => a + b, 0) + con;
-        if (sixes) store.gainBlood(sixes);
+        if (sixes) {
+          session.pushUndo("Питание ОБК");
+          store.gainBlood(sixes);
+        }
         setLast({
           label: "Питание",
           total: sum,
@@ -101,17 +140,17 @@ export function Hotkeys() {
       }
       if (key === "h") {
         e.preventDefault();
+        session.pushUndo("−1 ХП");
         store.adjustHp(-1);
-        toast.message(`ХП ${c.hpCurrent - 1}`);
+        toast.message("−1 ХП");
         return;
       }
       if (key === "j") {
         e.preventDefault();
+        session.pushUndo("+1 ХП");
         store.adjustHp(1);
         return;
       }
-      // silence unused pb
-      void pb;
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -119,12 +158,15 @@ export function Hotkeys() {
 
   return (
     <p className="hidden text-[10px] text-faint sm:block">
-      Клавиши: <kbd className="rounded border border-border px-1">N</kbd> ход ·{" "}
+      Клавиши:{" "}
+      <kbd className="rounded border border-border px-1">1–4</kbd> сценарий ·{" "}
+      <kbd className="rounded border border-border px-1">N</kbd> ход ·{" "}
       <kbd className="rounded border border-border px-1">A</kbd> атака ·{" "}
       <kbd className="rounded border border-border px-1">F</kbd> питание ·{" "}
       <kbd className="rounded border border-border px-1">B</kbd> зверь ·{" "}
-      <kbd className="rounded border border-border px-1">I</kbd> иниц ·{" "}
-      <kbd className="rounded border border-border px-1">H</kbd>/<kbd className="rounded border border-border px-1">J</kbd> −/+ХП
+      <kbd className="rounded border border-border px-1">Z</kbd> отмена ·{" "}
+      <kbd className="rounded border border-border px-1">H</kbd>/
+      <kbd className="rounded border border-border px-1">J</kbd> −/+ХП
     </p>
   );
 }

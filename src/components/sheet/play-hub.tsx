@@ -3,12 +3,12 @@ import {
   ChevronDown,
   ChevronUp,
   Clover,
-  Droplets,
   Heart,
-  Shield,
+  Pencil,
   ShieldCheck,
   Sparkles,
   Swords,
+  Undo2,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -36,9 +36,12 @@ import { QuickSkills } from "@/components/sheet/quick-skills";
 import { PrimaryPowers } from "@/components/sheet/primary-powers";
 import { RollHistory } from "@/components/sheet/roll-history";
 import { CombatCard } from "@/components/sheet/combat-card";
-import { ResourcePool } from "@/components/sheet/resource-pool";
 import { FullHealButton } from "@/components/sheet/full-heal";
 import { RecalcHp } from "@/components/sheet/recalc-hp";
+import { RollModeBar } from "@/components/sheet/roll-mode-bar";
+import { BloodPips } from "@/components/sheet/blood-pips";
+import { DeathPanel } from "@/components/sheet/death-panel";
+import { AbilityStrip } from "@/components/sheet/ability-strip";
 import {
   getBloodMax,
   getLuckMax,
@@ -50,11 +53,19 @@ import { rollD20, rollDamage } from "@/lib/roll-engine";
 import { conditionMode } from "@/lib/play-helpers";
 import { useSessionStore } from "@/lib/session-store";
 import { getLevelData } from "@/data/kindred-ru";
-import { rollDie } from "@/lib/utils";
+
+type Scenario = "combat" | "social" | "feed" | "rest";
+
+const SCENARIOS: { id: Scenario; label: string }[] = [
+  { id: "combat", label: "Бой" },
+  { id: "social", label: "Социал" },
+  { id: "feed", label: "Питание" },
+  { id: "rest", label: "Отдых" },
+];
 
 /**
- * Mobile-first play surface — only YOU (no enemies / encounter tools).
- * Progressive disclosure: status → turn → attacks → powers → advanced.
+ * Mobile-first play surface — only YOU.
+ * Scenario chips filter tools so the phone never shows everything at once.
  */
 export function PlayHub() {
   const c = useCharacterStore((s) => s.character);
@@ -76,7 +87,13 @@ export function PlayHub() {
   const removeResource = useCharacterStore((s) => s.removeResource);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
   const tickEffects = useSessionStore((s) => s.tickEffects);
+  const pushUndo = useSessionStore((s) => s.pushUndo);
+  const undo = useSessionStore((s) => s.undo);
+  const undoStack = useSessionStore((s) => s.undoStack);
 
+  const [editAtk, setEditAtk] = useState(false);
+
+  const scenario = (c.scenario ?? "combat") as Scenario;
   const pb = effectivePb(c.level, c.multiclass);
   const bloodMax = getBloodMax(c);
   const luckMax = getLuckMax(c.level, c.multiclass);
@@ -87,12 +104,6 @@ export function PlayHub() {
   const spellDc = 8 + pb + cha;
   const hpPct = c.hpMax ? Math.min(100, (c.hpCurrent / c.hpMax) * 100) : 0;
   const atZero = c.hpCurrent <= 0;
-
-  function setBloodTo(index: number) {
-    const next = index + 1;
-    if (c.bloodCurrent === next) setField("bloodCurrent", Math.max(0, next - 1));
-    else setField("bloodCurrent", Math.min(bloodMax, next));
-  }
 
   function modeFor(kind: "check" | "attack" | "save" | "init") {
     const sticky = c.rollMode ?? "norm";
@@ -129,41 +140,82 @@ export function PlayHub() {
     toast.success(`${atk.name}: ${r.total} → ${total} ${atk.type}`);
   }
 
+  const showCombat = scenario === "combat";
+  const showSocial = scenario === "social";
+  const showFeed = scenario === "feed";
+  const showRest = scenario === "rest";
+
   return (
-    <div className="mx-auto max-w-lg space-y-3 sm:max-w-none sm:space-y-4">
-      {/* ── Status hero ── */}
+    <div className="mx-auto max-w-lg space-y-2.5 sm:max-w-none sm:space-y-3">
+      {/* Scenario chips — primary phone filter */}
+      <div className="grid grid-cols-4 gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-1">
+        {SCENARIOS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setField("scenario", s.id)}
+            className={cn(
+              "flex h-11 items-center justify-center rounded-[var(--radius)] text-xs font-semibold active:scale-[0.97]",
+              scenario === s.id
+                ? "bg-primary text-primary-fg"
+                : "text-muted hover:bg-surface-2",
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Status hero — compact */}
       <section
         className={cn(
           "rounded-[var(--radius-lg)] border p-3",
           atZero ? "border-primary bg-primary/10" : "border-border bg-surface",
         )}
       >
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <div className="min-w-0 text-xs text-muted">
-            <span className="font-display text-base text-fg">{c.name || "Сородич"}</span>
-            <span className="ml-2">
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="font-display text-base leading-tight text-fg">
+              {c.name || "Сородич"}
+            </div>
+            <div className="text-[11px] text-muted">
               ур.{c.level}
-              {c.multiclass ? ` / ${c.multiclass}` : ""}
-            </span>
+              {c.multiclass ? ` / ${c.multiclass}` : ""} · Сл{" "}
+              <span className="font-display text-sm text-primary">{spellDc}</span>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="text-[10px] text-muted">Сл </span>
-            <span className="font-display text-2xl tabular-nums text-primary">{spellDc}</span>
-          </div>
+          <button
+            type="button"
+            disabled={!undoStack.length}
+            onClick={() => {
+              const ok = undo();
+              if (ok) toast.message("Отменено");
+              else toast.error("Нечего отменять");
+            }}
+            className={cn(
+              "flex h-10 items-center gap-1 rounded-[var(--radius)] border px-2.5 text-xs",
+              undoStack.length
+                ? "border-border bg-surface-2 text-fg"
+                : "border-border/50 text-faint opacity-50",
+            )}
+          >
+            <Undo2 className="size-3.5" />
+            Отмена
+          </button>
         </div>
 
         {/* HP */}
-        <div className="mb-3">
+        <div className="mb-2">
           <div className="mb-1 flex items-center justify-between text-sm">
             <span className="flex items-center gap-1.5 font-medium">
               <Heart className="size-3.5 text-primary" />
               ХП
             </span>
-            <span className="font-display tabular-nums">
+            <span className="font-display text-lg tabular-nums">
               {c.hpCurrent}
-              <span className="text-muted">/{c.hpMax}</span>
+              <span className="text-sm text-muted">/{c.hpMax}</span>
               {c.tempHp > 0 && (
-                <span className="ml-1 text-accent">+{c.tempHp}</span>
+                <span className="ml-1 text-sm text-accent">+{c.tempHp}</span>
               )}
             </span>
           </div>
@@ -178,8 +230,11 @@ export function PlayHub() {
               <button
                 key={n}
                 type="button"
-                onClick={() => adjustHp(n)}
-                className="flex h-11 items-center justify-center rounded-[var(--radius)] border border-border bg-surface-2 text-sm font-semibold active:scale-[0.97]"
+                onClick={() => {
+                  pushUndo(`ХП ${n > 0 ? "+" : ""}${n}`);
+                  adjustHp(n);
+                }}
+                className="flex h-12 items-center justify-center rounded-[var(--radius)] border border-border bg-surface-2 text-sm font-semibold active:scale-[0.97]"
               >
                 {n > 0 ? `+${n}` : n}
               </button>
@@ -187,31 +242,39 @@ export function PlayHub() {
           </div>
         </div>
 
-        {/* Resources strip */}
+        {/* Resources row */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <ResChip
-            icon={<Droplets className="size-3.5 text-primary" />}
             label="ОБК"
             value={`${c.bloodCurrent}/${bloodMax}`}
+            danger
             onMinus={() => {
               if (c.bloodCurrent < 1) toast.error("Нет ОБК");
-              else spendBlood(1);
+              else {
+                pushUndo("−ОБК");
+                spendBlood(1);
+              }
             }}
-            onPlus={() => gainBlood(1)}
+            onPlus={() => {
+              pushUndo("+ОБК");
+              gainBlood(1);
+            }}
           />
           <ResChip
-            icon={<Sparkles className="size-3.5 text-beast" />}
             label="Зверь"
             value={`${beastLeft}/${pb}${c.beastActive ? "★" : ""}`}
             accent
             onMinus={() => {
+              pushUndo("Зверь");
               if (!activateBeast()) toast.error("Зверь исчерпан");
               else toast.success("Преимущество");
             }}
-            onPlus={() => setField("beastUsed", Math.max(0, c.beastUsed - 1))}
+            onPlus={() => {
+              pushUndo("Восст. Зверь");
+              setField("beastUsed", Math.max(0, c.beastUsed - 1));
+            }}
           />
           <ResChip
-            icon={<Shield className="size-3.5 text-accent" />}
             label="КД"
             value={String(c.ac)}
             onMinus={() => setField("ac", Math.max(1, c.ac - 1))}
@@ -219,7 +282,7 @@ export function PlayHub() {
           />
         </div>
 
-        <div className="mt-3 grid grid-cols-4 gap-1.5 text-center text-xs">
+        <div className="mt-2 grid grid-cols-4 gap-1.5 text-center text-xs">
           <MiniStat label="Скор." value={c.speed} />
           <MiniStat
             label="Иниц"
@@ -229,7 +292,7 @@ export function PlayHub() {
           <MiniStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           <button
             type="button"
             onClick={() => {
@@ -242,7 +305,7 @@ export function PlayHub() {
               }
             }}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium",
+              "rounded-full border px-3 py-2 text-xs font-medium",
               c.inspiration
                 ? "border-accent bg-accent/20 text-accent"
                 : "border-border bg-surface-2 text-muted",
@@ -254,11 +317,11 @@ export function PlayHub() {
             type="button"
             onClick={() => {
               useCharacterStore.getState().toggleCondition("Голод");
-              toast.message(c.hunger || c.conditions.includes("Голод") ? "Голод снят" : "Голод");
+              toast.message(c.conditions.includes("Голод") ? "Голод снят" : "Голод");
             }}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium",
-              c.hunger
+              "rounded-full border px-3 py-2 text-xs font-medium",
+              c.hunger || c.conditions.includes("Голод")
                 ? "border-primary bg-primary/20 text-primary"
                 : "border-border bg-surface-2 text-muted",
             )}
@@ -266,98 +329,82 @@ export function PlayHub() {
             Голод
           </button>
           {c.beastActive && (
-            <span className="rounded-full border border-beast/40 bg-beast/15 px-3 py-1.5 text-xs text-beast">
+            <span className="rounded-full border border-beast/40 bg-beast/15 px-3 py-2 text-xs text-beast">
               Зверь★
             </span>
           )}
           {c.concentrating && (
-            <span className="max-w-[10rem] truncate rounded-full border border-border bg-surface-2 px-3 py-1.5 text-xs text-muted">
+            <span className="max-w-[10rem] truncate rounded-full border border-border bg-surface-2 px-3 py-2 text-xs text-muted">
               Конц: {c.concentrating}
             </span>
           )}
         </div>
-        {atZero && (
-          <Button
-            type="button"
-            variant="blood"
-            className="mt-3 w-full"
-            onClick={() => {
-              if (!spendProtected()) {
-                toast.error("Нет Защищённого");
-                return;
-              }
-              setField("hpCurrent", 1);
-              toast.success("0 → 1 хит");
-            }}
-          >
-            Protected: 0 → 1 ХП
-          </Button>
-        )}
       </section>
 
-      {/* ── Turn ── */}
-      <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="font-display text-sm">
-            Ход · R{c.round ?? 1}
-          </h3>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            className="h-9"
-            onClick={() => {
-              newTurn();
-              tickEffects();
-              toast.message(`Раунд ${(c.round ?? 1) + 1}`);
-            }}
-          >
-            Новый ход
-          </Button>
-        </div>
-        <div className="grid grid-cols-4 gap-1.5">
-          {(
-            [
-              ["actionUsed", "Действ."],
-              ["bonusUsed", "БД"],
-              ["reactionUsed", "Реакц."],
-              ["movementUsed", "Перем."],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
+      <DeathPanel />
+      <RollModeBar />
+      {(showCombat || showSocial) && <AbilityStrip />}
+
+      {/* Turn economy — combat + social */}
+      {(showCombat || showSocial) && (
+        <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="font-display text-sm">Ход · R{c.round ?? 1}</h3>
+            <Button
               type="button"
-              onClick={() => setField(key, !c[key])}
-              className={cn(
-                "flex h-12 flex-col items-center justify-center rounded-[var(--radius)] border text-xs font-medium",
-                c[key]
-                  ? "border-primary/40 bg-primary/15 text-primary line-through opacity-70"
-                  : "border-border bg-surface-2 text-fg",
-              )}
+              size="sm"
+              variant="secondary"
+              className="h-10"
+              onClick={() => {
+                newTurn();
+                tickEffects();
+                toast.message(`Раунд ${(c.round ?? 1) + 1}`);
+              }}
             >
-              {label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Dual luck compact ── */}
-      <section className="grid grid-cols-2 gap-2">
-        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
-          <div className="mb-1 flex items-center gap-1 text-xs font-medium text-accent">
-            <Clover className="size-3.5" /> Везучий
+              Новый ход
+            </Button>
           </div>
-          <div className="mb-2 font-display text-xl tabular-nums">
-            {luckyLeft}
-            <span className="text-sm text-muted">/{luckMax}</span>
+          <div className="grid grid-cols-4 gap-1.5">
+            {(
+              [
+                ["actionUsed", "Действ."],
+                ["bonusUsed", "БД"],
+                ["reactionUsed", "Реакц."],
+                ["movementUsed", "Перем."],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setField(key, !c[key])}
+                className={cn(
+                  "flex h-12 flex-col items-center justify-center rounded-[var(--radius)] border text-xs font-medium",
+                  c[key]
+                    ? "border-primary/40 bg-primary/15 text-primary line-through opacity-70"
+                    : "border-border bg-surface-2 text-fg",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Dual luck */}
+      <section className="grid grid-cols-2 gap-2">
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-2.5">
+          <div className="mb-0.5 flex items-center gap-1 text-[11px] font-medium text-accent">
+            <Clover className="size-3.5" /> Везучий {luckyLeft}/{luckMax}
           </div>
           <div className="flex flex-col gap-1">
             <Button
               type="button"
               size="sm"
               variant="secondary"
-              className="h-10 w-full text-xs"
+              className="h-11 w-full text-xs"
               onClick={() => {
+                pushUndo("Везучий");
                 if (!spendLucky()) return toast.error("Нет очков");
                 setField("pendingAdv", true);
                 toast.success("Преим. на d20");
@@ -369,8 +416,9 @@ export function PlayHub() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-10 w-full text-xs"
+              className="h-11 w-full text-xs"
               onClick={() => {
+                pushUndo("Везучий помеха");
                 if (!spendLucky()) return toast.error("Нет очков");
                 setField("pendingDis", true);
                 toast.success("Помеха на атаку по вам");
@@ -380,21 +428,18 @@ export function PlayHub() {
             </Button>
           </div>
         </div>
-        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
-          <div className="mb-1 flex items-center gap-1 text-xs font-medium text-primary">
-            <ShieldCheck className="size-3.5" /> Защищ.
-          </div>
-          <div className="mb-2 font-display text-xl tabular-nums">
-            {protectedLeft}
-            <span className="text-sm text-muted">/{luckMax}</span>
+        <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-2.5">
+          <div className="mb-0.5 flex items-center gap-1 text-[11px] font-medium text-primary">
+            <ShieldCheck className="size-3.5" /> Защищ. {protectedLeft}/{luckMax}
           </div>
           <div className="flex flex-col gap-1">
             <Button
               type="button"
               size="sm"
               variant="blood"
-              className="h-10 w-full text-xs"
+              className="h-11 w-full text-xs"
               onClick={() => {
+                pushUndo("Protected");
                 if (!spendProtected()) return toast.error("Нет очков");
                 toast.success("Переброс ≤9");
                 addLog("Protected: переброс");
@@ -406,8 +451,9 @@ export function PlayHub() {
               type="button"
               size="sm"
               variant="outline"
-              className="h-10 w-full text-xs"
+              className="h-11 w-full text-xs"
               onClick={() => {
+                pushUndo("Protected 0→1");
                 if (!spendProtected()) return toast.error("Нет очков");
                 setField("hpCurrent", 1);
                 toast.success("1 хит");
@@ -419,137 +465,177 @@ export function PlayHub() {
         </div>
       </section>
 
-      {/* ── Quick skills ── */}
       <RollHistory />
-      <QuickSkills />
 
-      <PrimaryPowers />
-      <DominateDc />
-      <FeedWizard />
-      <PcSaves />
-      <MyEffects />
-      <Passives />
+      {showCombat && (
+        <>
+          <PrimaryPowers />
+          <PcSaves />
 
-      
-      {/* ── Attacks ── */}
-      <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="flex items-center gap-1.5 font-display text-sm">
-            <Swords className="size-3.5 text-primary" /> Атаки
-          </h3>
-          <Button type="button" size="sm" variant="ghost" className="h-9" onClick={addAttack}>
-            +
-          </Button>
-        </div>
-        {c.attacks.length === 0 && (
-          <p className="text-xs text-muted">Добавьте атаку (билдер или +).</p>
-        )}
-        <div className="space-y-2">
-          {c.attacks.map((atk) => (
-            <div
-              key={atk.id}
-              className="rounded-[var(--radius)] border border-border bg-surface-2 p-2.5"
-            >
-              <div className="mb-2 flex items-center gap-2">
-                <Input
-                  className="h-10 flex-1"
-                  value={atk.name}
-                  onChange={(e) => updateAttack(atk.id, { name: e.target.value })}
-                />
-                <button
+          <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="flex items-center gap-1.5 font-display text-sm">
+                <Swords className="size-3.5 text-primary" /> Атаки
+              </h3>
+              <div className="flex gap-1">
+                <Button
                   type="button"
-                  className="text-muted"
-                  onClick={() => removeAttack(atk.id)}
+                  size="sm"
+                  variant={editAtk ? "secondary" : "ghost"}
+                  className="h-9"
+                  onClick={() => setEditAtk((v) => !v)}
                 >
-                  ×
-                </button>
+                  <Pencil className="size-3.5" />
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="h-9" onClick={addAttack}>
+                  +
+                </Button>
               </div>
-              <div className="mb-2 grid grid-cols-3 gap-1.5">
-                <Input
-                  type="number"
-                  className="h-10"
-                  value={atk.bonus}
-                  onChange={(e) =>
-                    updateAttack(atk.id, { bonus: Number(e.target.value) || 0 })
-                  }
-                  placeholder="+"
-                />
-                <Input
-                  className="h-10"
-                  value={atk.damage}
-                  onChange={(e) => updateAttack(atk.id, { damage: e.target.value })}
-                  placeholder="1d8"
-                />
-                <Input
-                  className="h-10"
-                  value={atk.type}
-                  onChange={(e) => updateAttack(atk.id, { type: e.target.value })}
-                  placeholder="тип"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="blood"
-                className="h-12 w-full"
-                onClick={() => rollAttack(atk.id)}
-              >
-                {atk.name || "Атака"}{" "}
-                <span className="ml-1 tabular-nums opacity-80">
-                  {atk.bonus >= 0 ? `+${atk.bonus}` : atk.bonus} · {atk.damage}
-                </span>
-              </Button>
             </div>
-          ))}
-        </div>
-      </section>
+            {c.attacks.length === 0 && (
+              <p className="text-xs text-muted">Добавьте атаку (билдер или +).</p>
+            )}
+            <div className="space-y-2">
+              {c.attacks.map((atk) => (
+                <div
+                  key={atk.id}
+                  className="rounded-[var(--radius)] border border-border bg-surface-2 p-2"
+                >
+                  {editAtk ? (
+                    <>
+                      <div className="mb-2 flex items-center gap-2">
+                        <Input
+                          className="h-11 flex-1"
+                          value={atk.name}
+                          onChange={(e) => updateAttack(atk.id, { name: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          className="text-muted"
+                          onClick={() => removeAttack(atk.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="mb-2 grid grid-cols-3 gap-1.5">
+                        <Input
+                          type="number"
+                          className="h-11"
+                          value={atk.bonus}
+                          onChange={(e) =>
+                            updateAttack(atk.id, { bonus: Number(e.target.value) || 0 })
+                          }
+                        />
+                        <Input
+                          className="h-11"
+                          value={atk.damage}
+                          onChange={(e) => updateAttack(atk.id, { damage: e.target.value })}
+                        />
+                        <Input
+                          className="h-11"
+                          value={atk.type}
+                          onChange={(e) => updateAttack(atk.id, { type: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mb-1.5 flex items-baseline justify-between px-0.5">
+                      <span className="text-sm font-medium">{atk.name || "Атака"}</span>
+                      <span className="text-[11px] tabular-nums text-muted">
+                        {atk.bonus >= 0 ? `+${atk.bonus}` : atk.bonus} · {atk.damage}{" "}
+                        {atk.type}
+                      </span>
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="blood"
+                    className="h-14 w-full text-base"
+                    onClick={() => rollAttack(atk.id)}
+                  >
+                    {atk.name || "Атака"}{" "}
+                    <span className="ml-1 tabular-nums opacity-80">
+                      {atk.bonus >= 0 ? `+${atk.bonus}` : atk.bonus}
+                    </span>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </section>
 
-      {/* ── Powers ── */}
-      <Collapsible title="Силы Kindred" icon={<Zap className="size-3.5 text-beast" />}>
-        <QuickActions />
-        <WarlockSnippet />
-      </Collapsible>
+          <MyEffects />
+          <Passives />
 
-      {/* ── Dice ── */}
-      <Collapsible title="Кости и проверки" icon={<Sparkles className="size-3.5" />}>
-        <DicePanel />
-        <FreeRoll />
-      </Collapsible>
+          <Collapsible title="Силы Kindred" icon={<Zap className="size-3.5 text-beast" />}>
+            <QuickActions />
+            <WarlockSnippet />
+          </Collapsible>
 
-      {/* ── Damage / rest ── */}
-      <Collapsible title="Урон · отдых · состояния">
-        <DamageIntake />
-        <TempHp />
-        <QuickCondition />
-        <RestWizard />
-        <div className="flex flex-wrap gap-2">
-          <RecalcHp />
-          <FullHealButton />
-        </div>
-      </Collapsible>
+          <Collapsible title="Урон · состояния · кости">
+            <DamageIntake />
+            <TempHp />
+            <QuickCondition />
+            <DicePanel />
+            <FreeRoll />
+          </Collapsible>
 
-      {/* ── Turn extras from SoloCombat (death saves, HD) ── */}
-      <Collapsible title="Ход · HD · 0 ХП">
-        <SoloCombat />
-      </Collapsible>
+          <Collapsible title="HD · детали 0 ХП">
+            <SoloCombat />
+          </Collapsible>
+        </>
+      )}
 
-      {/* ── Advanced rare ── */}
-      <Collapsible title="Редко (торпор, кол, солнце…)">
-        <ConcentrationHelper />
-        <EnvironmentHazards />
-        <TorporPanel />
-        <StakeHelper />
-        <ResourcePool
-          label="Очки крови"
-          current={c.bloodCurrent}
-          max={bloodMax}
-          color="blood"
-          onSpend={() => spendBlood(1)}
-          onGain={() => gainBlood(1)}
-          onToggle={setBloodTo}
-        />
+      {showSocial && (
+        <>
+          <QuickSkills />
+          <DominateDc />
+          <PrimaryPowers />
+          <MyEffects />
+          <Passives />
+          <Collapsible title="Кости и проверки" icon={<Sparkles className="size-3.5" />}>
+            <DicePanel />
+            <FreeRoll />
+            <PcSaves />
+          </Collapsible>
+        </>
+      )}
+
+      {showFeed && (
+        <>
+          <BloodPips />
+          <FeedWizard />
+          <PrimaryPowers />
+          <Collapsible title="Голод · состояния">
+            <QuickCondition />
+            <Passives />
+          </Collapsible>
+        </>
+      )}
+
+      {showRest && (
+        <>
+          <RestWizard />
+          <BloodPips />
+          <Collapsible title="HD · лечение" defaultOpen>
+            <SoloCombat />
+            <div className="flex flex-wrap gap-2">
+              <RecalcHp />
+              <FullHealButton />
+            </div>
+          </Collapsible>
+          <Collapsible title="Редко (торпор, кол, солнце…)">
+            <ConcentrationHelper />
+            <EnvironmentHazards />
+            <TorporPanel />
+            <StakeHelper />
+          </Collapsible>
+        </>
+      )}
+
+      <Collapsible title="Свои ресурсы · карточка">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted">Свои ресурсы</span>
+            <span className="text-sm text-muted">Ресурсы</span>
             <Button type="button" size="sm" variant="ghost" onClick={addResource}>
               +
             </Button>
@@ -560,30 +646,32 @@ export function PlayHub() {
               className="flex items-center gap-2 rounded border border-border bg-surface-2 p-2"
             >
               <Input
-                className="h-9 flex-1"
+                className="h-10 flex-1"
                 value={r.name}
                 onChange={(e) => updateResource(r.id, { name: e.target.value })}
               />
               <button
                 type="button"
-                className="h-9 w-9 rounded border border-border"
-                onClick={() =>
-                  updateResource(r.id, { current: Math.max(0, r.current - 1) })
-                }
+                className="h-10 w-10 rounded border border-border text-lg"
+                onClick={() => {
+                  pushUndo(`−${r.name}`);
+                  updateResource(r.id, { current: Math.max(0, r.current - 1) });
+                }}
               >
                 −
               </button>
-              <span className="w-10 text-center tabular-nums text-sm">
+              <span className="w-12 text-center tabular-nums text-sm">
                 {r.current}/{r.max}
               </span>
               <button
                 type="button"
-                className="h-9 w-9 rounded border border-border"
-                onClick={() =>
+                className="h-10 w-10 rounded border border-border text-lg"
+                onClick={() => {
+                  pushUndo(`+${r.name}`);
                   updateResource(r.id, {
                     current: Math.min(r.max, r.current + 1),
-                  })
-                }
+                  });
+                }}
               >
                 +
               </button>
@@ -596,8 +684,8 @@ export function PlayHub() {
         <CombatCard />
       </Collapsible>
 
-      <p className="pb-2 text-center text-[10px] text-faint">
-        Нижняя панель — одним пальцем. БМ {formatMod(pb)} · Питание{" "}
+      <p className="pb-1 text-center text-[10px] text-faint">
+        Сценарий фильтрует инструменты. БМ {formatMod(pb)} · Питание{" "}
         {getLevelData(c.level).feed}
       </p>
     </div>
@@ -605,44 +693,45 @@ export function PlayHub() {
 }
 
 function ResChip({
-  icon,
   label,
   value,
   onMinus,
   onPlus,
   accent,
+  danger,
 }: {
-  icon: React.ReactNode;
   label: string;
   value: string;
   onMinus: () => void;
   onPlus: () => void;
   accent?: boolean;
+  danger?: boolean;
 }) {
   return (
     <div
       className={cn(
         "rounded-[var(--radius)] border p-2",
-        accent ? "border-beast/30 bg-beast/10" : "border-border bg-surface-2",
+        accent
+          ? "border-beast/30 bg-beast/10"
+          : danger
+            ? "border-primary/25 bg-primary/5"
+            : "border-border bg-surface-2",
       )}
     >
-      <div className="mb-1 flex items-center justify-center gap-1 text-[10px] text-muted">
-        {icon}
-        {label}
-      </div>
+      <div className="mb-0.5 text-[10px] text-muted">{label}</div>
       <div className="mb-1 font-display text-lg tabular-nums leading-none">{value}</div>
       <div className="flex gap-1">
         <button
           type="button"
           onClick={onMinus}
-          className="flex h-9 flex-1 items-center justify-center rounded border border-border bg-bg text-sm font-bold"
+          className="flex h-10 flex-1 items-center justify-center rounded border border-border bg-bg text-sm font-bold"
         >
           −
         </button>
         <button
           type="button"
           onClick={onPlus}
-          className="flex h-9 flex-1 items-center justify-center rounded border border-border bg-bg text-sm font-bold"
+          className="flex h-10 flex-1 items-center justify-center rounded border border-border bg-bg text-sm font-bold"
         >
           +
         </button>
@@ -677,7 +766,7 @@ function Collapsible({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left"
+        className="flex min-h-12 w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
       >
         <span className="flex items-center gap-2 font-display text-sm">
           {icon}

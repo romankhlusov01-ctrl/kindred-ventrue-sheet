@@ -23,7 +23,7 @@ import { useSessionStore } from "@/lib/session-store";
 
 /**
  * One-thumb bottom dock — only self actions.
- * Phone-first: large targets, last roll always visible.
+ * Adapts primary row to scenario (combat / social / feed / rest).
  */
 export function PlayDock() {
   const c = useCharacterStore((s) => s.character);
@@ -36,14 +36,14 @@ export function PlayDock() {
   const gainBlood = useCharacterStore((s) => s.gainBlood);
   const consumeRollMode = useCharacterStore((s) => s.consumeRollMode);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
+  const lastRoll = useSessionStore((s) => s.lastRoll);
   const shortRest = useCharacterStore((s) => s.shortRest);
   const tickEffects = useSessionStore((s) => s.tickEffects);
   const spendLucky = useCharacterStore((s) => s.spendLucky);
   const spendProtected = useCharacterStore((s) => s.spendProtected);
+  const pushUndo = useSessionStore((s) => s.pushUndo);
+  const undo = useSessionStore((s) => s.undo);
   const [open, setOpen] = useState(true);
-  const [last, setLast] = useState<{ label: string; total: number; detail: string } | null>(
-    null,
-  );
   const [more, setMore] = useState(false);
 
   const pb = effectivePb(c.level, c.multiclass);
@@ -54,9 +54,9 @@ export function PlayDock() {
   const primary = c.attacks[0];
   const atZero = c.hpCurrent <= 0;
   const feedCount = getLevelData(c.level).feedCount;
+  const scenario = c.scenario ?? "combat";
 
   function show(label: string, total: number, detail: string) {
-    setLast({ label, total, detail });
     addLog(`${label}: ${total} (${detail})`);
     setLastRoll({ label, total, detail, at: Date.now() });
   }
@@ -106,7 +106,10 @@ export function PlayDock() {
     const sixes = rolls.filter((x) => x === 6).length;
     const con = Math.max(1, abilityMod(c.abilities.con));
     const sum = rolls.reduce((a, b) => a + b, 0) + con;
-    if (sixes) gainBlood(sixes);
+    if (sixes) {
+      pushUndo("Питание ОБК");
+      gainBlood(sixes);
+    }
     show("Питание", sum, `${rolls.join("+")}+Тел`);
     toast.success(`Питание ${sum}${sixes ? ` · +${sixes} ОБК` : ""}`);
   }
@@ -130,9 +133,9 @@ export function PlayDock() {
         >
           <ChevronUp className="size-4 text-primary" />
           <span className="text-sm font-medium">Играть</span>
-          {last && (
+          {lastRoll && (
             <span className="rounded-full bg-primary/20 px-2.5 py-0.5 font-display text-base text-primary">
-              {last.total}
+              {lastRoll.total}
             </span>
           )}
           <span className="text-xs text-muted">
@@ -152,6 +155,7 @@ export function PlayDock() {
             type="button"
             className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-fg"
             onClick={() => {
+              pushUndo("Protected 0→1");
               if (!spendProtected()) toast.error("Нет Protected");
               else {
                 setField("hpCurrent", 1);
@@ -164,14 +168,14 @@ export function PlayDock() {
         </div>
       )}
 
-      {last && (
+      {lastRoll && (
         <div className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-[var(--radius)] border border-primary/30 bg-primary/10 px-3 py-2">
           <div className="min-w-0">
-            <div className="truncate text-xs text-muted">{last.label}</div>
-            <div className="truncate text-[11px] text-faint">{last.detail}</div>
+            <div className="truncate text-xs text-muted">{lastRoll.label}</div>
+            <div className="truncate text-[11px] text-faint">{lastRoll.detail}</div>
           </div>
           <div className="font-display text-3xl tabular-nums leading-none text-primary">
-            {last.total}
+            {lastRoll.total}
           </div>
         </div>
       )}
@@ -191,45 +195,180 @@ export function PlayDock() {
           {Math.max(0, pb - c.beastUsed)}/{pb}
           {c.beastActive ? " ★" : ""}
         </span>
+        <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] uppercase text-faint">
+          {scenario === "combat"
+            ? "бой"
+            : scenario === "social"
+              ? "соц"
+              : scenario === "feed"
+                ? "пит"
+                : "отд"}
+        </span>
         <button type="button" className="text-faint" onClick={() => setOpen(false)}>
           <ChevronDown className="size-4" />
         </button>
       </div>
 
       <div className="grid grid-cols-4 gap-1.5 px-2 pb-1">
-        <DockBtn label={primary ? "Атака" : "—"} danger onClick={rollPrimaryAttack} />
-        <DockBtn label="Питан." danger onClick={rollFeed} />
-        <DockBtn
-          label="Зверь"
-          accent
-          onClick={() => {
-            if (!activateBeast()) toast.error("Зверь исчерпан");
-            else toast.success("Преим.");
-          }}
-        />
-        <DockBtn
-          label="Ход"
-          onClick={() => {
-            newTurn();
-            tickEffects();
-            toast.message("Новый ход");
-          }}
-        />
+        {scenario === "social" ? (
+          <>
+            <DockBtn label="Убежд." danger onClick={rollPersuade} />
+            <DockBtn
+              label="Голос"
+              danger
+              onClick={() => {
+                const voice = c.customResources.find((r) => /голос/i.test(r.name));
+                if (!voice || voice.current <= 0) return toast.error("Нет Голоса");
+                pushUndo("Голос");
+                useCharacterStore.getState().updateResource(voice.id, {
+                  current: voice.current - 1,
+                });
+                toast.message("Голос −1");
+              }}
+            />
+            <DockBtn
+              label="Зверь"
+              accent
+              onClick={() => {
+                pushUndo("Зверь");
+                if (!activateBeast()) toast.error("Зверь исчерпан");
+                else toast.success("Преим.");
+              }}
+            />
+            <DockBtn
+              label="Ход"
+              onClick={() => {
+                newTurn();
+                tickEffects();
+                toast.message("Новый ход");
+              }}
+            />
+          </>
+        ) : scenario === "feed" ? (
+          <>
+            <DockBtn label="Питан." danger onClick={rollFeed} />
+            <DockBtn
+              label="−ОБК"
+              danger
+              onClick={() => {
+                if (c.bloodCurrent < 1) toast.error("Нет ОБК");
+                else {
+                  pushUndo("−ОБК");
+                  spendBlood(1);
+                }
+              }}
+            />
+            <DockBtn
+              label="+ОБК"
+              onClick={() => {
+                pushUndo("+ОБК");
+                gainBlood(1);
+              }}
+            />
+            <DockBtn
+              label="Лечить"
+              danger
+              onClick={() => {
+                if (c.bloodCurrent < 1) return toast.error("Нет ОБК");
+                pushUndo("Лечение");
+                spendBlood(1);
+                const heal = Math.floor(Math.random() * 10) + 1 + c.level;
+                adjustHp(heal);
+                show("Исцеление", heal, `d10+${c.level}`);
+                toast.success(`+${heal} ХП`);
+              }}
+            />
+          </>
+        ) : scenario === "rest" ? (
+          <>
+            <DockBtn
+              label="К.отдых"
+              onClick={() => {
+                shortRest();
+                toast.message("Короткий");
+              }}
+            />
+            <DockBtn
+              label="−ХП"
+              onClick={() => {
+                pushUndo("−1 ХП");
+                adjustHp(-1);
+              }}
+            />
+            <DockBtn
+              label="+ХП"
+              onClick={() => {
+                pushUndo("+1 ХП");
+                adjustHp(1);
+              }}
+            />
+            <DockBtn
+              label="Отмена"
+              onClick={() => {
+                if (undo()) toast.message("Отменено");
+                else toast.error("Пусто");
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <DockBtn label={primary ? "Атака" : "—"} danger onClick={rollPrimaryAttack} />
+            <DockBtn label="Питан." danger onClick={rollFeed} />
+            <DockBtn
+              label="Зверь"
+              accent
+              onClick={() => {
+                pushUndo("Зверь");
+                if (!activateBeast()) toast.error("Зверь исчерпан");
+                else toast.success("Преим.");
+              }}
+            />
+            <DockBtn
+              label="Ход"
+              onClick={() => {
+                newTurn();
+                tickEffects();
+                toast.message("Новый ход");
+              }}
+            />
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-5 gap-1 px-2 pb-1">
-        <DockBtn label="−ХП" onClick={() => adjustHp(-1)} />
-        <DockBtn label="+ХП" onClick={() => adjustHp(1)} />
+        <DockBtn
+          label="−ХП"
+          onClick={() => {
+            pushUndo("−1 ХП");
+            adjustHp(-1);
+          }}
+        />
+        <DockBtn
+          label="+ХП"
+          onClick={() => {
+            pushUndo("+1 ХП");
+            adjustHp(1);
+          }}
+        />
         <DockBtn
           label="−ОБК"
           danger
           onClick={() => {
             if (c.bloodCurrent < 1) toast.error("Нет ОБК");
-            else spendBlood(1);
+            else {
+              pushUndo("−ОБК");
+              spendBlood(1);
+            }
           }}
         />
         <DockBtn label="Иниц" onClick={rollInit} />
-        <DockBtn label="Убежд." onClick={rollPersuade} />
+        <DockBtn
+          label="↩"
+          onClick={() => {
+            if (undo()) toast.message("Отменено");
+            else toast.error("Пусто");
+          }}
+        />
       </div>
 
       {more && (
@@ -237,6 +376,7 @@ export function PlayDock() {
           <DockBtn
             label={`Удч ${luckyLeft}`}
             onClick={() => {
+              pushUndo("Везучий");
               if (!spendLucky()) toast.error("Нет");
               else {
                 setField("pendingAdv", true);
@@ -248,6 +388,7 @@ export function PlayDock() {
             label={`Защ ${protectedLeft}`}
             danger
             onClick={() => {
+              pushUndo("Protected");
               if (!spendProtected()) toast.error("Нет");
               else toast.message("Protected");
             }}
@@ -281,8 +422,20 @@ export function PlayDock() {
               show(r.label, r.total, r.detail);
             }}
           />
-          <DockBtn label="−5ХП" onClick={() => adjustHp(-5)} />
-          <DockBtn label="+5ХП" onClick={() => adjustHp(5)} />
+          <DockBtn
+            label="−5ХП"
+            onClick={() => {
+              pushUndo("−5 ХП");
+              adjustHp(-5);
+            }}
+          />
+          <DockBtn
+            label="+5ХП"
+            onClick={() => {
+              pushUndo("+5 ХП");
+              adjustHp(5);
+            }}
+          />
           <DockBtn label="Скрыть" onClick={() => setOpen(false)} />
         </div>
       )}

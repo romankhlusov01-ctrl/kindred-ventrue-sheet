@@ -1,42 +1,39 @@
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CONDITIONS } from "@/data/skills";
 import { useCharacterStore } from "@/lib/character-store";
-import { cn } from "@/lib/utils";
 
 const QUICK = [
   "Голод",
+  "Очарован",
   "Испуган",
-  "Отравлен",
-  "Сбит с ног",
-  "Схвачен",
-  "Невидим",
+  "Отравленный",
+  "Недееспособный",
   "Ослеплён",
   "Оглушён",
-  "Очарован",
-  "Парализован",
-] as const;
+  "Схвачен",
+];
 
+/** One-tap conditions on yourself */
 export function QuickCondition() {
   const c = useCharacterStore((s) => s.character);
   const toggleCondition = useCharacterStore((s) => s.toggleCondition);
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-      <h3 className="mb-2 flex items-center gap-2 font-display text-sm">
-        <AlertTriangle className="size-4 text-accent" /> Быстрые состояния
+    <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
+      <h3 className="mb-2 flex items-center gap-1.5 font-display text-sm">
+        <AlertTriangle className="size-3.5 text-accent" /> Состояния
       </h3>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {QUICK.map((name) => {
-          const on = c.conditions.includes(name);
+          const on = c.conditions.includes(name) || (name === "Голод" && c.hunger);
           return (
             <Button
               key={name}
               type="button"
               size="sm"
               variant={on ? "blood" : "secondary"}
-              className={cn("h-8 text-xs", on && "ring-1 ring-primary")}
+              className="h-10"
               onClick={() => {
                 toggleCondition(name);
                 toast.message(on ? `− ${name}` : `+ ${name}`);
@@ -47,9 +44,11 @@ export function QuickCondition() {
           );
         })}
       </div>
-      <p className="mt-2 text-[10px] text-muted">
-        Полный список: {CONDITIONS.length} состояний на вкладке Бой.
-      </p>
+      {c.conditions.length > 0 && (
+        <p className="mt-2 text-[11px] text-muted">
+          Активно: {c.conditions.join(", ")} · тап чтобы снять
+        </p>
+      )}
     </div>
   );
 }

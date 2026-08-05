@@ -34,7 +34,7 @@ export function RestWizard() {
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <Button
           type="button"
-          className="h-12 w-full"
+          className="h-14 w-full"
           variant="secondary"
           onClick={() => {
             shortRest();
@@ -45,7 +45,7 @@ export function RestWizard() {
         </Button>
         <Button
           type="button"
-          className="h-12 w-full"
+          className="h-14 w-full"
           variant="secondary"
           disabled={hdLeft <= 0}
           onClick={() => {
@@ -61,7 +61,7 @@ export function RestWizard() {
         </Button>
         <Button
           type="button"
-          className="h-12 w-full"
+          className="h-14 w-full"
           variant={c.bloodCurrent >= 1 ? "blood" : "outline"}
           onClick={() => {
             const ok = c.bloodCurrent >= 1;

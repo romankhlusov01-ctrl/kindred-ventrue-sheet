@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useCharacterStore } from "@/lib/character-store";
 
 /** Ephemeral session UI state (not in character save) */
 export type LastRoll = {
@@ -15,29 +16,16 @@ export type EffectTimer = {
   note: string;
 };
 
-export type Enemy = {
-  id: string;
-  name: string;
-  hp: number;
-  hpMax: number;
-  ac: number;
-  notes: string;
-  /** Initiative total for this enemy */
-  init: number;
-  /** Optional attack bonus for solo GM rolls */
-  atkBonus: number;
-  /** Damage expression e.g. 1d8+3 */
-  damage: string;
-};
-
-export type EnemyTemplate = {
-  name: string;
-  hp: number;
-  ac: number;
-  notes: string;
-  init?: number;
-  atkBonus?: number;
-  damage?: string;
+/** Snapshot for one-tap undo of self resources */
+export type UndoSnap = {
+  hpCurrent: number;
+  tempHp: number;
+  bloodCurrent: number;
+  beastUsed: number;
+  luckyUsed: number;
+  protectedUsed: number;
+  label: string;
+  at: number;
 };
 
 type SessionState = {
@@ -48,102 +36,18 @@ type SessionState = {
   addEffect: (name: string, rounds: number | null, note?: string) => void;
   tickEffects: () => void;
   removeEffect: (id: string) => void;
-  enemies: Enemy[];
-  addEnemy: () => void;
-  addEnemyFromTemplate: (t: EnemyTemplate) => void;
-  updateEnemy: (id: string, partial: Partial<Enemy>) => void;
-  removeEnemy: (id: string) => void;
-  damageEnemy: (id: string, n: number) => void;
-  clearEncounter: () => void;
   /** Quick session note (not persisted to character) */
   sessionNote: string;
   setSessionNote: (n: string) => void;
+  /** Mobile: hide chrome, full play focus */
+  focusMode: boolean;
+  setFocusMode: (v: boolean) => void;
+  /** Undo last resource change */
+  undoStack: UndoSnap[];
+  pushUndo: (label: string) => void;
+  undo: () => boolean;
+  clearUndo: () => void;
 };
-
-export const ENEMY_TEMPLATES: EnemyTemplate[] = [
-  {
-    name: "Горожанин",
-    hp: 9,
-    ac: 12,
-    notes: "commoner · безоружный",
-    init: 10,
-    atkBonus: 2,
-    damage: "1d4",
-  },
-  {
-    name: "Страж",
-    hp: 32,
-    ac: 16,
-    notes: "guard · копьё/меч",
-    init: 11,
-    atkBonus: 5,
-    damage: "1d8+3",
-  },
-  {
-    name: "Охотник",
-    hp: 45,
-    ac: 15,
-    notes: "hunter · stake ready · silver",
-    init: 14,
-    atkBonus: 6,
-    damage: "1d10+3",
-  },
-  {
-    name: "Волк",
-    hp: 22,
-    ac: 13,
-    notes: "wolf · pack tactics",
-    init: 12,
-    atkBonus: 4,
-    damage: "2d4+2",
-  },
-  {
-    name: "Рыцарь",
-    hp: 52,
-    ac: 18,
-    notes: "knight · heavy armor",
-    init: 10,
-    atkBonus: 7,
-    damage: "2d6+4",
-  },
-  {
-    name: "Сородич-враг",
-    hp: 58,
-    ac: 15,
-    notes: "kindred · blood pool · fire vuln",
-    init: 13,
-    atkBonus: 6,
-    damage: "1d8+3",
-  },
-  {
-    name: "Жрец",
-    hp: 27,
-    ac: 13,
-    notes: "cleric · radiant · turn undead",
-    init: 10,
-    atkBonus: 5,
-    damage: "1d8+2",
-  },
-  {
-    name: "Маг",
-    hp: 22,
-    ac: 12,
-    notes: "mage · fire bolt · shield",
-    init: 12,
-    atkBonus: 5,
-    damage: "1d10",
-  },
-  {
-    name: "Гончая",
-    hp: 16,
-    ac: 13,
-    notes: "mastiff · pack",
-    init: 12,
-    atkBonus: 3,
-    damage: "1d6+1",
-  },
-];
-
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   lastRoll: null,
@@ -151,7 +55,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   setLastRoll: (r) =>
     set((s) => ({
       lastRoll: r,
-      rollHistory: r ? [r, ...s.rollHistory].slice(0, 8) : s.rollHistory,
+      rollHistory: r ? [r, ...s.rollHistory].slice(0, 12) : s.rollHistory,
     })),
   effects: [],
   addEffect: (name, rounds, note = "") =>
@@ -178,54 +82,57 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     })),
   removeEffect: (id) =>
     set((s) => ({ effects: s.effects.filter((e) => e.id !== id) })),
-  enemies: [],
-  addEnemy: () =>
-    set((s) => ({
-      enemies: [
-        ...s.enemies,
-        {
-          id: `en-${Date.now()}`,
-          name: `Враг ${s.enemies.length + 1}`,
-          hp: 20,
-          hpMax: 20,
-          ac: 13,
-          notes: "",
-          init: 10,
-          atkBonus: 4,
-          damage: "1d6+2",
-        },
-      ],
-    })),
-  addEnemyFromTemplate: (t) =>
-    set((s) => ({
-      enemies: [
-        ...s.enemies,
-        {
-          id: `en-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          name: t.name,
-          hp: t.hp,
-          hpMax: t.hp,
-          ac: t.ac,
-          notes: t.notes,
-          init: t.init ?? 10,
-          atkBonus: t.atkBonus ?? 4,
-          damage: t.damage ?? "1d6+2",
-        },
-      ],
-    })),
-  updateEnemy: (id, partial) =>
-    set((s) => ({
-      enemies: s.enemies.map((e) => (e.id === id ? { ...e, ...partial } : e)),
-    })),
-  removeEnemy: (id) =>
-    set((s) => ({ enemies: s.enemies.filter((e) => e.id !== id) })),
-  damageEnemy: (id, n) =>
-    set((s) => ({
-      enemies: s.enemies.map((e) =>
-        e.id === id ? { ...e, hp: Math.max(0, Math.min(e.hpMax + 50, e.hp - n)) } : e,
-      ),
-    })),
-  clearEncounter: () => set({ enemies: [], effects: [] }),
   sessionNote: "",
   setSessionNote: (n) => set({ sessionNote: n }),
+  focusMode: (() => {
+    try {
+      return typeof localStorage !== "undefined" && localStorage.getItem("kindred-focus") === "1";
+    } catch {
+      return false;
+    }
+  })(),
+  setFocusMode: (v) => {
+    try {
+      localStorage.setItem("kindred-focus", v ? "1" : "0");
+    } catch {
+      /* */
+    }
+    set({ focusMode: v });
+  },
+  undoStack: [],
+  pushUndo: (label) => {
+    const c = useCharacterStore.getState().character;
+    set((s) => ({
+      undoStack: [
+        {
+          hpCurrent: c.hpCurrent,
+          tempHp: c.tempHp,
+          bloodCurrent: c.bloodCurrent,
+          beastUsed: c.beastUsed,
+          luckyUsed: c.luckyUsed ?? 0,
+          protectedUsed: c.protectedUsed ?? 0,
+          label,
+          at: Date.now(),
+        },
+        ...s.undoStack,
+      ].slice(0, 12),
+    }));
+  },
+  undo: () => {
+    const stack = get().undoStack;
+    if (stack.length === 0) return false;
+    const [snap, ...rest] = stack;
+    if (!snap) return false;
+    useCharacterStore.getState().patch({
+      hpCurrent: snap.hpCurrent,
+      tempHp: snap.tempHp,
+      bloodCurrent: snap.bloodCurrent,
+      beastUsed: snap.beastUsed,
+      luckyUsed: snap.luckyUsed,
+      protectedUsed: snap.protectedUsed,
+    });
+    set({ undoStack: rest });
+    return true;
+  },
+  clearUndo: () => set({ undoStack: [] }),
 }));

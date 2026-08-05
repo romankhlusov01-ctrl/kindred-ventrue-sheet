@@ -4,11 +4,14 @@ import {
   Download,
   Heart,
   Link2,
+  Maximize2,
+  Minimize2,
   Plus,
   Share2,
   Sparkles,
   Swords,
   Trash2,
+  Undo2,
   Upload,
   Users,
   User,
@@ -132,6 +135,11 @@ export function CharacterSheet() {
   const spendLucky = useCharacterStore((s) => s.spendLucky);
   const spendProtected = useCharacterStore((s) => s.spendProtected);
   const lastRoll = useSessionStore((s) => s.lastRoll);
+  const focusMode = useSessionStore((s) => s.focusMode);
+  const setFocusMode = useSessionStore((s) => s.setFocusMode);
+  const pushUndo = useSessionStore((s) => s.pushUndo);
+  const undo = useSessionStore((s) => s.undo);
+  const undoStack = useSessionStore((s) => s.undoStack);
 
   const [tab, setTab] = useState<Tab>("play");
   const [tabReady, setTabReady] = useState(false);
@@ -268,11 +276,18 @@ export function CharacterSheet() {
     { id: "log", label: "Ещё", icon: <Heart className="size-3.5" /> },
   ];
 
-  return (
-    <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 pb-52 pt-3 sm:px-5 sm:pb-28 sm:pt-5">
+  const hideChrome = tab === "play" && focusMode;
 
-      <OnboardingBanner />
-      <header className={cn("mb-4 space-y-3", tab === "play" && "mb-2")}>
+  return (
+    <div
+      className={cn(
+        "mx-auto w-full max-w-6xl overflow-x-hidden px-3 sm:px-5",
+        hideChrome ? "pb-52 pt-1 sm:pb-28 sm:pt-2" : "pb-52 pt-3 sm:pb-28 sm:pt-5",
+      )}
+    >
+      {!hideChrome && <OnboardingBanner />}
+      <header className={cn("mb-3 space-y-3", tab === "play" && "mb-1.5", hideChrome && "mb-1")}>
+        {!hideChrome && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="mb-1 hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-muted sm:block">
@@ -298,6 +313,21 @@ export function CharacterSheet() {
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
+            {tab === "play" && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-10"
+                onClick={() => {
+                  setFocusMode(true);
+                  toast.message("Фокус · меньше хрома");
+                }}
+              >
+                <Minimize2 className="size-3.5" />
+                <span className="hidden sm:inline">Фокус</span>
+              </Button>
+            )}
             <Button type="button" variant="secondary" size="sm" className="h-10" onClick={() => setLibraryOpen((v) => !v)}>
               <Users className="size-3.5" />
               <span className="hidden sm:inline">Персонажи</span>
@@ -318,8 +348,9 @@ export function CharacterSheet() {
             </span>
           </div>
         </div>
+        )}
 
-        {libraryOpen && (
+        {libraryOpen && !hideChrome && (
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
             <div className="mb-2 flex flex-wrap gap-2">
               <Button
@@ -392,6 +423,27 @@ export function CharacterSheet() {
           </div>
         )}
 
+        {hideChrome && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 truncate text-sm font-medium">
+              {character.name || "Сородич"}{" "}
+              <span className="text-muted">
+                · {character.level}
+                {character.multiclass ? `/${character.multiclass}` : ""}
+              </span>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-9 shrink-0"
+              onClick={() => setFocusMode(false)}
+            >
+              <Maximize2 className="size-3.5" />
+            </Button>
+          </div>
+        )}
+
         {tab !== "play" && (
         <details className="group identity-fields" open>
           <summary className="mb-2 cursor-pointer list-none text-xs text-muted sm:hidden">Имя · клан · уровень ▾</summary>
@@ -436,13 +488,27 @@ export function CharacterSheet() {
         )}
       </header>
 
-      {/* Sticky HUD */}
-      <div className="sticky top-0 z-20 -mx-3 mb-3 border-b border-border bg-bg/95 px-3 py-2 backdrop-blur sm:mx-0 sm:mb-4 sm:rounded-[var(--radius-lg)] sm:border">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-1 gap-3 overflow-x-auto scroll-thin">
-            <HudStat label="ХП" value={`${character.hpCurrent}/${character.hpMax}`} />
+      {/* Sticky HUD — tappable HP/OBK */}
+      <div className="sticky top-0 z-20 -mx-3 mb-2 border-b border-border bg-bg/95 px-3 py-2 backdrop-blur sm:mx-0 sm:mb-4 sm:rounded-[var(--radius-lg)] sm:border">
+        <div className="flex items-center gap-1">
+          <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto scroll-thin">
+            <HudTap
+              label="ХП"
+              value={`${character.hpCurrent}/${character.hpMax}`}
+              onMinus={() => { pushUndo("−1 ХП"); adjustHp(-1); }}
+              onPlus={() => { pushUndo("+1 ХП"); adjustHp(1); }}
+            />
             <HudStat label="КД" value={String(character.ac)} />
-            <HudStat label="ОБК" value={`${character.bloodCurrent}/${bloodMax}`} blood />
+            <HudTap
+              label="ОБК"
+              value={`${character.bloodCurrent}/${bloodMax}`}
+              blood
+              onMinus={() => {
+                if (character.bloodCurrent < 1) toast.error("Нет ОБК");
+                else { pushUndo("−ОБК"); spendBlood(1); }
+              }}
+              onPlus={() => { pushUndo("+ОБК"); gainBlood(1); }}
+            />
             <HudStat label="Зверь" value={`${beastLeft}/${beastMax}`} />
             <HudStat label="Сл" value={String(spellDc)} />
             {character.customResources.filter(r => /голос/i.test(r.name)).map(r => (
@@ -453,6 +519,18 @@ export function CharacterSheet() {
               <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
             </span>
           </div>
+          <button
+            type="button"
+            disabled={!undoStack.length}
+            onClick={() => { if (undo()) toast.message("Отменено"); }}
+            className={cn(
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius)] border",
+              undoStack.length ? "border-border bg-surface-2 text-fg" : "border-border/40 text-faint opacity-40",
+            )}
+            title="Отмена"
+          >
+            <Undo2 className="size-4" />
+          </button>
         </div>
         {lastRoll && (
           <div className="mt-1.5 flex items-center justify-between gap-2 rounded-[var(--radius)] border border-primary/25 bg-primary/10 px-2.5 py-1.5">
@@ -501,6 +579,7 @@ export function CharacterSheet() {
       {tab === "play" && (
         <div className="space-y-3">
           <PlayHub />
+          {!hideChrome && (
           <details className="rounded-[var(--radius-lg)] border border-border bg-surface p-3 text-sm">
             <summary className="cursor-pointer font-display text-sm text-muted">
               Характеристики · уровень · ASI
@@ -511,6 +590,7 @@ export function CharacterSheet() {
               <AsiHelper />
             </div>
           </details>
+          )}
         </div>
       )}
 
@@ -579,6 +659,12 @@ export function CharacterSheet() {
                             : character.rollMode ?? "norm",
                         );
                         const r = rollD20(sk.nameRu, bonus, mode);
+                        useSessionStore.getState().setLastRoll({
+                          label: r.label,
+                          total: r.total,
+                          detail: r.detail,
+                          at: Date.now(),
+                        });
                         toast.message(
                           `${sk.nameRu}: ${r.detail} = ${r.total}`,
                         );
@@ -1010,12 +1096,12 @@ export function CharacterSheet() {
 
           </div>
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-sm text-muted">
-            <h3 className="mb-2 font-display text-base text-fg">Подсказки</h3>
+            <h3 className="mb-2 font-display text-base text-fg">Как играть с телефона</h3>
             <ul className="list-disc space-y-2 pl-4">
-              <li>Низ экрана: Атака · Питание · Зверь · Ход — основное.</li>
-              <li>«Ещё» на панели: удача, отдых, d20.</li>
-              <li>Тап по бонусу навыка = бросок.</li>
-              <li>Редкое (торпор, кол, солнце) свёрнуто в «Игра».</li>
+              <li><strong className="text-fg">Сценарии</strong> (Бой / Социал / Питание / Отдых) — на экране только нужное.</li>
+              <li>Нижняя панель подстраивается. <strong className="text-fg">↩</strong> — отмена ХП/ОБК/удач.</li>
+              <li><strong className="text-fg">Фокус</strong> прячет шапку. Sticky HUD: −/+ по ХП и ОБК.</li>
+              <li>Атаки: большая кнопка; карандаш — правка. Врагов на листе нет.</li>
             </ul>
           </div>
         </div>
@@ -1073,7 +1159,7 @@ function HudStat({
   blood?: boolean;
 }) {
   return (
-    <div className="min-w-[3.25rem] shrink-0">
+    <div className="min-w-[3.25rem] shrink-0 px-1">
       <div className="text-[9px] font-semibold uppercase tracking-wider text-faint">{label}</div>
       <div
         className={cn(
@@ -1083,6 +1169,50 @@ function HudStat({
       >
         {value}
       </div>
+    </div>
+  );
+}
+
+function HudTap({
+  label,
+  value,
+  blood,
+  onMinus,
+  onPlus,
+}: {
+  label: string;
+  value: string;
+  blood?: boolean;
+  onMinus: () => void;
+  onPlus: () => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-0.5 rounded-[var(--radius)] border border-border/60 bg-surface-2/50 px-0.5 py-0.5">
+      <button
+        type="button"
+        onClick={onMinus}
+        className="flex h-9 w-7 items-center justify-center text-sm font-bold text-muted active:text-fg"
+      >
+        −
+      </button>
+      <div className="min-w-[2.75rem] text-center">
+        <div className="text-[9px] font-semibold uppercase tracking-wider text-faint">{label}</div>
+        <div
+          className={cn(
+            "font-display text-sm tabular-nums leading-none",
+            blood ? "text-primary" : "text-fg",
+          )}
+        >
+          {value}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onPlus}
+        className="flex h-9 w-7 items-center justify-center text-sm font-bold text-muted active:text-fg"
+      >
+        +
+      </button>
     </div>
   );
 }
