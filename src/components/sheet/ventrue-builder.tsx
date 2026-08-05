@@ -53,6 +53,7 @@ import {
 } from "@/lib/character-store";
 import { BUILD_PRESETS, defaultAttacks, type BuildPreset } from "@/data/builder-presets";
 import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
+import { FEAT_RECS } from "@/data/feat-recommendations";
 
 export function VentrueBuilder() {
   const character = useCharacterStore((s) => s.character);
@@ -831,6 +832,14 @@ export function VentrueBuilder() {
                       <span className="text-[10px] text-faint">≥{f.levelMin}</span>
                     </div>
                     <p className="mt-1 text-xs text-muted">{f.body}</p>
+                    {FEAT_RECS[f.id] && (
+                      <p className="mt-1 text-[11px] text-accent">
+                        ★ {FEAT_RECS[f.id]!.note}
+                        <span className="ml-1 text-faint">
+                          [{FEAT_RECS[f.id]!.tags.join(", ")}]
+                        </span>
+                      </p>
+                    )}
                   </button>
                 );
               })}
