@@ -133,7 +133,7 @@ export function PlayHub() {
       {/* ── Status hero ── */}
       <section
         className={cn(
-          "rounded-[var(--radius-lg)] border p-4",
+          "rounded-[var(--radius-lg)] border p-3",
           atZero ? "border-primary bg-primary/10" : "border-border bg-surface",
         )}
       >
