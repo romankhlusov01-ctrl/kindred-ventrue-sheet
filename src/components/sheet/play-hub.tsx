@@ -452,8 +452,6 @@ export function PlayHub() {
         </div>
       </section>
 
-      {/* ── Feed / Dominate / Saves — primary Kindred ── */}
-      
       {/* ── Powers ── */}
       <Collapsible title="Силы Kindred" icon={<Zap className="size-3.5 text-beast" />}>
         <QuickActions />
