@@ -30,6 +30,10 @@ import { QuickActions } from "@/components/sheet/quick-actions";
 import { SoloCombat } from "@/components/sheet/solo-combat";
 import { ScenarioBar } from "@/components/sheet/scenario-bar";
 import { PlayDock } from "@/components/sheet/play-dock";
+import { Hotkeys } from "@/components/sheet/hotkeys";
+import { RoundBanner } from "@/components/sheet/round-banner";
+
+
 import { TargetCheck } from "@/components/sheet/target-check";
 import { DamageIntake } from "@/components/sheet/damage-intake";
 import { VentrueBuilder } from "@/components/sheet/ventrue-builder";
@@ -59,6 +63,8 @@ import { DominateDc } from "@/components/sheet/dominate-dc";
 import { SessionNote } from "@/components/sheet/session-note";
 import { TempHp } from "@/components/sheet/temp-hp";
 import { QuickCondition } from "@/components/sheet/quick-condition";
+import { FeedWizard } from "@/components/sheet/feed-wizard";
+
 
 
 
@@ -279,7 +285,8 @@ export function CharacterSheet() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-3 pb-36 pt-3 sm:px-5 sm:pb-28 sm:pt-5">
+    <div className="mx-auto w-full max-w-6xl overflow-x-hidden px-3 pb-36 pt-3 sm:px-5 sm:pb-28 sm:pt-5">
+
       <OnboardingBanner />
       <header className="mb-4 space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -468,7 +475,8 @@ export function CharacterSheet() {
         </div>
       </div>
 
-      <div className="mb-4 flex gap-1 overflow-x-auto scroll-thin rounded-[var(--radius)] border border-border bg-surface p-1">
+      <div className="mb-4 flex max-w-full gap-1 overflow-x-auto overscroll-x-contain scroll-thin rounded-[var(--radius)] border border-border bg-surface p-1">
+
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -492,7 +500,9 @@ export function CharacterSheet() {
       {tab === "combat" && (
         <div className="grid gap-4 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-8">
+            <RoundBanner />
             <ScenarioBar />
+
             <LevelUpHelper />
             <div className="flex flex-wrap gap-2"><RecalcHp /><FullHealButton /></div>
             <StartEncounter />
@@ -628,9 +638,11 @@ export function CharacterSheet() {
                         toast.error("Очки Везучего кончились");
                         return;
                       }
+                      setField("pendingAdv", true);
                       addLog("Везучий: преимущество на Тест d20 (−1)");
                       toast.success("Везучий → Преимущество");
                     }}
+
                   >
                     d20 + Преим.
                   </Button>
@@ -849,7 +861,9 @@ export function CharacterSheet() {
             <DominateDc />
             <TempHp />
             <QuickCondition />
+            <FeedWizard />
             <EncounterPanel />
+
 
 
             <InitOrder />
@@ -1510,7 +1524,14 @@ export function CharacterSheet() {
         </div>
       )}
 
-      {(tab === "combat" || tab === "skills") && <PlayDock />}
+      {(tab === "combat" || tab === "skills") && (
+        <>
+          <PlayDock />
+          <Hotkeys />
+        </>
+      )}
+
+
     </div>
   );
 }
