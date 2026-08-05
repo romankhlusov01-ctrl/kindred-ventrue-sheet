@@ -33,10 +33,12 @@ export function RestWizard() {
           хитов.
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
         <Button
           type="button"
           size="sm"
+          className="h-12 w-full sm:w-auto"
+          className="h-12 w-full sm:w-auto"
           variant="secondary"
           onClick={() => {
             shortRest();
@@ -48,6 +50,7 @@ export function RestWizard() {
         <Button
           type="button"
           size="sm"
+          className="h-12 w-full sm:w-auto"
           variant="secondary"
           disabled={hdLeft <= 0}
           onClick={() => {
@@ -64,6 +67,7 @@ export function RestWizard() {
         <Button
           type="button"
           size="sm"
+          className="h-12 w-full sm:w-auto"
           variant={c.bloodCurrent >= 1 ? "blood" : "outline"}
           onClick={() => {
             const ok = c.bloodCurrent >= 1;
