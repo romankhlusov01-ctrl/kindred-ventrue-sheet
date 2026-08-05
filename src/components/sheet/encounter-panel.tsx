@@ -121,22 +121,36 @@ export function EncounterPanel() {
                     </Button>
                   ))}
                   {lastRoll && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="blood"
-                      className="h-8"
-                      onClick={() => {
-                        const hit = lastRoll.total >= e.ac;
-                        if (hit) {
-                          toast.success(`${e.name}: попадание ${lastRoll.total} vs КД ${e.ac}`);
-                        } else {
-                          toast.message(`${e.name}: промах ${lastRoll.total} vs КД ${e.ac}`);
-                        }
-                      }}
-                    >
-                      vs КД ({lastRoll.total})
-                    </Button>
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="blood"
+                        className="h-8"
+                        onClick={() => {
+                          const hit = lastRoll.total >= e.ac;
+                          if (hit) {
+                            toast.success(`${e.name}: попадание ${lastRoll.total} vs КД ${e.ac}`);
+                          } else {
+                            toast.message(`${e.name}: промах ${lastRoll.total} vs КД ${e.ac}`);
+                          }
+                        }}
+                      >
+                        vs КД ({lastRoll.total})
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-8"
+                        onClick={() => {
+                          damageEnemy(e.id, lastRoll.total);
+                          toast.message(`${e.name}: −${lastRoll.total} ХП`);
+                        }}
+                      >
+                        −{lastRoll.total} урон
+                      </Button>
+                    </>
                   )}
                 </div>
                 {/* HP bar */}

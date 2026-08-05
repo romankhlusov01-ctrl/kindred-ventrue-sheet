@@ -39,6 +39,7 @@ import { EncounterPanel } from "@/components/sheet/encounter-panel";
 import { InventoryPanel } from "@/components/sheet/inventory-panel";
 import { RestWizard } from "@/components/sheet/rest-wizard";
 import { CombatCard } from "@/components/sheet/combat-card";
+import { InspirationToggle } from "@/components/sheet/inspiration-toggle";
 
 
 
@@ -467,6 +468,7 @@ export function CharacterSheet() {
             <ScenarioBar />
             <LevelUpHelper />
             <WarlockSnippet />
+            <InspirationToggle />
 
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {ABILITY_KEYS.map(({ key, short }) => {
