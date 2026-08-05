@@ -53,6 +53,7 @@ import { TorporPanel } from "@/components/sheet/torpor-panel";
 import { StakeHelper } from "@/components/sheet/stake-helper";
 import { Glossary } from "@/components/sheet/glossary";
 import { FullHealButton } from "@/components/sheet/full-heal";
+import { InitOrder } from "@/components/sheet/init-order";
 
 
 
@@ -835,6 +836,7 @@ export function CharacterSheet() {
 
           <aside className="space-y-4 lg:col-span-4">
             <EncounterPanel />
+            <InitOrder />
             <RestWizard />
             <EnvironmentHazards />
             <ConcentrationHelper />
