@@ -78,6 +78,21 @@ export function DominateDc() {
         <Button type="button" size="sm" variant="blood" onClick={rollNpcSave}>
           Бросок спас. NPC
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(String(dc));
+              toast.success(`Сл ${dc} скопирована`);
+            } catch {
+              toast.message(String(dc));
+            }
+          }}
+        >
+          Копировать Сл
+        </Button>
       </div>
     </div>
   );
