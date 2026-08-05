@@ -89,6 +89,7 @@ import {
   type Abilities,
 } from "@/lib/character-store";
 import { abilityMod, cn, formatMod, rollDie } from "@/lib/utils";
+import { effectivePb } from "@/lib/level-utils";
 import { rollD20, rollDamage } from "@/lib/roll-engine";
 import { conditionMode } from "@/lib/play-helpers";
 
@@ -153,7 +154,7 @@ export function CharacterSheet() {
   const [featureQ, setFeatureQ] = useState("");
 
   const row = getLevelData(character.level);
-  const pb = row.pb;
+  const pb = effectivePb(character.level, character.multiclass);
   const bloodMax = getBloodMax(character);
   const luckMax = getLuckMax(character.level);
   const beastMax = pb;

@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getLevelData } from "@/data/kindred-ru";
+import { effectivePb } from "@/lib/level-utils";
 import { useCharacterStore } from "@/lib/character-store";
 import { abilityMod, formatMod, rollDie } from "@/lib/utils";
 import { rollD20 } from "@/lib/roll-engine";
@@ -25,7 +26,7 @@ export function QuickActions() {
   const patch = useCharacterStore((s) => s.patch);
   const setLastRoll = useSessionStore((s) => s.setLastRoll);
   const row = getLevelData(c.level);
-  const pb = row.pb;
+  const pb = effectivePb(c.level, c.multiclass);
   const cha = abilityMod(c.abilities.cha);
   const str = abilityMod(c.abilities.str);
   const dc = 8 + pb + cha;

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { abilityMod, formatMod, rollDice, rollDie, cn } from "@/lib/utils";
 import { getLevelData } from "@/data/kindred-ru";
+import { effectivePb } from "@/lib/level-utils";
 import {
   getLuckMax,
   skillBonus,
@@ -57,7 +58,7 @@ export function DicePanel() {
 
   const [log, setLog] = useState<LogEntry[]>([]);
   const row = getLevelData(character.level);
-  const pb = row.pb;
+  const pb = effectivePb(character.level, character.multiclass);
   const conMod = abilityMod(character.abilities.con);
   const chaMod = abilityMod(character.abilities.cha);
   const luckMax = getLuckMax(character.level);
