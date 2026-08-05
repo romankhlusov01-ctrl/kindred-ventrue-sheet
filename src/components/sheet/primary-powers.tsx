@@ -71,9 +71,12 @@ export function PrimaryPowers() {
           type="button"
           variant="outline"
           className="h-12"
-          onClick={() => toast.message(`Сл ${dc}`)}
+          onClick={() => {
+            useCharacterStore.getState().shortRest();
+            toast.success("Короткий отдых");
+          }}
         >
-          Сл {dc}
+          Короткий отдых
         </Button>
       </div>
     </div>
