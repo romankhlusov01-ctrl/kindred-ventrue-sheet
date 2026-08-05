@@ -438,6 +438,9 @@ export function CharacterSheet() {
             <HudStat label="ОБК" value={`${character.bloodCurrent}/${bloodMax}`} blood />
             <HudStat label="Зверь" value={`${beastLeft}/${beastMax}`} />
             <HudStat label="Сл" value={String(spellDc)} />
+            {character.customResources.filter(r => /голос/i.test(r.name)).map(r => (
+              <HudStat key={r.id} label="Голос" value={`${r.current}/${r.max}`} />
+            ))}
             <span className="hidden sm:contents">
               <HudStat label="Везуч." value={`${luckyLeft}/${luckMax}`} />
               <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
