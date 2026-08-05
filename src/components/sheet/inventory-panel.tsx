@@ -95,7 +95,7 @@ export function InventoryPanel() {
           <Coins className="size-4 text-accent" />
           <Input
             type="number"
-            className="h-9 w-28"
+            className="h-11 w-28"
             value={gold}
             min={0}
             onChange={(e) => write(parsed, Number(e.target.value) || 0)}
@@ -170,14 +170,14 @@ export function InventoryPanel() {
 
         <div className="grid grid-cols-6 gap-2">
           <Input
-            className="col-span-3 h-9"
+            className="col-span-3 h-11"
             placeholder="Предмет"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <Input
             type="number"
-            className="col-span-1 h-9"
+            className="col-span-1 h-11"
             placeholder="шт"
             value={qty}
             min={1}
@@ -185,7 +185,7 @@ export function InventoryPanel() {
           />
           <Input
             type="number"
-            className="col-span-1 h-9"
+            className="col-span-1 h-11"
             placeholder="lb"
             value={weight}
             min={0}
@@ -195,7 +195,7 @@ export function InventoryPanel() {
           <Button
             type="button"
             size="sm"
-            className="col-span-1 h-9"
+            className="col-span-1 h-11"
             variant="secondary"
             onClick={() => {
               if (!name.trim()) return;

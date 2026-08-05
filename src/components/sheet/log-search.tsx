@@ -12,7 +12,7 @@ export function LogSearch() {
   }, [log, q]);
 
   return (
-    <div className="mb-2">
+    <div className="mb-2 h-11">
       <Input
         className="h-8"
         placeholder="Фильтр журнала…"
