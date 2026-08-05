@@ -1,10 +1,23 @@
 import { useState } from "react";
-import { Dices, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { abilityMod, formatMod, rollDice, rollDie } from "@/lib/utils";
-import { getLevelData } from "@/data/kindred-ru";
-import { useCharacterStore } from "@/lib/character-store";
+import { Dices, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { abilityMod, formatMod, rollDice, rollDie, cn } from "@/lib/utils";
+import { getLevelData } from "@/data/kindred-ru";
+import {
+  getLuckMax,
+  skillBonus,
+  useCharacterStore,
+  type Abilities,
+} from "@/lib/character-store";
+import {
+  hasAlacrity,
+  rollD20,
+  rollDamage,
+  type RollMode,
+} from "@/lib/roll-engine";
+
+import { SKILLS } from "@/data/skills";
 
 type LogEntry = {
   id: number;
@@ -14,41 +27,84 @@ type LogEntry = {
   kind: "check" | "damage" | "heal" | "other";
 };
 
+const ABIL: { key: keyof Abilities; short: string }[] = [
+  { key: "str", short: "СИЛ" },
+  { key: "dex", short: "ЛОВ" },
+  { key: "con", short: "ТЕЛ" },
+  { key: "int", short: "ИНТ" },
+  { key: "wis", short: "МУД" },
+  { key: "cha", short: "ХАР" },
+];
+
 export function DicePanel() {
   const character = useCharacterStore((s) => s.character);
   const gainBlood = useCharacterStore((s) => s.gainBlood);
   const spendBlood = useCharacterStore((s) => s.spendBlood);
   const adjustHp = useCharacterStore((s) => s.adjustHp);
   const addLog = useCharacterStore((s) => s.addLog);
+  const setRollMode = useCharacterStore((s) => s.setRollMode);
+  const consumeRollMode = useCharacterStore((s) => s.consumeRollMode);
+  const activateBeast = useCharacterStore((s) => s.activateBeast);
+  const clearBeast = useCharacterStore((s) => s.clearBeast);
+  const spendLucky = useCharacterStore((s) => s.spendLucky);
+  const spendProtected = useCharacterStore((s) => s.spendProtected);
+  const setField = useCharacterStore((s) => s.setField);
+  const patch = useCharacterStore((s) => s.patch);
+
   const [log, setLog] = useState<LogEntry[]>([]);
-  const [adv, setAdv] = useState<"norm" | "adv" | "dis">("norm");
   const row = getLevelData(character.level);
-  const conMod = abilityMod(character.abilities.con);
   const pb = row.pb;
+  const conMod = abilityMod(character.abilities.con);
   const chaMod = abilityMod(character.abilities.cha);
+  const luckMax = getLuckMax(character.level);
+  const mode = character.rollMode ?? "norm";
+  const beastOn = !!character.beastActive;
 
   function push(label: string, detail: string, total: number, kind: LogEntry["kind"] = "other") {
     setLog((prev) =>
-      [{ id: Date.now() + Math.random(), label, detail, total, kind }, ...prev].slice(0, 12),
+      [{ id: Date.now() + Math.random(), label, detail, total, kind }, ...prev].slice(0, 20),
     );
     addLog(`${label}: ${total} (${detail})`);
   }
 
-  function rollD20(label: string, mod: number) {
-    const a = rollDie(20);
-    const b = rollDie(20);
-    let used = a;
-    let detail = `${a}`;
-    if (adv === "adv") {
-      used = Math.max(a, b);
-      detail = `преим. ${a}/${b}`;
-    } else if (adv === "dis") {
-      used = Math.min(a, b);
-      detail = `помеха ${a}/${b}`;
+  function effectiveMode(forceAdv = false): RollMode {
+    const sticky = character.rollMode ?? "norm";
+    if (forceAdv || beastOn || character.pendingAdv) {
+      if (sticky === "dis" || character.pendingDis) return "norm";
+      return "adv";
     }
-    const total = used + mod;
-    const crit = used === 20 ? " · КРИТ" : used === 1 ? " · ПРОВАЛ" : "";
-    push(label, `${detail} ${formatMod(mod)}${crit}`, total, "check");
+    if (character.pendingDis) return sticky === "adv" ? "norm" : "dis";
+    return sticky;
+  }
+
+  function doD20(label: string, mod: number, opts?: { forceAdv?: boolean; consume?: boolean }) {
+    const m = opts?.forceAdv ? effectiveMode(true) : effectiveMode(false);
+    if (opts?.consume !== false) {
+      // consume pending one-shots
+      consumeRollMode();
+    }
+    const r = rollD20(label, mod, m);
+    // Protected: if d20 ≤9 and has points, offer auto note
+    if (r.used <= 9 && character.backgroundFeatId === "protected") {
+      const left = luckMax - (character.protectedUsed ?? 0);
+      if (left > 0) {
+        toast.message(`d20=${r.used} ≤9 — можно Защищённый: переброс`, {
+          action: {
+            label: "Переброс",
+            onClick: () => {
+              if (!spendProtected()) return;
+              const r2 = rollD20(label + " (переброс)", mod, "norm");
+              push(r2.label, r2.detail + (r2.crit ? " · КРИТ" : ""), r2.total, "check");
+              toast.success(`Переброс: ${r2.total}`);
+            },
+          },
+        });
+      }
+    }
+    const tag = r.crit ? " · КРИТ" : r.fumble ? " · ПРОВАЛ" : "";
+    push(r.label, r.detail + tag, r.total, "check");
+    toast.message(`${r.label}: ${r.total}`);
+    return r;
   }
 
   function rollFeed(half = false) {
@@ -60,14 +116,34 @@ export function DicePanel() {
     const sum = total + conPart;
     if (sixes > 0) {
       gainBlood(sixes);
-      toast.success(`Питание: ${sixes}×«6» → +${sixes} очк. крови`);
+      toast.success(`Питание: ${sixes}×«6» → +${sixes} ОБК`);
     }
     push(
-      half ? "Питание (½ Bane)" : "Питание",
-      `${rolls.join("+")} + Тел ${formatMod(conPart)}${sixes ? ` · 6×${sixes}` : ""}`,
+      half ? "Питание ½ (Bane)" : "Питание",
+      `${rolls.join("+")} + Тел ${formatMod(conPart)}`,
       sum,
       "damage",
     );
+    toast.message(`Питание: ${sum} некрот. (макс. хиты)`);
+  }
+
+  function rollInitiative() {
+    const mod = abilityMod(character.abilities.dex);
+    const forceAdv = hasAlacrity(character.selectedFeats);
+    const r = doD20("Инициатива", mod, { forceAdv });
+    setField("initiative", r.total);
+  }
+
+  function rollSave(key: keyof Abilities, name: string) {
+    const prof = !!character.saveProfs[key];
+    const bonus = abilityMod(character.abilities[key]) + (prof ? pb : 0);
+    // Ventrue: advantage on Wisdom saves
+    const forceAdv = character.clan === "ventrue" && key === "wis";
+    doD20(`Спас ${name}`, bonus, { forceAdv });
+  }
+
+  function rollAbility(key: keyof Abilities, name: string) {
+    doD20(`Проверка ${name}`, abilityMod(character.abilities[key]));
   }
 
   return (
@@ -75,7 +151,12 @@ export function DicePanel() {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Dices className="size-4 text-accent" />
-          <h3 className="font-display text-base tracking-wide">Кости</h3>
+          <h3 className="font-display text-base tracking-wide">Авто-кости</h3>
+          {beastOn && (
+            <span className="rounded-full bg-beast/20 px-2 py-0.5 text-[10px] font-medium text-beast">
+              Зверь: преим.
+            </span>
+          )}
         </div>
         <div className="flex rounded-[var(--radius-sm)] border border-border p-0.5">
           {(
@@ -88,10 +169,11 @@ export function DicePanel() {
             <button
               key={id}
               type="button"
-              onClick={() => setAdv(id)}
-              className={`h-8 px-2.5 text-xs font-medium rounded-[var(--radius-sm)] ${
-                adv === id ? "bg-primary text-primary-fg" : "text-muted hover:text-fg"
-              }`}
+              onClick={() => setRollMode(id)}
+              className={cn(
+                "h-8 px-2.5 text-xs font-medium rounded-[var(--radius-sm)]",
+                mode === id ? "bg-primary text-primary-fg" : "text-muted hover:text-fg",
+              )}
             >
               {label}
             </button>
@@ -99,91 +181,92 @@ export function DicePanel() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {/* Core combat rolls */}
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Button type="button" variant="blood" size="sm" onClick={() => rollFeed(false)}>
           Питание {row.feed}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => rollFeed(true)}>
-          Питание ½ (Bane)
+          Питание ½ Bane
         </Button>
         <Button
           type="button"
           variant="secondary"
           size="sm"
           onClick={() => {
+            if (character.bloodCurrent < 1) {
+              toast.error("Нет ОБК");
+              return;
+            }
             spendBlood(1);
             const r = rollDie(10) + character.level;
             adjustHp(r);
-            push("Исцеление", `1d10+${character.level} (−1 ОБК)`, r, "heal");
-            toast.message(`+${r} хитов`);
+            push("Исцеление ран", `1d10+${character.level} (−1 ОБК)`, r, "heal");
+            toast.success(`+${r} хитов`);
           }}
         >
           Лечение 1 ОБК
         </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() =>
-            rollD20("Атака Сил", abilityMod(character.abilities.str) + pb)
-          }
-        >
-          Атака Сил
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() =>
-            rollD20("Атака Лов", abilityMod(character.abilities.dex) + pb)
-          }
-        >
-          Атака Лов
+        <Button type="button" variant="secondary" size="sm" onClick={rollInitiative}>
+          Инициатива
         </Button>
         <Button
           type="button"
           variant="secondary"
           size="sm"
           onClick={() => {
-            const a = rollDie(20);
-            const b = rollDie(20);
-            const used = Math.max(a, b);
-            push("Зверь (преим.)", `преим. ${a}/${b}`, used, "check");
+            if (!activateBeast()) {
+              toast.error("Зверь исчерпан");
+              return;
+            }
+            toast.success("Зверь: преимущество на d20");
+            addLog("Зверь активирован — преимущество");
           }}
         >
-          Зверь d20
+          <Sparkles className="size-3.5" /> Зверь+преим.
         </Button>
+        {beastOn && (
+          <Button type="button" variant="ghost" size="sm" onClick={clearBeast}>
+            Снять Зверя
+          </Button>
+        )}
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           size="sm"
-          onClick={() => rollD20("Спас Тел", abilityMod(character.abilities.con) + pb)}
+          onClick={() => {
+            if (!spendLucky()) {
+              toast.error("Нет очков Везучего");
+              return;
+            }
+            patch({ pendingAdv: true });
+            toast.success("Везучий: след. бросок с преимуществом");
+            addLog("Везучий → pending преимущество");
+          }}
         >
-          Спас Тел
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => rollD20("Спас Хар", abilityMod(character.abilities.cha) + pb)}
-        >
-          Спас Хар
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() =>
-            rollD20("Спас Муд (Adv Вентру)", abilityMod(character.abilities.wis))
-          }
-        >
-          Спас Муд
+          Везучий → преим.
         </Button>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => rollD20("Атака закл.", chaMod + pb)}
+          onClick={() => {
+            if (!spendLucky()) {
+              toast.error("Нет очков Везучего");
+              return;
+            }
+            patch({ pendingDis: true });
+            toast.success("Везучий: помеха на атаку по тебе (отметь вручную у врага)");
+            addLog("Везучий → помеха на атаку по тебе");
+          }}
+        >
+          Везучий → помеха врагу
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => doD20("Атака закл.", chaMod + pb)}
         >
           Атака закл.
         </Button>
@@ -197,30 +280,141 @@ export function DicePanel() {
             toast.message(`Сл ${dc}`);
           }}
         >
-          Показать Сл
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            const r = rollDie(20);
-            push("d20", `${r}`, r, "check");
-          }}
-        >
-          d20
+          Сл {8 + pb + chaMod}
         </Button>
       </div>
 
+      {/* Ability checks + saves */}
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
+        Проверки · тап = бросок
+      </div>
+      <div className="mb-3 grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+        {ABIL.map(({ key, short }) => {
+          const mod = abilityMod(character.abilities[key]);
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => rollAbility(key, short)}
+              className="rounded-[var(--radius)] border border-border bg-surface-2 px-1 py-2 text-center active:bg-surface-3"
+            >
+              <div className="text-[10px] text-muted">{short}</div>
+              <div className="font-display text-lg text-accent">{formatMod(mod)}</div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
+        Спасброски
+      </div>
+      <div className="mb-3 grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+        {ABIL.map(({ key, short }) => {
+          const prof = !!character.saveProfs[key];
+          const bonus = abilityMod(character.abilities[key]) + (prof ? pb : 0);
+          const ventrueWis = character.clan === "ventrue" && key === "wis";
+          return (
+            <button
+              key={`save-${key}`}
+              type="button"
+              onClick={() => rollSave(key, short)}
+              className={cn(
+                "rounded-[var(--radius)] border px-1 py-2 text-center active:bg-surface-3",
+                prof ? "border-primary/50 bg-primary/10" : "border-border bg-surface-2",
+              )}
+            >
+              <div className="text-[10px] text-muted">
+                {short}
+                {ventrueWis ? " ★" : ""}
+              </div>
+              <div className="font-display text-lg text-fg">{formatMod(bonus)}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Quick skills — top social/perception for Ventrue */}
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
+        Навыки (быстрые)
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {(["persuasion", "intimidation", "deception", "insight", "perception", "stealth"] as const).map(
+          (id) => {
+            const sk = SKILLS.find((s) => s.id === id)!;
+            const bonus = skillBonus(
+              character.abilities[sk.ability],
+              pb,
+              character.skillProfs[id],
+            );
+            return (
+              <Button
+                key={id}
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => doD20(sk.nameRu, bonus)}
+              >
+                {sk.nameRu} {formatMod(bonus)}
+              </Button>
+            );
+          },
+        )}
+      </div>
+
+      {/* Attack list auto */}
+      {character.attacks.length > 0 && (
+        <>
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
+            Атаки (бросок + урон)
+          </div>
+          <div className="mb-3 space-y-1.5">
+            {character.attacks.map((atk) => (
+              <Button
+                key={atk.id}
+                type="button"
+                variant="blood"
+                size="sm"
+                className="h-auto w-full justify-between py-2"
+                onClick={() => {
+                  const hit = doD20(atk.name, atk.bonus);
+                  const dmg = rollDamage(atk.damage, `Урон · ${atk.name}`);
+                  // crit: double dice roughly by rolling again
+                  if (hit.crit) {
+                    const dmg2 = rollDamage(atk.damage, `Крит · ${atk.name}`);
+                    push(
+                      dmg2.label,
+                      dmg2.detail,
+                      dmg.total + dmg2.total,
+                      "damage",
+                    );
+                    toast.success(`КРИТ! ${atk.name}: ${dmg.total + dmg2.total} ${atk.type}`);
+                  } else {
+                    push(dmg.label, dmg.detail, dmg.total, "damage");
+                    toast.message(`${atk.name} урон: ${dmg.total} ${atk.type}`);
+                  }
+                }}
+              >
+                <span>
+                  {atk.name}{" "}
+                  <span className="text-primary-fg/80">{formatMod(atk.bonus)}</span>
+                </span>
+                <span className="text-[10px] opacity-80">
+                  {atk.damage} {atk.type}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </>
+      )}
+
       {log.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-2">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wide text-muted">История</span>
+            <span className="text-xs uppercase tracking-wide text-muted">История бросков</span>
             <button type="button" className="text-muted hover:text-fg" onClick={() => setLog([])}>
               <Trash2 className="size-3.5" />
             </button>
           </div>
-          <ul className="max-h-52 space-y-2 overflow-y-auto scroll-thin">
+          <ul className="max-h-56 space-y-2 overflow-y-auto scroll-thin">
             {log.map((e) => (
               <li
                 key={e.id}
@@ -231,13 +425,14 @@ export function DicePanel() {
                   <div className="truncate text-xs text-muted">{e.detail}</div>
                 </div>
                 <div
-                  className={`font-display text-xl tabular-nums ${
+                  className={cn(
+                    "font-display text-xl tabular-nums",
                     e.kind === "heal"
                       ? "text-success"
                       : e.kind === "damage"
                         ? "text-primary"
-                        : "text-accent"
-                  }`}
+                        : "text-accent",
+                  )}
                 >
                   {e.total}
                 </div>

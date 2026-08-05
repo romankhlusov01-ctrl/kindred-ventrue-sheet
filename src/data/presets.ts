@@ -1,9 +1,20 @@
 import type { CharacterSheet } from "@/lib/character-store";
 
+const SOLO_DEFAULTS = {
+  actionUsed: false,
+  bonusUsed: false,
+  reactionUsed: false,
+  movementUsed: false,
+  beastActive: false,
+  rollMode: "norm" as const,
+  initiative: null as number | null,
+  pendingAdv: false,
+  pendingDis: false,
+};
+
 /**
  * Основной пресет: человек · Опора (Protected) · Везучий (Lucky)
  * Класс Сородич / клан Вентру. Статы под бил: +2 Хар / +1 Тел (Touchstone).
- * Полностью редактируемый в листе.
  */
 export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
   id: "preset-ventrue-player",
@@ -41,20 +52,20 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
   protectedUsed: 0,
   humanSkill: "deception",
   feats:
-    "Человек · Гибкий: Везучий (Lucky) — dnd.su\nОпора · черта: Защищённый (Protected) — PDF\nУр. 2 Kindred: Властное присутствие\nУр. 4 ASI: +2 Хар → 17 (или иная настройка)\nУр. 7 Kindred: Смертельное тело\nУр. 8 ASI: по выбору\nДва пула удачи = БМ каждый (не смешиваются)",
+    "Человек · Гибкий: Везучий (Lucky)\nОпора · Защищённый (Protected)\nУр. 2: Властное присутствие\nУр. 4 ASI\nУр. 7: Смертельное тело\nУр. 8 ASI",
   equipment:
-    "Нагрудник\nКороткий меч\n2 кинжала\nРемесленные инструменты (Опора)\nДорожная одежда\nФлакон vitae\nПерстень дома\n15 зм",
+    "Нагрудник\nКороткий меч\n2 кинжала\nРемесленные инструменты\nДорожная одежда\nФлакон vitae\nПерстень дома\n15 зм",
   notes:
-    "Вид: Человек (dnd.su) — Находчивый, Умелый, Гибкий.\nБиография: Опора — Protected.\nКлан: Вентру. Bane: солдаты (½ Feed Dice иначе).\nСл заклинаний = 8 + БМ + Хар.\nВсе поля редактируются; уровень крутит прогрессию Kindred/Ventrue.",
+    "Соло-режим: вкладка Бой → ход / инициатива / кости.\nBane: солдаты. Сл = 8+БМ+Хар.",
   multiclass: "",
   attacks: [
     {
       id: "a1",
       name: "Безоружный (Смертельное тело)",
       bonus: 2,
-      damage: "1d4+0 + 1d8",
+      damage: "1d4+0+1d8",
       type: "Дробящий",
-      notes: "Сил 8 — лучше через контроль; Lethal Body +1d8",
+      notes: "Lethal Body +1d8",
     },
     {
       id: "a2",
@@ -62,15 +73,15 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
       bonus: 5,
       damage: "1d6+2",
       type: "Колющий",
-      notes: "Лёгкое · ловкость",
+      notes: "Лёгкое",
     },
     {
       id: "a3",
       name: "Питание (улучш.)",
       bonus: 0,
-      damage: "3d6+3 некрот. макс. хиты",
+      damage: "3d6+3",
       type: "Некротический",
-      notes: "БД с 5 ур.; «6» → +ОБК; half если не аспект Bane",
+      notes: "БД; max HP; half если не Bane",
     },
   ],
   conditions: [],
@@ -87,7 +98,7 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
       name: "Голос власти",
       current: 3,
       max: 3,
-      note: "Приказ / Внушение · БМ · короткий отдых",
+      note: "Приказ / Внушение · БМ · короткий",
     },
     {
       id: "cr2",
@@ -97,9 +108,9 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
       note: "Awe / Daunt · БМ · LR",
     },
   ],
+  ...SOLO_DEFAULTS,
 };
 
-/** Kindred 7 / Колдун 1 — тот же человек + Опора + двойная удача */
 export const PRESET_VENTRUE_7_WARLOCK_1: CharacterSheet = {
   ...PRESET_VENTRUE_PLAYER,
   id: "preset-ventrue-7-wl1",
@@ -111,9 +122,8 @@ export const PRESET_VENTRUE_7_WARLOCK_1: CharacterSheet = {
   hpCurrent: 62,
   ac: 14,
   feats:
-    "Человек: Везучий · Опора: Защищённый\nKindred 2: Властное присутствие\nKindred 4: ASI\nKindred 7: Смертельное тело\nКолдун 1: Мистический заряд + инвокация + 1 ячейка пакта",
-  notes:
-    "Сородич 7 / Колдун 1. Макс. ОБК 4, Питание 3d6.\nМистический заряд для дистанции.\nГолос власти БМ=3.",
+    "Человек: Везучий · Опора: Защищённый\nKindred 2: Властное присутствие\nKindred 4: ASI\nKindred 7: Смертельное тело\nКолдун 1: Мистический заряд + инвокация",
+  notes: "Сородич 7 / Колдун 1. ОБК 4, Питание 3d6.",
   attacks: [
     {
       id: "a1",
@@ -121,24 +131,24 @@ export const PRESET_VENTRUE_7_WARLOCK_1: CharacterSheet = {
       bonus: 6,
       damage: "1d10",
       type: "Силовой",
-      notes: "Заговор; +Хар если Агония",
+      notes: "Заговор",
     },
     {
       id: "a2",
       name: "Питание",
       bonus: 2,
-      damage: "3d6+3 некрот. макс. хиты",
+      damage: "3d6+3",
       type: "Некротический",
-      notes: "БД; захват через контроль",
+      notes: "БД",
     },
   ],
   customResources: [
     { id: "cr1", name: "Голос власти", current: 3, max: 3, note: "Приказ/Внушение" },
-    { id: "cr2", name: "Ячейка пакта", current: 1, max: 1, note: "1 круг, короткий отдых" },
+    { id: "cr2", name: "Ячейка пакта", current: 1, max: 1, note: "1 круг, короткий" },
   ],
+  ...SOLO_DEFAULTS,
 };
 
-/** Чистый Вентру 8 (социальный / силовой) — альтернативный пресет */
 export const PRESET_VENTRUE_8: CharacterSheet = {
   ...PRESET_VENTRUE_PLAYER,
   id: "preset-ventrue-8",
@@ -152,7 +162,7 @@ export const PRESET_VENTRUE_8: CharacterSheet = {
       id: "a1",
       name: "Безоружный (Смертельное тело)",
       bonus: 6,
-      damage: "1d8+3 + 1d8",
+      damage: "1d8+3+1d8",
       type: "Дробящий",
       notes: "Crushing Blows + Iron Grip",
     },
@@ -162,17 +172,18 @@ export const PRESET_VENTRUE_8: CharacterSheet = {
       bonus: 6,
       damage: "1d6+3",
       type: "Колющий",
-      notes: "Лёгкое",
+      notes: "",
     },
     {
       id: "a3",
       name: "Питание (улучш.)",
       bonus: 0,
-      damage: "3d6+3 некрот. макс. хиты",
+      damage: "3d6+3",
       type: "Некротический",
-      notes: "БД; half dice если не Bane-аспект",
+      notes: "БД",
     },
   ],
+  ...SOLO_DEFAULTS,
 };
 
 export const BLANK_TEMPLATE = (): CharacterSheet => ({
@@ -222,4 +233,5 @@ export const BLANK_TEMPLATE = (): CharacterSheet => ({
   customResources: [
     { id: "cr1", name: "Голос власти", current: 2, max: 2, note: "Приказ/Внушение" },
   ],
+  ...SOLO_DEFAULTS,
 });

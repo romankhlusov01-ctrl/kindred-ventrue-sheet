@@ -4,6 +4,7 @@ import type { ClanId } from "@/data/kindred";
 import { getLevelData } from "@/data/kindred-ru";
 import type { ProfLevel, SkillId } from "@/data/skills";
 import { BLANK_TEMPLATE, PRESET_VENTRUE_PLAYER } from "@/data/presets";
+import type { RollMode } from "@/lib/roll-engine";
 
 export type Abilities = {
   str: number;
@@ -44,7 +45,6 @@ export type CharacterSheet = {
   clan: ClanId;
   level: number;
   background: string;
-  /** id from BACKGROUNDS_PDF */
   backgroundId: string;
   species: string;
   alignment: string;
@@ -75,16 +75,25 @@ export type CharacterSheet = {
   hitDiceUsed: number;
   sessionLog: LogEntry[];
   customResources: CustomResource[];
-  /** Origin feat from Human Versatile — default Lucky */
   originFeatId: string;
-  /** Background origin feat — Touchstone → Protected */
   backgroundFeatId: string;
-  /** Spent Lucky points (Везучий, dnd.su) */
   luckyUsed: number;
-  /** Spent Protected points (Защищённый, PDF) */
   protectedUsed: number;
-  /** Human Skillful skill id */
   humanSkill: SkillId | "";
+  /** Solo combat session */
+  actionUsed: boolean;
+  bonusUsed: boolean;
+  reactionUsed: boolean;
+  movementUsed: boolean;
+  /** Beast advantage active until end of turn / clear */
+  beastActive: boolean;
+  /** Sticky dice mode for next rolls */
+  rollMode: RollMode;
+  /** Last initiative total */
+  initiative: number | null;
+  /** Consume next roll as adv then clear (Lucky one-shot without sticky) */
+  pendingAdv: boolean;
+  pendingDis: boolean;
 };
 
 type LibraryState = {
@@ -122,6 +131,16 @@ type LibraryState = {
   spendLucky: () => boolean;
   spendProtected: () => boolean;
   restoreLuck: () => void;
+  /** Solo helpers */
+  activateBeast: () => boolean;
+  clearBeast: () => void;
+  newTurn: () => void;
+  setRollMode: (m: RollMode) => void;
+  consumeRollMode: () => RollMode;
+  markDeathSuccess: () => void;
+  markDeathFail: () => void;
+  resetDeathSaves: () => void;
+  spendHitDie: () => number | null;
 };
 
 function clamp(n: number, min: number, max: number) {
@@ -158,6 +177,15 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     luckyUsed: raw.luckyUsed ?? 0,
     protectedUsed: raw.protectedUsed ?? 0,
     humanSkill: raw.humanSkill ?? base.humanSkill,
+    actionUsed: raw.actionUsed ?? false,
+    bonusUsed: raw.bonusUsed ?? false,
+    reactionUsed: raw.reactionUsed ?? false,
+    movementUsed: raw.movementUsed ?? false,
+    beastActive: raw.beastActive ?? false,
+    rollMode: raw.rollMode ?? "norm",
+    initiative: raw.initiative ?? null,
+    pendingAdv: raw.pendingAdv ?? false,
+    pendingDis: raw.pendingDis ?? false,
   };
 }
 
@@ -292,17 +320,23 @@ export const useCharacterStore = create<LibraryState>()(
         set((s) => updateActive(s, (c) => ({ ...c, beastUsed: 0 }))),
       adjustHp: (delta) =>
         set((s) =>
-          updateActive(s, (c) => ({
-            ...c,
-            hpCurrent: clamp(c.hpCurrent + delta, 0, Math.max(c.hpMax + 100, 0)),
-          })),
+          updateActive(s, (c) => {
+            const next = clamp(c.hpCurrent + delta, 0, Math.max(c.hpMax + 100, 0));
+            // Kindred auto-success death saves at 0 — still track if user wants
+            return { ...c, hpCurrent: next };
+          }),
         ),
       shortRest: () =>
         set((s) =>
           updateActive(s, (c) => ({
             ...c,
             beastUsed: 0,
+            beastActive: false,
             voiceUses: 0,
+            actionUsed: false,
+            bonusUsed: false,
+            reactionUsed: false,
+            movementUsed: false,
             customResources: c.customResources.map((r) =>
               /голос|пакт|коротк|voice|pact|short/i.test(r.name + r.note)
                 ? { ...r, current: r.max }
@@ -311,7 +345,7 @@ export const useCharacterStore = create<LibraryState>()(
             sessionLog: [
               { id: `log-${Date.now()}`, at: Date.now(), text: "Короткий отдых" },
               ...c.sessionLog,
-            ].slice(0, 50),
+            ].slice(0, 80),
           })),
         ),
       longRest: () =>
@@ -323,24 +357,30 @@ export const useCharacterStore = create<LibraryState>()(
               hpCurrent: hasBlood ? c.hpMax : c.hpCurrent,
               tempHp: 0,
               beastUsed: 0,
+              beastActive: false,
               voiceUses: 0,
               luckyUsed: 0,
               protectedUsed: 0,
-              inspiration: true, // Human Resourceful
+              inspiration: true,
               hitDiceUsed: hasBlood ? 0 : c.hitDiceUsed,
               deathSuccess: 0,
               deathFail: 0,
+              actionUsed: false,
+              bonusUsed: false,
+              reactionUsed: false,
+              movementUsed: false,
+              concentrating: hasBlood ? "" : c.concentrating,
               customResources: c.customResources.map((r) => ({ ...r, current: r.max })),
               sessionLog: [
                 {
                   id: `log-${Date.now()}`,
                   at: Date.now(),
                   text: hasBlood
-                    ? "Продолжительный отдых (≥1 ОБК) — хиты, удача Lucky+Protected, вдохновение (Человек)"
-                    : "Продолжительный отдых БЕЗ ОБК — только польза короткого (Awaken); удача Lucky+Protected восстановлена",
+                    ? "Продолжительный отдых (≥1 ОБК) — хиты, HD, удача, вдохновение"
+                    : "Продолжительный отдых БЕЗ ОБК — только короткий (Awaken)",
                 },
                 ...c.sessionLog,
-              ].slice(0, 50),
+              ].slice(0, 80),
             };
           }),
         ),
@@ -382,7 +422,7 @@ export const useCharacterStore = create<LibraryState>()(
             sessionLog: [
               { id: `log-${Date.now()}`, at: Date.now(), text },
               ...c.sessionLog,
-            ].slice(0, 50),
+            ].slice(0, 80),
           })),
         ),
       loadCharacter: (data) =>
@@ -461,10 +501,107 @@ export const useCharacterStore = create<LibraryState>()(
       },
       restoreLuck: () =>
         set((s) => updateActive(s, (c) => ({ ...c, luckyUsed: 0, protectedUsed: 0 }))),
+      activateBeast: () => {
+        const c = get().character;
+        const pb = getLevelData(c.level).pb;
+        if (c.beastUsed >= pb) return false;
+        set((s) =>
+          updateActive(s, (ch) => ({
+            ...ch,
+            beastUsed: ch.beastUsed + 1,
+            beastActive: true,
+            pendingAdv: true,
+          })),
+        );
+        return true;
+      },
+      clearBeast: () =>
+        set((s) =>
+          updateActive(s, (c) => ({
+            ...c,
+            beastActive: false,
+            pendingAdv: false,
+          })),
+        ),
+      newTurn: () =>
+        set((s) =>
+          updateActive(s, (c) => ({
+            ...c,
+            actionUsed: false,
+            bonusUsed: false,
+            reactionUsed: false,
+            movementUsed: false,
+            beastActive: false,
+            pendingAdv: false,
+            pendingDis: false,
+            sessionLog: [
+              {
+                id: `log-${Date.now()}`,
+                at: Date.now(),
+                text: "— Новый ход —",
+              },
+              ...c.sessionLog,
+            ].slice(0, 80),
+          })),
+        ),
+      setRollMode: (m) =>
+        set((s) => updateActive(s, (c) => ({ ...c, rollMode: m }))),
+      consumeRollMode: () => {
+        const c = get().character;
+        let mode: RollMode = c.rollMode;
+        if (c.beastActive || c.pendingAdv) {
+          mode = mode === "dis" ? "norm" : "adv";
+        }
+        if (c.pendingDis && !c.beastActive && !c.pendingAdv) {
+          mode = mode === "adv" ? "norm" : "dis";
+        }
+        // Clear one-shots; beast stays until new turn unless user clears
+        set((s) =>
+          updateActive(s, (ch) => ({
+            ...ch,
+            pendingAdv: false,
+            pendingDis: false,
+          })),
+        );
+        return mode;
+      },
+      markDeathSuccess: () =>
+        set((s) =>
+          updateActive(s, (c) => ({
+            ...c,
+            deathSuccess: Math.min(3, c.deathSuccess + 1),
+          })),
+        ),
+      markDeathFail: () =>
+        set((s) =>
+          updateActive(s, (c) => ({
+            ...c,
+            deathFail: Math.min(3, c.deathFail + 1),
+          })),
+        ),
+      resetDeathSaves: () =>
+        set((s) =>
+          updateActive(s, (c) => ({ ...c, deathSuccess: 0, deathFail: 0 })),
+        ),
+      spendHitDie: () => {
+        const c = get().character;
+        if (c.hitDiceUsed >= c.level) return null;
+        const conMod = Math.floor((c.abilities.con - 10) / 2);
+        const roll = Math.floor(Math.random() * 8) + 1; // Kindred d8
+        const heal = Math.max(1, roll + conMod);
+        set((s) =>
+          updateActive(s, (ch) => ({
+            ...ch,
+            hitDiceUsed: ch.hitDiceUsed + 1,
+            hpCurrent: Math.min(ch.hpMax, ch.hpCurrent + heal),
+          })),
+        );
+        return heal;
+      },
     }),
     {
-      name: "kindred-sheet-v4-ru",
-      version: 4,
+      name: "kindred-sheet-v5-solo",
+      version: 5,
       migrate: (persisted: unknown) => {
         const p = persisted as {
           character?: CharacterSheet;

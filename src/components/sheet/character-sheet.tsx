@@ -26,6 +26,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ResourcePool } from "@/components/sheet/resource-pool";
 import { DicePanel } from "@/components/sheet/dice-panel";
 import { QuickActions } from "@/components/sheet/quick-actions";
+import { SoloCombat } from "@/components/sheet/solo-combat";
+
 import {
   featsForLevel,
   getLevelData,
@@ -390,7 +392,15 @@ export function CharacterSheet() {
           <HudStat label="Зверь" value={`${beastLeft}/${beastMax}`} />
           <HudStat label="Везучий" value={`${luckyLeft}/${luckMax}`} />
           <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
-          <HudStat label="Иниц" value={formatMod(abilityMod(character.abilities.dex))} />
+          <HudStat
+            label="Иниц"
+            value={
+              character.initiative != null
+                ? String(character.initiative)
+                : formatMod(abilityMod(character.abilities.dex))
+            }
+          />
+
           <div className="ml-auto flex flex-wrap gap-1.5">
             <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(-1)}>
               −ХП
@@ -747,13 +757,53 @@ export function CharacterSheet() {
                         variant="blood"
                         className="flex-1"
                         onClick={() => {
-                          const d20 = rollDie(20);
-                          const total = d20 + atk.bonus;
-                          toast.message(`${atk.name}: ${d20}${formatMod(atk.bonus)} = ${total}`);
-                          addLog(`Атака ${atk.name}: ${total}`);
+                          const mode =
+                            character.beastActive || character.pendingAdv
+                              ? character.rollMode === "dis"
+                                ? "norm"
+                                : "adv"
+                              : character.rollMode ?? "norm";
+                          const a = rollDie(20);
+                          const b = rollDie(20);
+                          const used =
+                            mode === "adv" ? Math.max(a, b) : mode === "dis" ? Math.min(a, b) : a;
+                          const total = used + atk.bonus;
+                          const det =
+                            mode === "adv"
+                              ? `преим. ${a}/${b}`
+                              : mode === "dis"
+                                ? `помеха ${a}/${b}`
+                                : `${a}`;
+                          toast.message(`${atk.name}: ${det}${formatMod(atk.bonus)} = ${total}`);
+                          addLog(`Атака ${atk.name}: ${total} (${det})`);
+                          // damage dice from expression
+                          const m = atk.damage.match(/(\d+)d(\d+)([+-]\d+)?/i);
+                          if (m) {
+                            const count = Number(m[1]);
+                            const sides = Number(m[2]);
+                            const bonus = m[3] ? Number(m[3]) : 0;
+                            let sum = bonus;
+                            const rolls: number[] = [];
+                            for (let i = 0; i < count; i++) {
+                              const r = rollDie(sides);
+                              rolls.push(r);
+                              sum += r;
+                            }
+                            if (used === 20) {
+                              for (let i = 0; i < count; i++) {
+                                const r = rollDie(sides);
+                                rolls.push(r);
+                                sum += r;
+                              }
+                            }
+                            toast.success(
+                              `Урон ${atk.name}: ${sum} ${atk.type}${used === 20 ? " (крит)" : ""}`,
+                            );
+                            addLog(`Урон ${atk.name}: ${sum} [${rolls.join("+")}]`);
+                          }
                         }}
                       >
-                        Брос
+                        Атака+урон
                       </Button>
                       <Button
                         type="button"
@@ -768,6 +818,8 @@ export function CharacterSheet() {
                 ))}
               </div>
             </div>
+
+            <SoloCombat />
 
             <DicePanel />
           </div>
