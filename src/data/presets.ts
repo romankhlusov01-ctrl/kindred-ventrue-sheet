@@ -11,7 +11,9 @@ const SOLO_DEFAULTS = {
   pendingAdv: false,
   pendingDis: false,
   scenario: "combat" as const,
+  round: 1,
 };
+
 
 
 /**

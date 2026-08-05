@@ -96,7 +96,10 @@ export type CharacterSheet = {
   pendingDis: boolean;
   /** Solo scenario focus */
   scenario: "combat" | "social" | "feed" | "rest";
+  /** Combat round number for solo tracking */
+  round: number;
 };
+
 
 
 type LibraryState = {
@@ -190,6 +193,7 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     pendingAdv: raw.pendingAdv ?? false,
     pendingDis: raw.pendingDis ?? false,
     scenario: raw.scenario ?? "combat",
+    round: raw.round ?? 1,
   };
 }
 
@@ -538,11 +542,12 @@ export const useCharacterStore = create<LibraryState>()(
             beastActive: false,
             pendingAdv: false,
             pendingDis: false,
+            round: (c.round ?? 1) + 1,
             sessionLog: [
               {
                 id: `log-${Date.now()}`,
                 at: Date.now(),
-                text: "— Новый ход —",
+                text: `— Ход · раунд ${(c.round ?? 1) + 1} —`,
               },
               ...c.sessionLog,
             ].slice(0, 80),

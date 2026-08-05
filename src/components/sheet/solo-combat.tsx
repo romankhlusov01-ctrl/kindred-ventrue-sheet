@@ -49,6 +49,17 @@ export function SoloCombat() {
                 Иниц {c.initiative}
               </span>
             )}
+            <span className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs tabular-nums">
+              Раунд {c.round ?? 1}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setField("round", 1)}
+            >
+              R1
+            </Button>
             <Button type="button" size="sm" variant="secondary" onClick={newTurn}>
               <RefreshCw className="size-3.5" /> Новый ход
             </Button>

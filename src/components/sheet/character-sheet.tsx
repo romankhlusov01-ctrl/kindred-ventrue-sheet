@@ -30,6 +30,7 @@ import { SoloCombat } from "@/components/sheet/solo-combat";
 import { ScenarioBar } from "@/components/sheet/scenario-bar";
 import { PlayDock } from "@/components/sheet/play-dock";
 import { TargetCheck } from "@/components/sheet/target-check";
+import { DamageIntake } from "@/components/sheet/damage-intake";
 
 
 
@@ -393,12 +394,12 @@ export function CharacterSheet() {
 
       {/* Sticky HUD */}
       <div className="sticky top-0 z-20 -mx-3 mb-4 border-y border-border bg-bg/95 px-3 py-2 backdrop-blur sm:mx-0 sm:rounded-[var(--radius-lg)] sm:border sm:px-4">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="grid grid-cols-4 gap-x-2 gap-y-1 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
           <HudStat label="ХП" value={`${character.hpCurrent}/${character.hpMax}`} />
           <HudStat label="КД" value={String(character.ac)} />
           <HudStat label="ОБК" value={`${character.bloodCurrent}/${bloodMax}`} blood />
           <HudStat label="Зверь" value={`${beastLeft}/${beastMax}`} />
-          <HudStat label="Везучий" value={`${luckyLeft}/${luckMax}`} />
+          <HudStat label="Везуч." value={`${luckyLeft}/${luckMax}`} />
           <HudStat label="Защищ." value={`${protectedLeft}/${luckMax}`} />
           <HudStat
             label="Иниц"
@@ -408,8 +409,9 @@ export function CharacterSheet() {
                 : formatMod(abilityMod(character.abilities.dex))
             }
           />
-
-          <div className="ml-auto flex flex-wrap gap-1.5">
+          <HudStat label="Раунд" value={String(character.round ?? 1)} />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
             <Button type="button" size="sm" variant="secondary" onClick={() => adjustHp(-1)}>
               −ХП
             </Button>
@@ -425,7 +427,6 @@ export function CharacterSheet() {
             <Button type="button" size="sm" variant="outline" onClick={longRest}>
               Длинный
             </Button>
-          </div>
         </div>
       </div>
 
@@ -866,6 +867,7 @@ export function CharacterSheet() {
             <SoloCombat />
 
             <TargetCheck />
+            <DamageIntake />
 
             <DicePanel />
           </div>
@@ -1063,11 +1065,18 @@ export function CharacterSheet() {
                       type="button"
                       className="font-display tabular-nums text-accent"
                       onClick={() => {
-                        const d20 = rollDie(20);
-                        toast.message(
-                          `${sk.nameRu}: ${d20}${formatMod(bonus)} = ${d20 + bonus}`,
+                        const mode = conditionMode(
+                          character,
+                          "check",
+                          character.beastActive || character.pendingAdv
+                            ? "adv"
+                            : character.rollMode ?? "norm",
                         );
-                        addLog(`${sk.nameRu}: ${d20 + bonus}`);
+                        const r = rollD20(sk.nameRu, bonus, mode);
+                        toast.message(
+                          `${sk.nameRu}: ${r.detail} = ${r.total}`,
+                        );
+                        addLog(`${sk.nameRu}: ${r.total} (${r.detail})`);
                       }}
                     >
                       {formatMod(bonus)}
