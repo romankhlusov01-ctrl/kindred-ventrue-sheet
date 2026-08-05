@@ -362,6 +362,13 @@ export function PlayHub() {
       <DeathPanel />
       <SelfReminders />
       <RollModeBar />
+      {(c.pendingAdv || c.pendingDis) && (
+        <div className="rounded-[var(--radius)] border border-accent/30 bg-accent/10 px-3 py-2 text-center text-xs text-accent">
+          Следующий d20: {c.pendingAdv ? "преимущество" : ""}
+          {c.pendingAdv && c.pendingDis ? " · " : ""}
+          {c.pendingDis ? "помеха" : ""}
+        </div>
+      )}
       {(showCombat || showSocial) && <AbilityStrip />}
 
       {/* Turn economy — combat + social */}
