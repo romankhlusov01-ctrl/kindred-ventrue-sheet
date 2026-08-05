@@ -47,7 +47,7 @@ export function RollModeBar() {
       {(c.pendingAdv || c.pendingDis || c.beastActive) && (
         <button
           type="button"
-          className="flex h-11 shrink-0 items-center gap-1 rounded-[var(--radius)] border border-border bg-surface-2 px-2 text-[10px] text-muted"
+          className="flex h-11 shrink-0 items-center gap-1 rounded-[var(--radius)] border border-accent/40 bg-accent/10 px-2 text-[10px] font-medium text-accent"
           onClick={() => {
             setField("pendingAdv", false);
             setField("pendingDis", false);
@@ -58,8 +58,8 @@ export function RollModeBar() {
           }}
         >
           {c.beastActive && <span className="text-beast">Зв★</span>}
-          {c.pendingAdv && <span className="text-accent">+1</span>}
-          {c.pendingDis && <span className="text-primary">−1</span>}
+          {c.pendingAdv && <span>↑след</span>}
+          {c.pendingDis && <span className="text-primary">↓след</span>}
           ×
         </button>
       )}
