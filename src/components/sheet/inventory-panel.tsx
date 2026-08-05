@@ -51,13 +51,13 @@ function serialize(items: InventoryItem[], rest: string, gold: number) {
     (i) =>
       `• ${i.name} ×${i.qty}${i.weight ? ` (${i.weight} lb)` : ""}${i.note ? ` — ${i.note}` : ""}`,
   );
-  const goldLine = `💰 ${gold} зм`;
+  const goldLine = `$ ${gold} зм`;
   const body = [goldLine, ...lines, rest].filter(Boolean).join("\n");
   return body;
 }
 
 function parseGold(raw: string): number {
-  const m = raw.match(/💰\s*(\d+)/);
+  const m = raw.match(/(?:\$|💰)\s*(\d+)/);
   return m ? Number(m[1]) : 0;
 }
 
@@ -75,7 +75,7 @@ export function InventoryPanel() {
     // strip old gold line from rest
     const cleanRest = r
       .split("\n")
-      .filter((l) => !l.startsWith("💰"))
+      .filter((l) => !l.startsWith("$") && !l.startsWith("💰"))
       .join("\n")
       .trim();
     setField("equipment", serialize(items, cleanRest, g));
