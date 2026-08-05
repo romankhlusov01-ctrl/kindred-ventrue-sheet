@@ -37,11 +37,18 @@ export function LevelUpHelper() {
         onClick={() => {
           const hp = calcKindredHp(next, c.abilities.con, next >= 6);
           const gain = Math.max(1, hp - c.hpMax);
+          const resources = c.customResources.map((r) => {
+            if (/голос|присутств|forceful/i.test(r.name)) {
+              return { ...r, max: row.pb, current: Math.min(r.current + 1, row.pb) };
+            }
+            return r;
+          });
           patch({
             level: next,
             hpMax: hp,
             hpCurrent: c.hpCurrent + gain,
             bloodCurrent: Math.min(row.bp, c.bloodCurrent + 1),
+            customResources: resources,
           });
           addLog(`Уровень ${next}: +${gain} макс. ХП, ОБК макс ${row.bp}`);
           toast.success(`Уровень ${next}${newFeat ? " — выберите черту сородича в Билдере" : ""}`);
