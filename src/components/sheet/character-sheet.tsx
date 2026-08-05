@@ -51,6 +51,7 @@ import { RecalcHp } from "@/components/sheet/recalc-hp";
 import { StartEncounter } from "@/components/sheet/start-encounter";
 import { TorporPanel } from "@/components/sheet/torpor-panel";
 import { StakeHelper } from "@/components/sheet/stake-helper";
+import { Glossary } from "@/components/sheet/glossary";
 
 
 
@@ -1438,6 +1439,7 @@ export function CharacterSheet() {
       {tab === "log" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <SessionSummary />
+          <Glossary />
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-lg">Журнал</h2>
