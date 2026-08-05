@@ -138,6 +138,24 @@ export function Hotkeys() {
         toast.success(`Питание ${sum}`);
         return;
       }
+
+      if (key === "p") {
+        e.preventDefault();
+        session.pushUndo("Protected");
+        if (!store.spendProtected()) toast.error("Нет Protected");
+        else toast.message("Protected · переброс");
+        return;
+      }
+      if (key === "l") {
+        e.preventDefault();
+        session.pushUndo("Везучий");
+        if (!store.spendLucky()) toast.error("Нет Везучего");
+        else {
+          store.setField("pendingAdv", true);
+          toast.success("Преим.");
+        }
+        return;
+      }
       if (key === "h") {
         e.preventDefault();
         session.pushUndo("−1 ХП");
@@ -165,6 +183,7 @@ export function Hotkeys() {
       <kbd className="rounded border border-border px-1">F</kbd> питание ·{" "}
       <kbd className="rounded border border-border px-1">B</kbd> зверь ·{" "}
       <kbd className="rounded border border-border px-1">Z</kbd> отмена ·{" "}
+      <kbd className="rounded border border-border px-1">L</kbd>/<kbd className="rounded border border-border px-1">P</kbd> удача ·{" "}
       <kbd className="rounded border border-border px-1">H</kbd>/
       <kbd className="rounded border border-border px-1">J</kbd> −/+ХП
     </p>
