@@ -45,6 +45,7 @@ import { AbilityStrip } from "@/components/sheet/ability-strip";
 import { SelfReminders } from "@/components/sheet/self-reminders";
 import { AutoInit } from "@/components/sheet/auto-init";
 import { InspirationToggle } from "@/components/sheet/inspiration-toggle";
+import { SessionNote } from "@/components/sheet/session-note";
 import {
   getBloodMax,
   getLuckMax,
@@ -616,6 +617,7 @@ export function PlayHub() {
 
       {showSocial && (
         <>
+          <SessionNote />
           <InspirationToggle />
           <div className="grid gap-2.5 lg:grid-cols-2">
           <QuickSkills />
@@ -648,6 +650,7 @@ export function PlayHub() {
         <>
           <RestWizard />
           <BloodPips />
+          <MyEffects />
           <Collapsible title="HD · лечение" defaultOpen>
             <SoloCombat />
             <div className="flex flex-wrap gap-2">
