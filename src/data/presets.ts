@@ -55,6 +55,7 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
   luckyUsed: 0,
   protectedUsed: 0,
   humanSkill: "deception",
+  fiendishLegacy: "",
   feats:
     "Человек · Гибкий: Везучий (Lucky)\nОпора · Защищённый (Protected)\nУр. 2: Властное присутствие\nУр. 4 ASI\nУр. 7: Смертельное тело\nУр. 8 ASI",
   equipment:
@@ -221,6 +222,7 @@ export const BLANK_TEMPLATE = (): CharacterSheet => ({
   luckyUsed: 0,
   protectedUsed: 0,
   humanSkill: "perception",
+  fiendishLegacy: "",
   feats: "",
   equipment: "",
   notes: "",

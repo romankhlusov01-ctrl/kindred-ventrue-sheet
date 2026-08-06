@@ -21,11 +21,31 @@ export type BackgroundDef = {
   description: string;
 };
 
+export type SpeciesTrait = { name: string; body: string };
+
+export type SpeciesDef = {
+  id: string;
+  name: string;
+  nameEn: string;
+  source: string;
+  /** free origin feat from Versatile (Human only) */
+  versatileOriginFeat?: boolean;
+  /** free skill from Skillful (Human only) */
+  skillful?: boolean;
+  traits: SpeciesTrait[];
+  summary: string;
+};
+
 /** Человек · next.dnd.su/species/human · PHB 2024 */
-export const HUMAN_SPECIES = {
+export const HUMAN_SPECIES: SpeciesDef = {
   id: "human",
   name: "Человек",
+  nameEn: "Human",
   source: "dnd.su · PHB 2024",
+  versatileOriginFeat: true,
+  skillful: true,
+  summary:
+    "Находчивый (вдохновение на LR) · Умелый (1 навык) · Гибкий (черта происхождения).",
   traits: [
     {
       name: "Тип существа",
@@ -41,10 +61,110 @@ export const HUMAN_SPECIES = {
     },
     {
       name: "Гибкий (Versatile)",
-      body: "Вы получаете одну черту Происхождения на ваш выбор. В этом билде: Везучий (Lucky).",
+      body: "Вы получаете одну черту Происхождения на ваш выбор. Часто: Везучий (Lucky).",
     },
   ],
 };
+
+/** Тифлинг · PHB 2024 · Fiendish Legacy */
+export type FiendishLegacyId = "infernal" | "abyssal" | "chthonic";
+
+export type FiendishLegacyDef = {
+  id: FiendishLegacyId;
+  name: string;
+  nameEn: string;
+  /** casting: choose INT/WIS/CHA when selecting legacy */
+  level1: string;
+  level3: string;
+  level5: string;
+};
+
+export const FIENDISH_LEGACIES: FiendishLegacyDef[] = [
+  {
+    id: "infernal",
+    name: "Инфернальное",
+    nameEn: "Infernal",
+    level1: "Огненный снаряд (Fire Bolt)",
+    level3: "Адское возмездие (Hellish Rebuke) — 1/LR без ячейки",
+    level5: "Тьма (Darkness) — 1/LR без ячейки",
+  },
+  {
+    id: "abyssal",
+    name: "Бездны",
+    nameEn: "Abyssal",
+    level1: "Ядовитые брызги (Poison Spray)",
+    level3: "Луч болезни (Ray of Sickness) — 1/LR без ячейки",
+    level5: "Удержание личности (Hold Person) — 1/LR без ячейки",
+  },
+  {
+    id: "chthonic",
+    name: "Хтоническое",
+    nameEn: "Chthonic",
+    level1: "Леденящее касание (Chill Touch)",
+    level3: "Псевдожизнь (False Life) — 1/LR без ячейки",
+    level5: "Луч слабости (Ray of Enfeeblement) — 1/LR без ячейки",
+  },
+];
+
+export const TIEFLING_SPECIES: SpeciesDef = {
+  id: "tiefling",
+  name: "Тифлинг",
+  nameEn: "Tiefling",
+  source: "PHB 2024 · dnd.su / D&D Beyond",
+  versatileOriginFeat: false,
+  skillful: false,
+  summary:
+    "Тёмное зрение 60 · Иное присутствие (Чудотворство) · Наследие (Infernal / Abyssal / Chthonic).",
+  traits: [
+    {
+      name: "Тип существа",
+      body: "Гуманоид. Размер: Средний (около 4–7 фт) или Маленький (около 3–4 фт) — на выбор. Скорость 30 футов. Средний срок жизни ~100 лет.",
+    },
+    {
+      name: "Тёмное зрение (Darkvision)",
+      body: "Вы видите в тусклом свете в пределах 60 футов как при ярком, а в темноте — как в тусклом. Цвета в темноте не различаете.",
+    },
+    {
+      name: "Наследие демонов (Fiendish Legacy)",
+      body: "Выберите наследие: Инфернальное, Бездны или Хтоническое. На 1 уровне — заговор наследия. На 3 и 5 — заклинания наследия (всегда подготовлены; 1 раз / LR без ячейки, либо любой подходящей ячейкой). Способность заклинаний: Интеллект, Мудрость или Харизма — на ваш выбор при взятии наследия.",
+    },
+    {
+      name: "Иное присутствие (Otherworldly Presence)",
+      body: "Вы знаете заговор Чудотворство (Thaumaturgy). Способность та же, что для Fiendish Legacy.",
+    },
+    {
+      name: "Заметка Kindred",
+      body: "Как сородич вы по-прежнему уязвимы к Огню и Лучу (×2). Инфернальный Огненный снаряд — союзник в бою, но не снимает уязвимость. Наследие и класс Kindred сочетаются.",
+    },
+  ],
+};
+
+export const SPECIES: SpeciesDef[] = [HUMAN_SPECIES, TIEFLING_SPECIES];
+
+export function speciesById(id: string | undefined | null): SpeciesDef {
+  return SPECIES.find((s) => s.id === id) ?? HUMAN_SPECIES;
+}
+
+export function speciesByName(name: string | undefined | null): SpeciesDef {
+  if (!name) return HUMAN_SPECIES;
+  const n = name.trim().toLowerCase();
+  return (
+    SPECIES.find(
+      (s) =>
+        s.name.toLowerCase() === n ||
+        s.nameEn.toLowerCase() === n ||
+        s.id === n ||
+        (n.includes("тифлинг") && s.id === "tiefling") ||
+        (n.includes("tiefling") && s.id === "tiefling") ||
+        (n.includes("человек") && s.id === "human") ||
+        (n.includes("human") && s.id === "human"),
+    ) ?? HUMAN_SPECIES
+  );
+}
+
+export function fiendishLegacyById(id: string | undefined | null) {
+  return FIENDISH_LEGACIES.find((l) => l.id === id) ?? FIENDISH_LEGACIES[0]!;
+}
 
 /**
  * Везучий [Lucky] — черта происхождения PHB 2024

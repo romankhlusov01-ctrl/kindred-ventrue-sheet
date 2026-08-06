@@ -82,6 +82,8 @@ export type CharacterSheet = {
   luckyUsed: number;
   protectedUsed: number;
   humanSkill: SkillId | "";
+  /** Tiefling Fiendish Legacy */
+  fiendishLegacy: "" | "infernal" | "abyssal" | "chthonic";
   /** Solo combat session */
   actionUsed: boolean;
   bonusUsed: boolean;
@@ -185,6 +187,7 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     luckyUsed: raw.luckyUsed ?? 0,
     protectedUsed: raw.protectedUsed ?? 0,
     humanSkill: raw.humanSkill ?? base.humanSkill,
+    fiendishLegacy: (raw as CharacterSheet).fiendishLegacy ?? base.fiendishLegacy ?? "",
     actionUsed: raw.actionUsed ?? false,
     bonusUsed: raw.bonusUsed ?? false,
     reactionUsed: raw.reactionUsed ?? false,

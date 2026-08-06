@@ -57,10 +57,14 @@ import {
   BACKGROUNDS_PDF,
   FEAT_LUCKY,
   FEAT_PROTECTED,
-  HUMAN_SPECIES,
+  FIENDISH_LEGACIES,
   ORIGIN_FEATS,
+  SPECIES,
   backgroundById,
+  fiendishLegacyById,
   originFeatById,
+  speciesByName,
+  type FiendishLegacyId,
 } from "@/data/origin-ru";
 import { CONDITIONS, SKILLS, type ProfLevel, type SkillId } from "@/data/skills";
 import {
@@ -192,6 +196,8 @@ export function CharacterSheet() {
   const bgDef = backgroundById(character.backgroundId);
   const originFeat = originFeatById(character.originFeatId);
   const bgFeat = originFeatById(character.backgroundFeatId);
+  const activeSpecies = speciesByName(character.species);
+  const legacy = fiendishLegacyById(character.fiendishLegacy || "infernal");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -750,11 +756,43 @@ export function CharacterSheet() {
             <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 space-y-3">
               <h3 className="font-display text-base">Происхождение · настройка</h3>
               <Field label="Вид">
-                <Input
-                  value={character.species}
-                  onChange={(e) => setField("species", e.target.value)}
-                />
+                <select
+                  className="flex h-11 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
+                  value={activeSpecies.id}
+                  onChange={(e) => {
+                    const sp = SPECIES.find((s) => s.id === e.target.value);
+                    if (!sp) return;
+                    setField("species", sp.name);
+                    if (sp.id === "tiefling" && !character.fiendishLegacy) {
+                      setField("fiendishLegacy", "infernal");
+                    }
+                    if (sp.id === "human") setField("fiendishLegacy", "");
+                  }}
+                >
+                  {SPECIES.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.nameEn})
+                    </option>
+                  ))}
+                </select>
               </Field>
+              {activeSpecies.id === "tiefling" && (
+                <Field label="Наследие тифлинга">
+                  <select
+                    className="flex h-11 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
+                    value={character.fiendishLegacy || "infernal"}
+                    onChange={(e) =>
+                      setField("fiendishLegacy", e.target.value as FiendishLegacyId)
+                    }
+                  >
+                    {FIENDISH_LEGACIES.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name} — {l.level1}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
               <Field label="Предыстория (PDF)">
                 <select
                   className="flex h-10 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
@@ -778,7 +816,7 @@ export function CharacterSheet() {
                   <p className="mt-2 leading-relaxed">{bgDef.description}</p>
                 </div>
               )}
-              <Field label="Черта происхождения (Человек · Гибкий)">
+              <Field label={activeSpecies.versatileOriginFeat ? "Черта происхождения (Гибкий)" : "Черта происхождения"}>
                 <select
                   className="flex h-10 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
                   value={character.originFeatId}
@@ -804,9 +842,10 @@ export function CharacterSheet() {
                   ))}
                 </select>
               </Field>
+              {activeSpecies.skillful && (
               <Field label="Человек · Умелый (навык)">
                 <select
-                  className="flex h-10 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
+                  className="flex h-11 w-full rounded-[var(--radius)] border border-border bg-surface-2 px-3 text-sm"
                   value={character.humanSkill || ""}
                   onChange={(e) => {
                     const id = e.target.value as SkillId | "";
@@ -822,6 +861,7 @@ export function CharacterSheet() {
                   ))}
                 </select>
               </Field>
+              )}
               <Field label="Мировоззрение">
                 <Input
                   value={character.alignment}
@@ -858,6 +898,15 @@ export function CharacterSheet() {
               >
                 Человек dnd.su
               </a>
+              {" · "}
+              <a
+                className="text-accent underline"
+                href="https://www.dndbeyond.com/species/1751443-tiefling"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Тифлинг PHB 2024
+              </a>
             </div>
           </div>
         </div>
@@ -879,20 +928,43 @@ export function CharacterSheet() {
             />
           </div>
 
-          {/* Human + origin feats cards */}
+          {/* Species traits */}
           <section>
-            <h3 className="mb-2 font-display text-base">Вид · {HUMAN_SPECIES.name}</h3>
+            <h3 className="mb-2 font-display text-base">
+              Вид · {activeSpecies.name}
+              {activeSpecies.id === "tiefling" && (
+                <span className="ml-2 text-sm font-normal text-muted">
+                  · {legacy.name}
+                </span>
+              )}
+            </h3>
             <div className="grid gap-2 lg:grid-cols-2">
-              {HUMAN_SPECIES.traits.map((t) => (
+              {activeSpecies.traits.map((tr) => (
                 <div
-                  key={t.name}
+                  key={tr.name}
                   className="rounded-[var(--radius-lg)] border border-border bg-surface p-4"
                 >
-                  <div className="font-medium text-fg">{t.name}</div>
-                  <p className="mt-1 text-sm text-muted">{t.body}</p>
-                  <div className="mt-2 text-[10px] text-faint">{HUMAN_SPECIES.source}</div>
+                  <div className="font-medium text-fg">{tr.name}</div>
+                  <p className="mt-1 text-sm text-muted">{tr.body}</p>
+                  <div className="mt-2 text-[10px] text-faint">{activeSpecies.source}</div>
                 </div>
               ))}
+              {activeSpecies.id === "tiefling" && (
+                <div className="rounded-[var(--radius-lg)] border border-accent/30 bg-surface p-4">
+                  <div className="font-medium text-fg">
+                    Наследие · {legacy.name}{" "}
+                    <span className="text-muted">[{legacy.nameEn}]</span>
+                  </div>
+                  <ul className="mt-2 space-y-1 text-sm text-muted">
+                    <li>ур.1: {legacy.level1}</li>
+                    <li>ур.3: {legacy.level3}</li>
+                    <li>ур.5: {legacy.level5}</li>
+                  </ul>
+                  <p className="mt-2 text-xs text-faint">
+                    + Чудотворство (Otherworldly Presence). Способность: ИНТ / МУД / ХАР.
+                  </p>
+                </div>
+              )}
             </div>
           </section>
 

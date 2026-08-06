@@ -33,10 +33,16 @@ import {
 } from "@/data/builder-ru";
 import {
   BACKGROUNDS_PDF,
+  FIENDISH_LEGACIES,
   HUMAN_SPECIES,
   ORIGIN_FEATS,
+  SPECIES,
+  TIEFLING_SPECIES,
   backgroundById,
+  fiendishLegacyById,
   originFeatById,
+  speciesByName,
+  type FiendishLegacyId,
 } from "@/data/origin-ru";
 import {
   KINDRED_FEATS,
@@ -247,7 +253,8 @@ export function VentrueBuilder() {
     const skillProfs: CharacterSheet["skillProfs"] = {};
     for (const id of classSkills) skillProfs[id] = "proficient";
     for (const id of bgSkillIds) skillProfs[id] = "proficient";
-    if (humanSkill) skillProfs[humanSkill] = "proficient";
+    const sp = speciesByName(character.species);
+    if (sp.skillful && humanSkill) skillProfs[humanSkill] = "proficient";
 
     const originFeat = character.originFeatId || "lucky";
     let bgFeat = character.backgroundFeatId || bg.featId;
@@ -281,7 +288,8 @@ export function VentrueBuilder() {
       abilities: finalScores,
       skillProfs,
       saveProfs: { con: true, cha: true },
-      species: "Человек",
+      species: sp.name,
+      fiendishLegacy: sp.id === "tiefling" ? (character.fiendishLegacy || "infernal") : "",
       clan: "ventrue",
       background: bg.name,
       backgroundId: bg.id,
@@ -300,7 +308,9 @@ export function VentrueBuilder() {
       preferredBlood: character.preferredBlood || "солдаты / военные",
       attacks,
       feats: [
-        `Человек · ${originFeatById(originFeat)?.name ?? originFeat}`,
+        sp.id === "tiefling"
+          ? `Тифлинг · ${fiendishLegacyById(character.fiendishLegacy || "infernal").name}`
+          : `Человек · ${originFeatById(originFeat)?.name ?? originFeat}`,
         `Био · ${originFeatById(bgFeat)?.name ?? bgFeat}`,
         ...character.selectedFeats.map(
           (id) => KINDRED_FEATS.find((f) => f.id === id)?.name ?? id,
@@ -460,33 +470,114 @@ export function VentrueBuilder() {
         {step === "origin" && (
           <div className="space-y-4">
             <section>
-              <h3 className="mb-2 font-display text-base">Человек</h3>
-              <InfoBox source={HUMAN_SPECIES.source}>
-                Находчивый (вдохновение на LR) · Умелый (1 навык) · Гибкий (origin feat →
-                Везучий).
-              </InfoBox>
-              {HUMAN_SPECIES.traits.map((t) => (
-                <div
-                  key={t.name}
-                  className="mt-2 rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm"
-                >
-                  <div className="font-medium">{t.name}</div>
-                  <p className="mt-1 text-muted">{t.body}</p>
-                </div>
-              ))}
-              <Field label="Навык Skillful" className="mt-3">
-                <select
-                  className="h-10 w-full rounded-[var(--radius)] border border-border bg-bg px-3"
-                  value={humanSkill}
-                  onChange={(e) => setField("humanSkill", e.target.value as SkillId)}
-                >
-                  {SKILLS.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nameRu} ({s.ability.toUpperCase()})
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <h3 className="mb-2 font-display text-base">Вид (раса)</h3>
+              <div className="mb-3 grid gap-2 sm:grid-cols-2">
+                {SPECIES.map((spOpt) => {
+                  const active = speciesByName(character.species).id === spOpt.id;
+                  return (
+                    <button
+                      key={spOpt.id}
+                      type="button"
+                      onClick={() => {
+                        setField("species", spOpt.name);
+                        if (spOpt.id === "tiefling" && !character.fiendishLegacy) {
+                          setField("fiendishLegacy", "infernal");
+                        }
+                        if (spOpt.id === "human") {
+                          setField("fiendishLegacy", "");
+                        }
+                      }}
+                      className={cn(
+                        "rounded-[var(--radius)] border p-3 text-left transition-colors active:scale-[0.99]",
+                        active
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-surface-2",
+                      )}
+                    >
+                      <div className="font-medium text-fg">
+                        {spOpt.name}{" "}
+                        <span className="text-xs text-muted">[{spOpt.nameEn}]</span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted">{spOpt.summary}</p>
+                      <div className="mt-1 text-[10px] text-faint">{spOpt.source}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(() => {
+                const sp = speciesByName(character.species);
+                return (
+                  <>
+                    <InfoBox source={sp.source}>{sp.summary}</InfoBox>
+                    {sp.traits.map((tr) => (
+                      <div
+                        key={tr.name}
+                        className="mt-2 rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm"
+                      >
+                        <div className="font-medium">{tr.name}</div>
+                        <p className="mt-1 text-muted">{tr.body}</p>
+                      </div>
+                    ))}
+
+                    {sp.skillful && (
+                      <Field label="Навык Умелый (Skillful)" className="mt-3">
+                        <select
+                          className="h-11 w-full rounded-[var(--radius)] border border-border bg-bg px-3"
+                          value={humanSkill}
+                          onChange={(e) => setField("humanSkill", e.target.value as SkillId)}
+                        >
+                          {SKILLS.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.nameRu} ({s.ability.toUpperCase()})
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    )}
+
+                    {sp.id === "tiefling" && (
+                      <div className="mt-3 space-y-2">
+                        <h4 className="text-sm font-medium">Наследие (Fiendish Legacy)</h4>
+                        <div className="grid gap-2">
+                          {FIENDISH_LEGACIES.map((leg) => {
+                            const on = (character.fiendishLegacy || "infernal") === leg.id;
+                            return (
+                              <button
+                                key={leg.id}
+                                type="button"
+                                onClick={() =>
+                                  setField("fiendishLegacy", leg.id as FiendishLegacyId)
+                                }
+                                className={cn(
+                                  "rounded-[var(--radius)] border p-3 text-left text-sm",
+                                  on
+                                    ? "border-accent bg-accent/10"
+                                    : "border-border bg-surface-2",
+                                )}
+                              >
+                                <div className="font-medium">
+                                  {leg.name}{" "}
+                                  <span className="text-xs text-muted">[{leg.nameEn}]</span>
+                                </div>
+                                <ul className="mt-1 space-y-0.5 text-xs text-muted">
+                                  <li>ур.1: {leg.level1}</li>
+                                  <li>ур.3: {leg.level3}</li>
+                                  <li>ур.5: {leg.level5}</li>
+                                </ul>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[11px] text-faint">
+                          Способность заклинаний наследия: Интеллект, Мудрость или Харизма (запишите
+                          в заметках; для Вентру обычно Хар).
+                        </p>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </section>
 
             <section>
@@ -528,7 +619,18 @@ export function VentrueBuilder() {
             </section>
 
             <section>
-              <h3 className="mb-2 font-display text-base">Origin feat (Versatile)</h3>
+              <h3 className="mb-2 font-display text-base">
+                Черта происхождения
+                {speciesByName(character.species).versatileOriginFeat
+                  ? " (Гибкий / Versatile)"
+                  : " (из биографии)"}
+              </h3>
+              {!speciesByName(character.species).versatileOriginFeat && (
+                <p className="mb-2 text-xs text-muted">
+                  У тифлинга нет Versatile — слот черты происхождения идёт от биографии (часто
+                  Защищённый у Опоры). Можно выбрать доп. черту, если мастер разрешил.
+                </p>
+              )}
               <div className="grid gap-2 sm:grid-cols-2">
                 {ORIGIN_FEATS.map((f) => (
                   <button
@@ -925,7 +1027,7 @@ export function VentrueBuilder() {
             <div className="rounded-[var(--radius)] border border-accent/40 bg-accent/5 p-4">
               <h3 className="font-display text-lg">{character.name || "Без имени"}</h3>
               <p className="text-sm text-muted">
-                Человек · Вентру · Kindred {level}
+                {character.species || "Вид"} · Вентру · Kindred {level}
                 {character.multiclass ? ` / ${character.multiclass}` : ""}
               </p>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center sm:grid-cols-6">
