@@ -368,7 +368,7 @@ export function TableSheet() {
           [
             ["checks", "Проверки", Dices],
             ["fight", "Бой", Swords],
-            ["kindred", "Кровь", Droplets],
+            ["kindred", "Сородич", Droplets],
             ["more", "Ещё", Zap],
           ] as const
         ).map(([id, label, Icon]) => (
@@ -536,7 +536,7 @@ export function TableSheet() {
               Питание {getLevelData(c.level).feed}
             </Button>
             <Button type="button" variant="secondary" className="h-12" onClick={() => tableFeed(true)}>
-              {c.clan === "toreador" ? "½ кости" : "½ Bane"}
+              {c.clan === "toreador" ? "½ кости" : "½ Проклятие"}
             </Button>
             <Button type="button" variant="blood" className="h-12" onClick={() => tableHealBlood()}>
               Лечение (−1 ОБК)
@@ -557,9 +557,9 @@ export function TableSheet() {
           {/колдун|warlock/i.test(c.multiclass || "") && <WarlockSnippet />}
           <p className="text-center text-[10px] text-faint">
             {c.clan === "toreador"
-              ? "Bane Тореадор: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)"
-              : `Bane Вентру: ${c.preferredBlood || "укажите кровь"} · иначе ½ костей`}{" "}
-            · BBB · dnd.su
+              ? "Проклятие Тореадор: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)"
+              : `Проклятие Вентру: ${c.preferredBlood || "укажите кровь"} · иначе ½ костей Питания`}{" "}
+            · PDF · dnd.su
           </p>
         </div>
       )}

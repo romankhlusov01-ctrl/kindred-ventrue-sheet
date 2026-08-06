@@ -22,7 +22,7 @@ export const FEAT_RECS: Record<string, { tags: string[]; note: string; clans?: s
   },
   heightened: {
     tags: ["auspex", "разведка"],
-    note: "Тореадор must-have: синергия с Artist's Soul / Bane Awareness.",
+    note: "Тореадор: синергия с Душой художника и Проклятием (внимание).",
     clans: ["toreador"],
   },
   "self-control": {

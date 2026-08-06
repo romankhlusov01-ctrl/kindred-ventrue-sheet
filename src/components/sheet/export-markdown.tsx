@@ -45,7 +45,7 @@ export function ExportMarkdown() {
     const lines = [
       `# ${c.name}`,
       "",
-      `**${c.species} · ${clanRu} · Kindred ${c.level}**${c.multiclass ? ` / ${c.multiclass}` : ""}`,
+      `**${c.species} · ${clanRu} · Сородич ${c.level}**${c.multiclass ? ` / ${c.multiclass}` : ""}`,
       `Био: ${c.background} · ${originFeatById(c.originFeatId)?.name} + ${originFeatById(c.backgroundFeatId)?.name}`,
       "",
       "| СИЛ | ЛОВ | ТЕЛ | ИНТ | МУД | ХАР |",
@@ -56,7 +56,7 @@ export function ExportMarkdown() {
       `- **ХП** ${c.hpCurrent}/${c.hpMax} · **КД** ${c.ac} · **Скорость** ${c.speed}`,
       `- **ОБК** ${c.bloodCurrent}/${getBloodMax(c)} · **Питание** ${getLevelData(c.level).feed}`,
       `- **Сл** ${8 + pb + abilityMod(c.abilities.cha)} · **БМ** ${formatMod(pb)}`,
-      `- **Bane** ${clanBaneLine(c.clan, c.preferredBlood)}`,
+      `- **Проклятие (Bane)** ${clanBaneLine(c.clan, c.preferredBlood)}`,
       `- **Удача** Везучий ${getLuckMax(c.level, c.multiclass) - c.luckyUsed}/${getLuckMax(c.level, c.multiclass)} · Защищ. ${getLuckMax(c.level, c.multiclass) - c.protectedUsed}/${getLuckMax(c.level, c.multiclass)}`,
       "",
       "## Навыки",

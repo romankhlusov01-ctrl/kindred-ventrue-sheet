@@ -1,9 +1,13 @@
-/** Справочник билдера Kindred · Ventrue / Toreador · PHB 2024 + Bound by Blood */
+/** Справочник билдера · Сородич (Вентру / Тореадор) · PDF + dnd.su */
 
 import type { SkillId } from "@/data/skills";
 import type { Abilities } from "@/lib/character-store";
+import { BANE, CLAN, COPY, FEATURES, baneLine, clanLabel } from "@/data/terms-ru";
 
-/** Навыки класса Сородич (типичный список по PDF/справочникам 5e-класса) — выбрать 2 */
+export { BANE, CLAN, COPY, FEATURES, baneLine, clanLabel };
+export { clanLabel as clanNameRu, baneLine as clanBaneLine };
+
+/** Навыки класса Сородич — выбрать 2 */
 export const KINDRED_CLASS_SKILLS: SkillId[] = [
   "athletics",
   "deception",
@@ -38,22 +42,20 @@ export function abilityMod(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
-/** HP Kindred (d8): 8+Тел на 1 ур., затем среднее 5+Тел за уровень */
+/** ХП Сородича (d8): 8+Тел, далее среднее 5+Тел; Вентру L6+ — Dare Not Falter */
 export function calcKindredHp(level: number, con: number, ventrueDareNotFalter: boolean) {
   const conMod = abilityMod(con);
   let hp = 8 + conMod;
   for (let i = 2; i <= level; i++) {
     hp += 5 + conMod;
   }
-  // Ventrue L6: +level once when gained, then +1/level — approximate if level>=6: +level + (level-6)
   if (ventrueDareNotFalter && level >= 6) {
-    hp += level; // flat +level at gain
-    hp += Math.max(0, level - 6); // +1 each level after 6
+    hp += level;
+    hp += Math.max(0, level - 6);
   }
   return Math.max(1, hp);
 }
 
-/** Слоты черт сородича по уровню */
 export function kindredFeatSlots(level: number): number {
   let n = 0;
   for (const L of [2, 7, 10, 13, 17]) {
@@ -62,8 +64,7 @@ export function kindredFeatSlots(level: number): number {
   return n;
 }
 
-/** ASI levels for Kindred */
-/** Ability Score Improvement levels (feat or ASI). L19 is Epic Boon separately. */
+/** ASI: 4 / 8 / 12 / 16. Ур. 19 — эпическое благословение. */
 export const ASI_LEVELS = [4, 8, 12, 16] as const;
 export const EPIC_BOON_LEVEL = 19;
 
@@ -77,31 +78,22 @@ export function hasEpicBoon(level: number) {
 
 export const BUILDER_STEPS = [
   { id: "concept", title: "Концепт", short: "Имя · ур." },
-  { id: "origin", title: "Происхождение", short: "Раса · био" },
+  { id: "origin", title: "Происхождение", short: "Вид · био" },
   { id: "abilities", title: "Характеристики", short: "Статы" },
   { id: "skills", title: "Навыки", short: "Навыки" },
   { id: "feats", title: "Черты", short: "Черты" },
-  { id: "mechanics", title: "Механики", short: "Правила" },
+  { id: "mechanics", title: "Правила", short: "Справка" },
   { id: "finish", title: "Итог", short: "Готово" },
 ] as const;
 
 export type BuilderStepId = (typeof BUILDER_STEPS)[number]["id"];
 
-/** ─── Bane by clan (RAW-ish BBB) ─── */
-
-/** Ventrue: preferred blood type for full feed dice */
-export const VENTRUE_BANE_SHORT =
-  "Предпочтённая кровь: питание «не тем» — половина костей (мин. 1).";
-
-/** Toreador: attention trap on Investigation / Perception */
-export const TOREADOR_BANE_SHORT =
-  "d20 ≤9 на Анализ или Внимательность → Обездвижен (Restrained), спас Муд. DC 10.";
-
-export const TOREADOR_BANE_FIELD =
-  "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)";
+export const VENTRUE_BANE_SHORT = BANE.ventrueShort;
+export const TOREADOR_BANE_SHORT = BANE.toreadorShort;
+export const TOREADOR_BANE_FIELD = BANE.toreadorField;
 
 export const TOREADOR_TOOLS = [
-  "Лютня / музыкальный инструмент",
+  "Музыкальный инструмент",
   "Набор художника",
   "Инструменты каллиграфа",
   "Воровские инструменты",
@@ -109,29 +101,8 @@ export const TOREADOR_TOOLS = [
   "Свой инструмент…",
 ] as const;
 
-export function clanNameRu(clan: string | undefined | null): string {
-  if (clan === "toreador") return "Тореадор";
-  if (clan === "ventrue") return "Вентру";
-  return clan || "—";
-}
-
-/** One-line Bane for HUD / export / reminders */
-export function clanBaneLine(
-  clan: string | undefined | null,
-  preferredBlood?: string | null,
-): string {
-  if (clan === "toreador") {
-    return TOREADOR_BANE_SHORT;
-  }
-  // ventrue + default
-  const blood = (preferredBlood || "").trim();
-  return blood
-    ? `Bane (кровь): ${blood} · иначе ½ костей питания`
-    : "Bane (Вентру): укажите предпочтённую кровь";
-}
-
 export function isVentrueClan(clan: string | undefined | null) {
-  return !clan || clan === "ventrue" || clan === "none";
+  return clan === "ventrue";
 }
 
 export function isToreadorClan(clan: string | undefined | null) {
@@ -142,80 +113,92 @@ export const MECHANICS_GUIDE = [
   {
     id: "kindred",
     title: "База сородича",
-    body: `Питание: кости d6 по уровню; 6 → +1 ОБК.
-Зверь: преимущество, потом Голод.
-Awaken: 1 ОБК после LR (иначе слабость).
-Солнце: 5 лучистого в начале хода.
-Уязвимость к Огню и Лучу.
-Death saves: автоуспех. 0 хитов от Огня/Луча или обезглавливание = смерть.
-Деревянный кол (крит/0 хитов) → Паралич, пока кол не вынут.
-Сверхъестественное колдовство: Харизма; урон не сбивает концентрацию своих заклинаний.`,
+    body: `Источник: Vampire: The Masquerade – Bound by Blood.
+
+• ${FEATURES.feed}: кости d6 по таблице + Тел (мин. 1); «6» → +1 ${"ОБК"}.
+• ${FEATURES.beast}: БД, преимущество на d20; провал → ${FEATURES.hunger}.
+• ${FEATURES.awaken}: продолжительный отдых нужен ≥1 ОБК.
+• Солнце: 5 лучистого в начале хода; уязвимость к Огню и Лучу.
+• Death saves: автоуспех. 0 хитов от Огня/Луча или обезглавливание — смерть.
+• Деревянный кол (крит / 0 хитов) → Паралич, пока не вынут.
+• ${COPY.spellcasting}`,
+  },
+  {
+    id: "clans",
+    title: "Кланы (подклассы)",
+    body: `${COPY.equalClans}
+
+Оба клана открываются с 3 уровня. Билдер и лист поддерживают полный цикл: создание → apply → броски за столом.`,
   },
   {
     id: "ventrue",
-    title: "Клан Вентру",
-    body: `Bane: предпочтённый тип крови — при питании «не тем» бросайте половину костей питания (мин. 1).
+    title: "Клан Вентру (Ventrue)",
+    body: `${BANE.label}: ${BANE.ventrueShort}
 
-Голос власти (3): Приказ / Внушение, число = БМ / короткий.
-Непоколебимая уверенность: преимущество на спас Мудрости.
-Ур.6: +макс. хиты; reroll спас vs Charm/Fear/Stun.
-Далее: Entrance, Terrify, Mass Suggestion, Flesh of Marble, Imposing Aura…`,
+• Ур. 3 — ${FEATURES.voice}: Приказ / Внушение, число = БМ / короткий или продолжительный отдых.
+• Ур. 3 — ${FEATURES.unshakable}: преимущество на спас Мудрости.
+• Ур. 6 — ${FEATURES.dnf}: +макс. хиты; переброс спас vs Очарование / Испуг / Оглушение.
+• Далее: Entrance, Terrify, Mass Suggestion, Flesh of Marble, Imposing Aura (см. вехи и вкладку «Сородич»).`,
   },
   {
     id: "toreador",
-    title: "Клан Тореадор",
-    body: `Bane (не про кровь!): если на проверке Анализа или Внимательности на d20 выпало 9 или меньше — вы Обездвижены (Restrained), пока не пройдёте спас Мудрости DC 10 (или как в PDF стола).
+    title: "Клан Тореадор (Toreador)",
+    body: `${BANE.label}: ${BANE.toreadorShort}
+(Это не предпочтённая кровь — у Тореадора другое проклятие.)
 
-Душа художника / Artist's Soul: преимущество на Анализ и Внимательность, тёмное зрение и доп. навыки (см. вехи).
-Presence / Aura: обаяние и контроль через чувства, не Dominate.
-Не путайте с Bane Вентру (предпочтённая кровь).`,
+• Ур. 3 — ${FEATURES.artistSoul}: преимущество на Анализ и Внимательность; ТЗ 120 фт.; +2 навыка и инструмент.
+• Ур. 6 — ${FEATURES.depth}: 2 ОБК взгляд ауры; 1 ОБК Calm / Charm.
+• Ур. 9 — ${FEATURES.liveFast}: Лов +2 (макс. 25); БД 1 ОБК — доп. действие на БМ ходов.
+• Ур. 11+ — Visionary, Truly Majestic, Magnum Opus (см. вехи).`,
   },
   {
     id: "luck",
-    title: "Две удачи (Lucky + Protected)",
-    body: `Везучий (человек / черта происхождения, dnd.su): пул = БМ.
-• Потратить → преимущество на свой d20.
-• Потратить → помеха на атаку по вам.
+    title: "Две удачи",
+    body: `${COPY.dualLuck}
 
-Защищённый (Опора / PDF): пул = БМ, отдельный.
-• d20 ≤9 → переброс.
-• 0 хитов → 1 хит.
+Везучий (человек / черта происхождения, dnd.su): пул = БМ.
+• → преимущество на свой d20, или помеха на атаку по вам.
 
-Оба пула восстанавливаются на долгом отдыхе.`,
+Защищённый (биография Опора, PDF): пул = БМ, отдельный.
+• d20 ≤9 → переброс; 0 хитов → 1 хит.
+
+Оба пула: продолжительный отдых.`,
   },
   {
     id: "asi",
-    title: "Улучшение характеристик (ASI)",
-    body: `Уровни Kindred 4, 8, 12, 16 (и 19 — эпик): +2 к одной характеристике (макс. 20) или +1 к двум, либо **любая черта**, для которой выполнены требования — в том числе **Kindred Feat** (RAW PDF).
+    title: "ASI и черты",
+    body: `Уровни 4, 8, 12, 16 — на выбор одно:
+• ${FEATURES.asi}: +2 к одной или +1 к двум (макс. 20);
+• универсальная черта PHB (dnd.su);
+• ${FEATURES.kindredFeat}.
 
-Отдельно: на 2, 7, 10, 13, 17 класс **всегда** даёт слот черты сородича (Kindred Feat). Это не «вместо ASI», а **дополнительные** слоты.`,
+Слоты черты сородича на 2, 7, 10, 13, 17 — дополнительно, не вместо ASI.
+
+Ур. 19 — ${FEATURES.epic} (или другая подходящая черта).`,
   },
   {
     id: "multiclass",
     title: "Мультикласс",
-    body: `Пример: Kindred 7 / Колдун 1.
-ОБК и кости питания — по уровню Kindred.
-Поле «Уровень» в билдере = уровень Kindred; «Мультикласс» — пометка.
-БМ в D&D 2024 — по суммарному уровню персонажа (см. таблицу PB). Если играете 7+1=8, БМ=+3 — совпадает с Kindred 7–8.`,
+    body: `Пример: Сородич 7 / Колдун 1.
+• ОБК и кости Питания — по уровню Сородича.
+• БМ (dnd.su / PHB 2024) — по суммарному уровню.
+• Поле «Уровень» в билдере = уровень Сородича; «Мультикласс» — пометка.`,
   },
   {
     id: "session",
-    title: "Соло-сессия (как играть с листом)",
-    body: `1. Билдер → Применить.
-2. Бой → Иниц (нижняя панель).
-3. Новый ход → отметь Действие/БД/Реакцию.
-4. Атака / Приказ / Питание — тап.
-5. Урон по вам — «Получить урон».
-6. 0 ХП — Protected 0→1 или автоуспех death saves.
-7. Соц: Awe → Убеждение / Daunt.
-8. Отдых: короткий (HD, Зверь, Голос) / длинный (≥1 ОБК).`,
+    title: "Игра за столом",
+    body: `1. Создать → шаги → Применить.
+2. Играть → Проверки / Бой / Сородич.
+3. Тап по навыку, спас, атаке, Питанию — бросок в журнал.
+4. Урон по вам — «Получить урон»; 0 ХП — Защищённый 0→1 или авто death saves.
+5. Отдых: короткий (Зверь, Голос, КХ) / продолжительный (≥1 ОБК).`,
   },
   {
     id: "sources",
-    title: "Источники (RAW)",
-    body: `• Vampire: The Masquerade – Bound by Blood (класс Kindred, Ventrue, Toreador, Touchstone, Protected).
-• dnd.su / PHB 2024: Человек, Везучий (Lucky), point buy, стандартный массив, фоны +2/+1.
-• Черты сородича: слоты 2/7/10/13/17 + можно взять Kindred Feat на ASI 4/8/12/16 вместо +2.`,
+    title: "Источники",
+    body: `• Vampire: The Masquerade – Bound by Blood (класс Kindred, кланы Ventrue / Toreador, Protected, Touchstone).
+• dnd.su / Player's Handbook 2024: вид (человек, тифлинг), Везучий, point buy, фоны +2/+1, универсальные черты.
+• Черты сородича ≠ слоты ASI: 2/7/10/13/17 отдельно; на ASI можно взять Kindred Feat (RAW).`,
   },
 ];
 
@@ -228,7 +211,7 @@ export const ABILITY_LABELS: { key: keyof Abilities; ru: string; short: string }
   { key: "cha", ru: "Харизма", short: "ХАР" },
 ];
 
-/** Ventrue preferred-blood presets only */
+/** Предпочтённая кровь — только Вентру */
 export const PREFERRED_BLOOD_PRESETS = [
   "солдаты / военные",
   "аристократы",
@@ -239,7 +222,7 @@ export const PREFERRED_BLOOD_PRESETS = [
   "свой вариант…",
 ];
 
-/** Optional aesthetic notes for Toreador (not a Bane requirement) */
+/** Эстетика Тореадора — не проклятие, опциональная заметка */
 export const TOREADOR_AESTHETIC_PRESETS = [
   "артисты / сцена",
   "красавцы / модели",

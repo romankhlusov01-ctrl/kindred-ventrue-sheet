@@ -138,14 +138,14 @@ export function LevelUpHelper() {
         </strong>
         : {features}. ОБК {row.bp}, питание {row.feed}, БМ +{row.pb}
         {newClassKindred ? " · +слот Kindred (класс)" : ""}
-        {newAsi ? " · ASI / PHB / Kindred" : ""}.
+        {newAsi ? " · ASI / PHB / сородич" : ""}.
         {milestone ? ` · ${milestone.title}` : ""}
       </p>
 
       {newAsi && (
         <div className="mb-3 space-y-2">
           <p className="text-[11px] font-medium text-fg">
-            Ур.{next} RAW: одно из трёх
+            Ур.{next}: выберите одно из трёх (RAW)
           </p>
           <div className="grid grid-cols-3 gap-1.5">
             {(

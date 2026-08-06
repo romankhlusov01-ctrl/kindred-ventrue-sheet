@@ -89,7 +89,7 @@ export const ORIGIN_FEAT_CATALOG: CatalogFeat[] = [
     clans: ["toreador", "any"],
     tags: ["навыки"],
     body: `Владение тремя навыками на выбор.
-(Синергия с Тореадор Artist's Soul / Visionary.)`,
+(Синергия с Тореадор: Душа художника / Провидец.)`,
   },
   {
     id: "tough",

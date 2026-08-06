@@ -62,7 +62,7 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
   equipment:
     "Нагрудник\nКороткий меч\n2 кинжала\nРемесленные инструменты\nДорожная одежда\nФлакон vitae\nПерстень дома\n15 зм",
   notes:
-    "Соло-режим: вкладка Бой → ход / инициатива / кости.\nBane: солдаты. Сл = 8+БМ+Хар.",
+    "Соло-режим: вкладка Бой → ход / инициатива / кости.\nПроклятие: солдаты. Сл = 8+БМ+Хар.",
   multiclass: "",
   attacks: [
     {
@@ -87,7 +87,7 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
       bonus: 0,
       damage: "3d6+3",
       type: "Некротический",
-      notes: "БД; max HP; half если не Bane",
+      notes: "БД; урон к макс. ХП; ½ костей если не предпочтённая кровь",
     },
   ],
   conditions: [],
@@ -251,7 +251,7 @@ export const PRESET_TOREADOR_PLAYER: CharacterSheet = {
   name: "Алая роза",
   clan: "toreador",
   preferredBlood:
-    "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.) · вкус: артисты",
+    "Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.) · вкус: артисты",
   abilities: { str: 8, dex: 16, con: 14, int: 12, wis: 12, cha: 16 },
   hpCurrent: 59,
   hpMax: 59,
@@ -275,7 +275,7 @@ export const PRESET_TOREADOR_PLAYER: CharacterSheet = {
     },
   ],
   notes:
-    "Тореадор 8. Bane: d20≤9 Анализ/Внимательность → Restrained DC10. Artist's Soul (adv Анал/Вним, ТЗ 120, +2 навыка). Depth of Feelings (ОБК). Dual luck.",
+    "Тореадор 8. Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10). Душа художника. Глубина чувств. Dual luck.",
   attacks: [
     {
       id: "atk-1",

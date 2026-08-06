@@ -39,7 +39,7 @@ export function FeedWizard() {
     const label = half
       ? toreador
         ? "Питание ½"
-        : "Питание (½ Bane кровь)"
+        : "½ Питания (Проклятие)"
       : "Питание";
     setLastRoll({ label, total: sum, detail: `${rolls.join("+")}+Тел`, at: Date.now() });
     addLog(`${label}: ${sum} [${rolls.join("+")}] · +${sixes} ОБК`);
@@ -60,7 +60,7 @@ export function FeedWizard() {
         <>
           <Input
             className="mb-2 h-11"
-            placeholder="Предпочтённая кровь (Bane Вентру)"
+            placeholder="Предпочтённая кровь (Проклятие Вентру)"
             value={c.preferredBlood}
             onChange={(e) => setField("preferredBlood", e.target.value)}
           />
@@ -85,7 +85,7 @@ export function FeedWizard() {
           Полное
         </Button>
         <Button type="button" variant="secondary" className="h-14" onClick={() => feed(true)}>
-          {toreador ? "½ кости" : "½ Bane"}
+          {toreador ? "½ кости" : "½ Проклятие"}
         </Button>
       </div>
     </div>

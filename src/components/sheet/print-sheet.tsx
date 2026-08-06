@@ -94,7 +94,7 @@ export function PrintSheetBlock() {
           "—"}
       </p>
       <p>
-        <strong>Bane:</strong> {clanBaneLine(c.clan, c.preferredBlood)}
+        <strong>Проклятие:</strong> {clanBaneLine(c.clan, c.preferredBlood)}
       </p>
       <p>
         <strong>Сородич:</strong>{" "}

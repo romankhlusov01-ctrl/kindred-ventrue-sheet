@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { COPY } from "@/data/terms-ru";
 
 const KEY = "kindred-onboarding-v4-modes";
 
@@ -24,14 +25,12 @@ export function OnboardingBanner() {
           <h2 className="font-display text-sm text-accent">Два режима</h2>
           <ol className="mt-1.5 list-decimal space-y-0.5 pl-4 text-xs text-muted">
             <li>
-              <strong className="text-fg">Создать</strong> — билдер Вентру (Bound by Blood + dnd.su)
+              <strong className="text-fg">Создать</strong> — {COPY.onboarding1.replace(/^Создать — /, "")}
             </li>
             <li>
-              <strong className="text-fg">Играть</strong> — лист: тап по проверке/атаке → бросок в журнал
+              <strong className="text-fg">Играть</strong> — {COPY.onboarding2.replace(/^Играть — /, "")}
             </li>
-            <li>
-              Без перегруза: 4 вкладки на листе (Проверки · Бой · Kindred · Ещё)
-            </li>
+            <li>{COPY.onboarding3}</li>
           </ol>
         </div>
         <Button

@@ -523,7 +523,7 @@ export function CharacterSheet() {
                 variant="blood"
                 onClick={() => {
                   addCharacter({ ...PRESET_VENTRUE_PLAYER, id: `vp-${Date.now()}` });
-                  toast.success("Пресет: твой Вентру (Человек + Опора + 2×удача)");
+                  toast.success("Пресет: Вентру · Человек · Опора · 2×удача");
                 }}
               >
                 + Твой билд
@@ -555,7 +555,7 @@ export function CharacterSheet() {
                 variant="outline"
                 onClick={() => {
                   addCharacter({ ...PRESET_TOREADOR_PLAYER, id: `to-${Date.now()}` });
-                  toast.success("Пресет: Тореадор · Алая роза");
+                  toast.success("Пресет: Тореадор · Алая роза · dual luck");
                 }}
               >
                 + Тореадор
@@ -800,9 +800,9 @@ export function CharacterSheet() {
 
       {appMode === "create" && tab === "builder" && (
         <div className="mb-3 rounded-[var(--radius-lg)] border border-accent/30 bg-accent/5 p-3 text-sm text-muted">
-          <strong className="text-accent">Режим создания · Вентру / Тореадор</strong>
+          <strong className="text-accent">Создание сородича · Вентру / Тореадор</strong>
           <p className="mt-1 text-xs">
-            Bound by Blood PDF · dnd.su · PHB 2024. Выберите клан → шаги → Применить → <em>Играть</em>.
+            Bound by Blood · dnd.su · PHB 2024. Клан (Вентру или Тореадор) → шаги → Применить → <em>Играть</em>.
           </p>
         </div>
       )}

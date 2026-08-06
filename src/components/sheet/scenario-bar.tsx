@@ -49,7 +49,7 @@ export function ScenarioBar() {
       </p>
       {!toreador && (scenario === "feed" || scenario === "social") && (
         <label className="mb-2 block text-[10px] text-muted">
-          Предпочтённая кровь (Bane Вентру)
+          Предпочтённая кровь (Проклятие Вентру)
           <Input
             className="mt-0.5 h-8"
             value={preferredBlood}

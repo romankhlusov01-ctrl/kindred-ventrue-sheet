@@ -27,7 +27,7 @@ export function TalentSummary({ className }: { className?: string }) {
       <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="font-display text-sm tracking-wide text-fg">Таланты</h3>
         <span className="text-[10px] text-faint">
-          Kindred {c.selectedFeats.length}/{kSlots} · PHB {general.length}/{gSlots}
+          Сородич {c.selectedFeats.length}/{kSlots} · PHB {general.length}/{gSlots}
         </span>
       </div>
       <div className="flex flex-wrap gap-1.5">

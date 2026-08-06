@@ -62,7 +62,7 @@ export function tableCheckSkill(id: SkillId) {
     c.level >= 3 &&
     (id === "investigation" || id === "perception")
   ) {
-    detail += " · Artist's Soul";
+    detail += " · Душа художника";
   }
 
   // Toreador Bane: natural d20 ≤9 on Inv/Perc → Restrained (Wis DC 10 EoT)
@@ -74,10 +74,10 @@ export function tableCheckSkill(id: SkillId) {
   ) {
     detail += " · BANE d20≤9 → Обездвижен";
     const store = useCharacterStore.getState();
-    if (!store.character.conditions.includes("Обездвижен (Bane)")) {
-      store.toggleCondition("Обездвижен (Bane)");
+    if (!store.character.conditions.includes("Обездвижен (Проклятие)")) {
+      store.toggleCondition("Обездвижен (Проклятие)");
     }
-    toast.error("Bane Тореадор: d20≤9 → Обездвижен (спас Муд. DC 10)");
+    toast.error("Проклятие Тореадор: d20≤9 → Обездвижен (спас Муд. Сл 10)");
   }
 
   publish(r.label, r.total, detail);
@@ -106,7 +106,7 @@ export function tableSave(key: keyof Abilities, labelRu: string) {
   publish(
     r.label,
     r.total,
-    r.detail + (c.clan === "ventrue" && key === "wis" ? " · Unshakable" : ""),
+    r.detail + (c.clan === "ventrue" && key === "wis" ? " · Непоколебимая" : ""),
   );
   return r;
 }
@@ -159,9 +159,9 @@ export function tableFeed(half = false) {
   }
   const label =
     half && c.clan !== "toreador"
-      ? "Питание ½ Bane"
+      ? "½ Питания (Проклятие)"
       : half
-        ? "Питание ½"
+        ? "½ кости"
         : "Питание";
   publish(label, sum, `${rolls.join("+")}+Тел · +${sixes} ОБК`);
   toast.success(`${label}: ${sum}${sixes ? ` · +${sixes} ОБК` : ""}`);

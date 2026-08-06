@@ -107,7 +107,7 @@ export function PcSaves() {
         })}
       </div>
       {c.clan === "ventrue" && (
-        <p className="mt-2 text-[10px] text-muted">Вентру: часто преимущество к спас. Муд. (клан)</p>
+        <p className="mt-2 text-[10px] text-muted">Вентру (ур.3+): преимущество на спас Мудрости (Непоколебимая уверенность)</p>
       )}
       <Button
         type="button"

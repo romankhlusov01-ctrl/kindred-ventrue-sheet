@@ -44,11 +44,11 @@ export function ClanPowers() {
       <div className="space-y-3">
         <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-display text-sm">Тореадор · стол</h3>
+            <h3 className="font-display text-sm">Тореадор · силы</h3>
             <span className="text-[10px] text-muted">Сл {dc}</span>
           </div>
           <p className="mb-2 text-[11px] text-accent">
-            Bane: d20≤9 Анализ/Внимательность → Restrained (DC 10 Муд.) · Artist's Soul: adv
+            Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.) · Душа художника: преим.
           </p>
           <div className="grid grid-cols-2 gap-1.5">
             <Button
@@ -155,20 +155,20 @@ export function ClanPowers() {
               variant="outline"
               className="col-span-2 h-11 text-xs"
               onClick={() => {
-                useCharacterStore.getState().toggleCondition("Обездвижен (Bane)");
-                addLog("Bane: Restrained (Тореадор)");
-                toast.message("Bane Restrained");
+                useCharacterStore.getState().toggleCondition("Обездвижен (Проклятие)");
+                addLog("Проклятие: Обездвижен (Тореадор)");
+                toast.message("Проклятие: Обездвижен");
               }}
             >
-              Bane: Обездвижен (вкл/выкл)
+              Проклятие: Обездвижен (вкл/выкл)
             </Button>
             <Button
               type="button"
               variant="ghost"
               className="col-span-2 h-10 text-xs"
-              onClick={() => tableD20Plain("Bane check d20")}
+              onClick={() => tableD20Plain("d20 · Проклятие")}
             >
-              Чистый d20 (Bane?)
+              Чистый d20 (Проклятие)
             </Button>
           </div>
         </div>
@@ -182,15 +182,14 @@ export function ClanPowers() {
       <DominateDc />
       <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="font-display text-sm">Вентру · стол</h3>
+          <h3 className="font-display text-sm">Вентру · силы</h3>
           <span className="text-[10px] text-muted">
             Сл {dc}
             {voice ? ` · Голос ${voice.current}/${voice.max}` : ""}
           </span>
         </div>
         <p className="mb-2 text-[11px] text-muted">
-          Bane: предпочтённая кровь «{c.preferredBlood || "—"}» · иначе ½ костей питания. Unshakable:
-          adv спас Муд.
+          Проклятие: предпочтённая кровь «{c.preferredBlood || "—"}» · иначе ½ костей питания. Непоколебимая уверенность: преим. на спас Муд.
         </p>
         <div className="grid grid-cols-2 gap-1.5">
           <Button
@@ -215,11 +214,11 @@ export function ClanPowers() {
               variant="secondary"
               className="col-span-2 h-11 text-xs"
               onClick={() => {
-                addLog("Dare Not Falter: reroll спас vs Charm/Fear/Stun (раз/ход)");
-                toast.message("Reroll Charm/Fear/Stun");
+                addLog("Не дрогнуть: переброс спас vs Очарование/Испуг/Оглушение (раз/ход)");
+                toast.message("Переброс Очарование/Испуг/Оглушение");
               }}
             >
-              Dare Not Falter · reroll (заметка)
+              Не дрогнуть · переброс (заметка)
             </Button>
           )}
           {c.level >= 9 && (

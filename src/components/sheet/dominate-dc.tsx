@@ -53,10 +53,10 @@ export function DominateDc() {
         <li>Mind Tricks: {c.selectedFeats.includes("mind-tricks") ? "да" : "нет"}</li>
         {c.clan === "toreador" ? (
           <li className="text-primary">
-            Bane Тореадор: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)
+            Проклятие Тореадор: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)
           </li>
         ) : c.preferredBlood ? (
-          <li className="text-primary">Bane Вентру / кровь: {c.preferredBlood}</li>
+          <li className="text-primary">Проклятие Вентру · кровь: {c.preferredBlood}</li>
         ) : null}
       </ul>
 

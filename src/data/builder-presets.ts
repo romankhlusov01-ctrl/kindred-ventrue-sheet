@@ -111,7 +111,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "perception",
     classSkills: ["persuasion", "insight"],
     selectedFeats: ["forceful", "alacrity"],
-    preferredBlood: "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)",
+    preferredBlood: "Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)",
     nameSuggestion: "Алая роза",
   },
   {
@@ -129,7 +129,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "investigation",
     classSkills: ["persuasion", "perception"],
     selectedFeats: ["forceful"],
-    preferredBlood: "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)",
+    preferredBlood: "Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)",
     nameSuggestion: "Новая муза",
   },
   {
@@ -147,7 +147,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "acrobatics",
     classSkills: ["stealth", "persuasion"],
     selectedFeats: ["alacrity", "lethal"],
-    preferredBlood: "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.) · танцоры",
+    preferredBlood: "Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.) · танцоры",
     nameSuggestion: "Мгновение",
   },
 ];
@@ -190,7 +190,7 @@ export function defaultAttacks(level: number, scores: Abilities, feats: string[]
       bonus: 0,
       damage: `${feed}d6${conMod >= 0 ? "+" + Math.max(1, conMod) : Math.max(1, conMod)}`,
       type: "Некротический",
-      notes: "Макс. хиты; ½ если не Bane",
+      notes: "Макс. хиты; ½ если не предпочтённая кровь",
     },
   ];
 

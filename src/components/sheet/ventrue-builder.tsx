@@ -119,7 +119,7 @@ export function VentrueBuilder() {
   const [artistSkills, setArtistSkills] = useState<SkillId[]>(() =>
     character.clan === "toreador" ? ["performance", "investigation"] : [],
   );
-  const [artistTool, setArtistTool] = useState("Лютня / музыкальный инструмент");
+  const [artistTool, setArtistTool] = useState("Музыкальный инструмент");
   /** Visionary L11: 3 expertise skills */
   const [visionaryExpertise, setVisionaryExpertise] = useState<SkillId[]>([]);
 
@@ -179,7 +179,7 @@ export function VentrueBuilder() {
     if (classSkills.length !== 2) issues.push("Нужно 2 навыка класса");
     const kTaken = character.selectedFeats.length;
     if (kTaken > kSlots)
-      issues.push(`Черт сородича ${kTaken}/${kSlots} (класс + ASI→Kindred)`);
+      issues.push(`Черт сородича ${kTaken}/${kSlots} (класс + ASI→сородич)`);
     // Kindred slots recommended but not hard-required mid-build
     const gTaken = character.generalFeats?.length ?? 0;
     if (gTaken > gSlots)
@@ -192,14 +192,14 @@ export function VentrueBuilder() {
     // ASI points optional until user assigns them (presets may leave empty)
     // Bane blood is Ventrue-only; Toreador attention-trap is not preferred blood
     if (builderClan === "ventrue" && !character.preferredBlood.trim()) {
-      issues.push("Не указан Bane Вентру (предпочтённая кровь)");
+      issues.push("Не указано Проклятие Вентру (предпочтённая кровь)");
     }
     if (asiPlus2 === asiPlus1) issues.push("+2 и +1 биографии на одну характеристику");
     if (builderClan === "toreador" && level >= 3 && artistSkills.length !== 2) {
-      issues.push("Тореадор L3+: выберите 2 навыка Artist's Soul");
+      issues.push("Тореадор ур.3+: выберите 2 навыка «Душа художника»");
     }
     if (builderClan === "toreador" && level >= 11 && visionaryExpertise.length !== 3) {
-      issues.push("Тореадор L11+: выберите 3 навыка для Экспертизы (Visionary)");
+      issues.push("Тореадор ур.11+: выберите 3 навыка для Экспертизы (Провидец)");
     }
     // illegal kindred feats
     for (const id of character.selectedFeats) {
@@ -338,7 +338,7 @@ export function VentrueBuilder() {
       next[k] = scores[i] ?? 10;
     });
     setBaseScores(next);
-    toast.message(`4d6: ${scores.join(", ")} (разложено под Вентру)`);
+    toast.message(`4d6: ${scores.join(", ")} `);
   }
 
   function toggleClassSkill(id: SkillId) {
@@ -447,11 +447,11 @@ export function VentrueBuilder() {
 
     const visionNote =
       builderClan === "toreador" && level >= 3
-        ? "Тёмное зрение 120 фт. (Artist's Soul)"
+        ? "Тёмное зрение 120 фт. (Душа художника)"
         : "Тёмное зрение 60 фт.";
     const toolNote =
       builderClan === "toreador" && level >= 3
-        ? `Инструмент Artist's Soul: ${artistTool}`
+        ? `Инструмент (Душа художника): ${artistTool}`
         : "";
 
     patch({
@@ -504,13 +504,13 @@ export function VentrueBuilder() {
           visionNote,
           toolNote,
           builderClan === "toreador" && level >= 3
-            ? "Artist's Soul: преимущество на Анализ и Внимательность."
+            ? "Душа художника: преимущество на Анализ и Внимательность."
             : "",
           builderClan === "toreador" && level >= 9
-            ? `Live Fast: Лов ${appliedScores.dex} (incl. +2, макс 25).`
+            ? `Живи быстро: Лов ${appliedScores.dex} (incl. +2, макс 25).`
             : "",
           builderClan === "ventrue" && level >= 6
-            ? "Dare Not Falter: +макс.ХП; reroll Charm/Fear/Stun."
+            ? "Не дрогнуть: +макс. ХП; переброс Очарование/Испуг/Оглушение."
             : "",
           "Dual luck: Везучий + Защищённый.",
         ]
@@ -518,7 +518,7 @@ export function VentrueBuilder() {
           .join(" ");
         const prev = (character.notes || "").trim();
         if (!prev) return auto;
-        if (/Artist's Soul|Dare Not Falter|Live Fast|Тёмное зрение/i.test(prev)) return prev;
+        if (/Душа художника|Не дрогнуть|Живи быстро|Тёмное зрение|Artist|Live Fast|Dare/i.test(prev)) return prev;
         return `${prev}\n${auto}`;
       })(),
     });
@@ -909,7 +909,7 @@ export function VentrueBuilder() {
               {unlockedAsiLevels.length > 0 && (
                 <>
                   , затем на ур. {unlockedAsiLevels.join(", ")} —{" "}
-                  <strong>ASI / PHB / Kindred Feat</strong> (RAW, одно на уровень)
+                  <strong>ASI / PHB / черта сородича</strong> (RAW, одно на уровень)
                 </>
               )}
               .
@@ -1061,7 +1061,7 @@ export function VentrueBuilder() {
                   </div>
                   <p className="mt-1 text-xs text-muted">
                     RAW: на каждом уровне — <strong>одно</strong>: +2/+1+1,{" "}
-                    <strong>черта PHB</strong> или <strong>Kindred Feat</strong>. Слоты класса
+                    <strong>черта PHB</strong> или <strong>черта сородича</strong>. Слоты класса
                     2/7/10/13/17 — <em>дополнительно</em> дают черту сородича.
                   </p>
                 </div>
@@ -1099,7 +1099,7 @@ export function VentrueBuilder() {
                     }
                     if (next === "kindred") {
                       setFeatTab("kindred");
-                      toast.message(`Ур.${L}: Kindred Feat → шаг «Черты → Сородич»`);
+                      toast.message(`Ур.${L}: черта сородича → шаг «Черты → Сородич»`);
                     }
                   }
                   return (
@@ -1278,7 +1278,7 @@ export function VentrueBuilder() {
 
             {builderClan === "toreador" && level >= 3 && (
               <div className="rounded-[var(--radius)] border border-primary/30 bg-primary/5 p-3">
-                <h3 className="mb-1 font-display text-sm">Artist's Soul (L3) · +2 навыка</h3>
+                <h3 className="mb-1 font-display text-sm">Душа художника (ур.3) · +2 навыка</h3>
                 <p className="mb-2 text-[11px] text-muted">
                   RAW: два навыка на выбор. Если уже владеете — Экспертиза. +1 инструмент.
                   Также: преимущество на Анализ/Внимательность, ТЗ 120.
@@ -1294,7 +1294,7 @@ export function VentrueBuilder() {
                           setArtistSkills((prev) => {
                             if (prev.includes(sk.id)) return prev.filter((x) => x !== sk.id);
                             if (prev.length >= 2) {
-                              toast.error("Artist's Soul: ровно 2 навыка");
+                              toast.error("Душа художника: ровно 2 навыка");
                               return prev;
                             }
                             return [...prev, sk.id];
@@ -1341,9 +1341,9 @@ export function VentrueBuilder() {
 
             {builderClan === "toreador" && level >= 11 && (
               <div className="rounded-[var(--radius)] border border-accent/30 bg-accent/5 p-3">
-                <h3 className="mb-1 font-display text-sm">Visionary (L11) · Экспертиза ×3</h3>
+                <h3 className="mb-1 font-display text-sm">Провидец (ур.11) · Экспертиза ×3</h3>
                 <p className="mb-2 text-[11px] text-muted">
-                  Выберите 3 навыка, которыми уже владеете (класс/био/Artist/человек).
+                  Выберите 3 навыка, которыми уже владеете (класс / био / Душа художника / человек).
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {SKILLS.filter((sk) => {
@@ -1363,7 +1363,7 @@ export function VentrueBuilder() {
                           setVisionaryExpertise((prev) => {
                             if (prev.includes(sk.id)) return prev.filter((x) => x !== sk.id);
                             if (prev.length >= 3) {
-                              toast.error("Visionary: ровно 3");
+                              toast.error("Провидец: ровно 3");
                               return prev;
                             }
                             return [...prev, sk.id];
@@ -1540,7 +1540,7 @@ export function VentrueBuilder() {
                       {character.selectedFeats.length}/{kSlots}
                     </strong>{" "}
                     (класс {featSlots}
-                    {asiSlotsKindred > 0 ? ` + ASI→Kindred ${asiSlotsKindred}` : ""} · 2/7/10/13/17
+                    {asiSlotsKindred > 0 ? ` + ASI→сородич ${asiSlotsKindred}` : ""} · 2/7/10/13/17
                     + опция на 4/8/12/16)
                   </span>
                   <button
@@ -1710,16 +1710,16 @@ export function VentrueBuilder() {
             <div>
               <h3 className="mb-2 font-display text-sm">
                 {builderClan === "toreador"
-                  ? "Bane Тореадор · внимание"
-                  : "Bane Вентру · предпочтённая кровь"}
+                  ? "Проклятие Тореадор · внимание"
+                  : "Проклятие Вентру · предпочтённая кровь"}
               </h3>
               {builderClan === "toreador" ? (
                 <>
                   <div className="mb-2 rounded-[var(--radius)] border border-primary/30 bg-primary/10 p-3 text-xs text-fg">
-                    <strong className="text-primary">Bane (не про кровь):</strong>{" "}
+                    <strong className="text-primary">Проклятие (не про кровь):</strong>{" "}
                     если на <strong>Анализе</strong> или <strong>Внимательности</strong> на d20
-                    выпало ≤9 — вы <strong>Обездвижены</strong> (Restrained), спас Мудрости DC 10.
-                    Это не Bane Вентру с предпочтённой кровью.
+                    выпало ≤9 — вы <strong>Обездвижены</strong> (Restrained), спас Мудрости Сл 10.
+                    Это не Проклятие Вентру (предпочтённая кровь).
                   </div>
                   <Button
                     type="button"
@@ -1728,7 +1728,7 @@ export function VentrueBuilder() {
                     className="mb-2 h-10"
                     onClick={() => setField("preferredBlood", TOREADOR_BANE_FIELD)}
                   >
-                    Записать Bane на лист
+                    Записать Проклятие на лист
                   </Button>
                   <p className="mb-1 text-[11px] text-muted">
                     Опционально — эстетика / вкус (не требование):
@@ -1818,7 +1818,7 @@ export function VentrueBuilder() {
               <p className="mt-1 text-muted">{lore.description}</p>
               {builderClan === "toreador" && (
                 <p className="mt-2 text-xs text-accent">
-                  Bane: d20 ≤9 на Анализ/Внимательность → Обездвижен (DC 10 Муд.).
+                  Проклятие: d20 ≤9 на Анализ/Внимательность → Обездвижен (Сл 10 Муд.).
                 </p>
               )}
               <ul className="mt-2 space-y-1 text-xs text-faint">
@@ -1853,7 +1853,7 @@ export function VentrueBuilder() {
               <h3 className="font-display text-lg">{character.name || "Без имени"}</h3>
               <p className="text-sm text-muted">
                 {character.species || "Вид"} ·{" "}
-                {builderClan === "toreador" ? "Тореадор" : "Вентру"} · Kindred {level}
+                {builderClan === "toreador" ? "Тореадор" : "Вентру"} · Сородич {level}
                 {character.multiclass ? ` / ${character.multiclass}` : ""}
               </p>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center sm:grid-cols-6">
@@ -1893,7 +1893,7 @@ export function VentrueBuilder() {
                     .join(", ") || "—"}
                 </li>
                 <li>
-                  Bane:{" "}
+                  Проклятие:{" "}
                   {builderClan === "toreador"
                     ? clanBaneLine("toreador")
                     : character.preferredBlood || "—"}
