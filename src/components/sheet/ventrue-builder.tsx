@@ -38,6 +38,7 @@ import {
   ORIGIN_FEATS,
   SPECIES,
   TIEFLING_SPECIES,
+  allOriginFeats,
   backgroundById,
   fiendishLegacyById,
   originFeatById,
@@ -63,6 +64,11 @@ import { BUILD_PRESETS, defaultAttacks, type BuildPreset } from "@/data/builder-
 import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
 import { TOREADOR_MILESTONES } from "@/data/toreador-milestones";
 import { FEAT_RECS } from "@/data/feat-recommendations";
+import {
+  GENERAL_FEAT_CATALOG,
+  generalFeatsForLevel,
+  recommendedForClan,
+} from "@/data/phb-feats-ru";
 import { useSessionStore } from "@/lib/session-store";
 
 export function VentrueBuilder() {
@@ -71,6 +77,7 @@ export function VentrueBuilder() {
   const setField = useCharacterStore((s) => s.setField);
   const setAbility = useCharacterStore((s) => s.setAbility);
   const toggleFeat = useCharacterStore((s) => s.toggleFeat);
+  const toggleGeneralFeat = useCharacterStore((s) => s.toggleGeneralFeat);
   const addLog = useCharacterStore((s) => s.addLog);
 
   const [step, setStep] = useState<BuilderStepId>("concept");
@@ -95,6 +102,9 @@ export function VentrueBuilder() {
   const [arrayPool, setArrayPool] = useState<number[]>([...STANDARD_ARRAY]);
   const [pickedArray, setPickedArray] = useState<number | null>(null);
   const [rolledPool, setRolledPool] = useState<number[] | null>(null);
+  const [featTab, setFeatTab] = useState<"origin" | "kindred" | "general">("kindred");
+  const [featClanOnly, setFeatClanOnly] = useState(true);
+  const [featQuery, setFeatQuery] = useState("");
 
   const level = character.level;
   const lore = builderClan === "toreador" ? TOREADOR_LORE : VENTRUE_LORE;
@@ -140,6 +150,10 @@ export function VentrueBuilder() {
     if (classSkills.length !== 2) issues.push("Нужно 2 навыка класса");
     if (character.selectedFeats.length > featSlots)
       issues.push(`Черт сородича ${character.selectedFeats.length}/${featSlots}`);
+    const gSlots = asiCount(level);
+    const gTaken = character.generalFeats?.length ?? 0;
+    if (gTaken > gSlots)
+      issues.push(`Универсальных черт ${gTaken}/${gSlots} (слоты ASI 4/8/12/16/19)`);
     if (asiPtsLeft < 0) issues.push("Слишком много ASI");
     if (!character.preferredBlood.trim()) issues.push("Не выбран Bane (кровь)");
     if (asiPlus2 === asiPlus1) issues.push("+2 и +1 биографии на одну характеристику");
@@ -345,6 +359,10 @@ export function VentrueBuilder() {
         ...character.selectedFeats.map(
           (id) => KINDRED_FEATS.find((f) => f.id === id)?.name ?? id,
         ),
+        ...(character.generalFeats ?? []).map((id) => {
+          const g = GENERAL_FEAT_CATALOG.find((f) => f.id === id);
+          return g ? `PHB: ${g.name}` : id;
+        }),
         `Ур. ${level}${character.multiclass ? " / " + character.multiclass : ""}`,
       ].join("\n"),
       equipment:
@@ -693,7 +711,7 @@ export function VentrueBuilder() {
                 </p>
               )}
               <div className="grid gap-2 sm:grid-cols-2">
-                {ORIGIN_FEATS.map((f) => (
+                {allOriginFeats().map((f) => (
                   <button
                     key={f.id}
                     type="button"
@@ -968,47 +986,283 @@ export function VentrueBuilder() {
           </div>
         )}
 
+        
         {step === "feats" && (
           <div className="space-y-4">
             <InfoBox>
-              Слоты черт сородича (ур. 2/7/10/13/17): <strong>{featSlots}</strong>. Выбрано:{" "}
-              {character.selectedFeats.length}.
+              <strong>Три слоя талантов:</strong> (1) происхождение / био — dnd.su + BBB · (2) черты
+              сородича — слоты 2/7/10/13/17 · (3) универсальные PHB — вместо ASI на 4/8/12/16/19.
+              Рекомендации подстраиваются под{" "}
+              <strong>{builderClan === "toreador" ? "Тореадор" : "Вентру"}</strong>.
             </InfoBox>
-            <div className="grid gap-2">
-              {KINDRED_FEATS.filter((f) => f.levelMin <= level).map((f) => {
-                const on = character.selectedFeats.includes(f.id);
-                const full =
-                  !on && character.selectedFeats.length >= featSlots && !f.repeatable;
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    disabled={full}
-                    onClick={() => toggleFeat(f.id)}
-                    className={cn(
-                      "rounded-[var(--radius)] border p-3 text-left text-sm disabled:opacity-40",
-                      on ? "border-primary bg-primary/10" : "border-border bg-surface-2",
-                    )}
-                  >
-                    <div className="flex justify-between gap-2">
-                      <span className="font-medium">{f.name}</span>
-                      <span className="text-[10px] text-faint">≥{f.levelMin}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted">{f.body}</p>
-                    {FEAT_RECS[f.id] && (
-                      <p className="mt-1 text-[11px] text-accent">
-                        ★ {FEAT_RECS[f.id]!.note}
-                        <span className="ml-1 text-faint">
-                          [{FEAT_RECS[f.id]!.tags.join(", ")}]
-                        </span>
-                      </p>
-                    )}
-                  </button>
-                );
-              })}
+
+            <div className="grid grid-cols-3 gap-1 rounded-[var(--radius)] border border-border bg-surface-2 p-1">
+              {(
+                [
+                  ["origin", "Происх."],
+                  ["kindred", "Сородич"],
+                  ["general", "PHB/ASI"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setFeatTab(id)}
+                  className={cn(
+                    "flex h-11 items-center justify-center rounded-[var(--radius-sm)] text-xs font-semibold",
+                    featTab === id ? "bg-primary text-primary-fg" : "text-muted",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
+
+            <Input
+              placeholder="Поиск черты…"
+              value={featQuery}
+              onChange={(e) => setFeatQuery(e.target.value)}
+              className="h-11"
+            />
+
+            {featTab === "origin" && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted">
+                  Сейчас: вид →{" "}
+                  <strong className="text-fg">
+                    {originFeatById(character.originFeatId)?.name ?? "—"}
+                  </strong>
+                  {" · "}
+                  био →{" "}
+                  <strong className="text-fg">
+                    {originFeatById(character.backgroundFeatId)?.name ?? "—"}
+                  </strong>
+                  . Dual luck = Везучий + Защищённый (Опора). Источник: dnd.su + BBB.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {allOriginFeats()
+                    .filter((f) => {
+                      if (!featQuery.trim()) return true;
+                      const q = featQuery.toLowerCase();
+                      return `${f.name} ${f.nameEn} ${f.body}`.toLowerCase().includes(q);
+                    })
+                    .map((f) => {
+                      const onOrigin = character.originFeatId === f.id;
+                      const onBg = character.backgroundFeatId === f.id;
+                      return (
+                        <div
+                          key={f.id}
+                          className={cn(
+                            "rounded-[var(--radius)] border p-3 text-left text-sm",
+                            onOrigin || onBg
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-surface-2",
+                          )}
+                        >
+                          <div className="font-medium text-fg">{f.name}</div>
+                          <div className="text-[10px] text-faint">{f.source}</div>
+                          <p className="mt-1 text-xs text-muted line-clamp-4">{f.body}</p>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={onOrigin ? "blood" : "secondary"}
+                              className="h-9 text-[11px]"
+                              onClick={() => setField("originFeatId", f.id)}
+                            >
+                              Черта вида
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={onBg ? "blood" : "outline"}
+                              className="h-9 text-[11px]"
+                              onClick={() => setField("backgroundFeatId", f.id)}
+                            >
+                              Черта био
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {featTab === "kindred" && (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span>
+                    Слоты сородича:{" "}
+                    <strong>
+                      {character.selectedFeats.length}/{featSlots}
+                    </strong>{" "}
+                    (ур. 2, 7, 10, 13, 17)
+                  </span>
+                  <button
+                    type="button"
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 font-medium",
+                      featClanOnly
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border text-muted",
+                    )}
+                    onClick={() => setFeatClanOnly((v) => !v)}
+                  >
+                    {featClanOnly
+                      ? `Сначала ${builderClan === "toreador" ? "Тореадор" : "Вентру"}`
+                      : "Все кланы"}
+                  </button>
+                </div>
+                <div className="grid gap-2">
+                  {KINDRED_FEATS.filter((f) => f.levelMin <= level)
+                    .filter((f) => {
+                      if (!featQuery.trim()) return true;
+                      const q = featQuery.toLowerCase();
+                      return `${f.name} ${f.body} ${f.prereq}`.toLowerCase().includes(q);
+                    })
+                    .filter((f) => {
+                      if (!featClanOnly) return true;
+                      if (!f.clans || f.clans.includes("any")) return true;
+                      return f.clans.includes(builderClan);
+                    })
+                    .sort((a, b) => {
+                      const ra = FEAT_RECS[a.id]?.clans?.includes(builderClan) ? 0 : 1;
+                      const rb = FEAT_RECS[b.id]?.clans?.includes(builderClan) ? 0 : 1;
+                      return ra - rb || a.levelMin - b.levelMin;
+                    })
+                    .map((f) => {
+                      const on = character.selectedFeats.includes(f.id);
+                      const full =
+                        !on &&
+                        character.selectedFeats.length >= featSlots &&
+                        !f.repeatable;
+                      const rec = FEAT_RECS[f.id];
+                      const clanHit =
+                        rec?.clans?.includes(builderClan) ||
+                        f.clans?.includes(builderClan);
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          disabled={full}
+                          onClick={() => toggleFeat(f.id)}
+                          className={cn(
+                            "rounded-[var(--radius)] border p-3 text-left text-sm disabled:opacity-40",
+                            on
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-surface-2",
+                          )}
+                        >
+                          <div className="flex justify-between gap-2">
+                            <span className="font-medium">
+                              {clanHit && <span className="text-accent">★ </span>}
+                              {f.name}
+                            </span>
+                            <span className="shrink-0 text-[10px] text-faint">
+                              ≥{f.levelMin}
+                              {f.tags ? ` · ${f.tags.join(", ")}` : ""}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-muted">{f.body}</p>
+                          <p className="mt-0.5 text-[10px] text-faint">{f.prereq}</p>
+                          {rec && (
+                            <p className="mt-1 text-[11px] text-accent">
+                              ★ {rec.note}
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {featTab === "general" && (
+              <div className="space-y-3">
+                <p className="text-xs text-muted">
+                  Универсальные черты PHB 2024 (dnd.su) — берите вместо +2 к характеристикам на
+                  ASI. Слоты ≈ число ASI:{" "}
+                  <strong>
+                    {(character.generalFeats ?? []).length}/{asiCount(level)}
+                  </strong>
+                  . Статы по-прежнему правятся на шаге «Характеристики».
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-xs font-medium",
+                      featClanOnly
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border text-muted",
+                    )}
+                    onClick={() => setFeatClanOnly((v) => !v)}
+                  >
+                    {featClanOnly ? "Рекомендованные клану" : "Полный список"}
+                  </button>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {generalFeatsForLevel(level)
+                    .filter((f) => {
+                      if (!featQuery.trim()) return true;
+                      const q = featQuery.toLowerCase();
+                      return `${f.name} ${f.nameEn} ${f.body} ${f.tags?.join(" ")}`
+                        .toLowerCase()
+                        .includes(q);
+                    })
+                    .filter((f) => !featClanOnly || recommendedForClan(f, builderClan))
+                    .map((f) => {
+                      const on = (character.generalFeats ?? []).includes(f.id);
+                      const gSlots = asiCount(level);
+                      const full =
+                        !on && (character.generalFeats ?? []).length >= gSlots;
+                      const rec = FEAT_RECS[f.id];
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          disabled={full && !on}
+                          onClick={() => toggleGeneralFeat(f.id)}
+                          className={cn(
+                            "rounded-[var(--radius)] border p-3 text-left text-sm disabled:opacity-40",
+                            on
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-surface-2",
+                          )}
+                        >
+                          <div className="flex justify-between gap-2">
+                            <span className="font-medium">
+                              {rec?.clans?.includes(builderClan) && (
+                                <span className="text-accent">★ </span>
+                              )}
+                              {f.name}
+                            </span>
+                            <span className="text-[10px] text-faint">≥{f.levelMin}</span>
+                          </div>
+                          <div className="text-[10px] text-faint">{f.source}</div>
+                          <p className="mt-1 text-xs text-muted line-clamp-5">{f.body}</p>
+                          {f.tags && (
+                            <p className="mt-1 text-[10px] text-faint">
+                              {f.tags.join(" · ")}
+                            </p>
+                          )}
+                          {rec && (
+                            <p className="mt-1 text-[11px] text-accent">★ {rec.note}</p>
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
             <div>
-              <h3 className="mb-2 font-display text-sm">Bane · предпочтённая кровь</h3>
+              <h3 className="mb-2 font-display text-sm">
+                {builderClan === "toreador"
+                  ? "Заметка / эстетика (Bane Тореадор)"
+                  : "Bane · предпочтённая кровь (Вентру)"}
+              </h3>
               <div className="flex flex-wrap gap-1.5">
                 {PREFERRED_BLOOD_PRESETS.map((p) => (
                   <button
@@ -1036,7 +1290,7 @@ export function VentrueBuilder() {
           </div>
         )}
 
-        {step === "mechanics" && (
+{step === "mechanics" && (
           <div className="space-y-2">
             {MECHANICS_GUIDE.map((g) => (
               <button

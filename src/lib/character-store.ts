@@ -63,6 +63,8 @@ export type CharacterSheet = {
   skillProfs: Partial<Record<SkillId, ProfLevel>>;
   saveProfs: Partial<Record<keyof Abilities, boolean>>;
   selectedFeats: string[];
+  /** PHB general feats taken instead of / in addition to ASI tracking */
+  generalFeats: string[];
   feats: string;
   equipment: string;
   notes: string;
@@ -119,6 +121,7 @@ type LibraryState = {
   toggleSave: (key: keyof Abilities) => void;
   toggleCondition: (c: string) => void;
   toggleFeat: (featId: string) => void;
+  toggleGeneralFeat: (featId: string) => void;
   patch: (partial: Partial<CharacterSheet>) => void;
   spendBlood: (n?: number) => void;
   gainBlood: (n?: number) => void;
@@ -177,6 +180,7 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     skillProfs: { ...raw.skillProfs },
     saveProfs: { con: true, cha: true, ...raw.saveProfs },
     selectedFeats: raw.selectedFeats ?? [],
+    generalFeats: (raw as CharacterSheet).generalFeats ?? [],
     attacks: raw.attacks ?? [],
     conditions: raw.conditions ?? [],
     sessionLog: raw.sessionLog ?? [],
@@ -312,6 +316,16 @@ export const useCharacterStore = create<LibraryState>()(
               }
             }
             return { ...c, selectedFeats, customResources };
+          }),
+        ),
+      toggleGeneralFeat: (featId) =>
+        set((s) =>
+          updateActive(s, (c) => {
+            const has = (c.generalFeats ?? []).includes(featId);
+            const generalFeats = has
+              ? (c.generalFeats ?? []).filter((x) => x !== featId)
+              : [...(c.generalFeats ?? []), featId];
+            return { ...c, generalFeats };
           }),
         ),
       patch: (partial) =>

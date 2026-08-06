@@ -278,6 +278,9 @@ export type FeatDef = {
   body: string;
   /** if true, can pick multiple times */
   repeatable?: boolean;
+  /** clan affinity for builder filter */
+  clans?: ("ventrue" | "toreador" | "any")[];
+  tags?: string[];
 };
 
 export const KINDRED_FEATS: FeatDef[] = [
@@ -286,6 +289,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Проворство (Alacrity)",
     prereq: "Ур. 2+, класс Kindred",
     levelMin: 2,
+    clans: ["toreador", "any"],
+    tags: ["бой", "celerity"],
     body: "БД 1 ОБК: доп. действие (только Атака раз или Отход). Скорость +10 фт., преимущество на инициативу.",
   },
   {
@@ -293,6 +298,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Плащ теней (Cloak of Shadows)",
     prereq: "Ур. 2+",
     levelMin: 2,
+    clans: ["any"],
+    tags: ["скрытность"],
     body: "БД: преимущество на следующую проверку Ловкости (Скрытность) в этот ход. Маг. действие: Невидимость до конца следующего хода — БМ раз / продолжит. отдых.",
   },
   {
@@ -300,6 +307,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Убедительные мысли (Convincing Thoughts)",
     prereq: "Ур. 7+",
     levelMin: 7,
+    clans: ["ventrue", "toreador"],
+    tags: ["соц", "dominate"],
     body: "Харизма +1 (макс. 20). «Очаровать личность» без ячейки БМ / LR. Цель не знает, что была Очарована вами.",
   },
   {
@@ -307,6 +316,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Дневной ходок (Daywalker)",
     prereq: "Kindred",
     levelMin: 1,
+    clans: ["any"],
+    tags: ["выживание"],
     body: "Урон от солнца −2. БД 1 ОБК: 1 мин без уязвимости к Лучу. При старте LR: спас Тел. DC 12 — считаться ≥1 ОБК для отдыха.",
   },
   {
@@ -314,6 +325,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Освоение дисциплины",
     prereq: "Ур. 4+",
     levelMin: 4,
+    clans: ["any"],
+    tags: ["дисциплина"],
     body: "Базовая дисциплина другого клана (Animalism, Auspex, Celerity, Dominate, Fortitude, Obfuscate, Oblivion, Potence, Presence, Protean). Повторяема с другой дисциплиной.",
     repeatable: true,
   },
@@ -322,6 +335,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Дикий шёпот (Feral Whispers)",
     prereq: "Ур. 2+",
     levelMin: 2,
+    clans: ["any"],
+    tags: ["animalism"],
     body: "Маг. действие 1 ОБК: призвать зверей (CR ≤ БМ). Speak with Animals как ритуал.",
   },
   {
@@ -329,6 +344,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Властное присутствие (Forceful Presence)",
     prereq: "Ур. 2+",
     levelMin: 2,
+    clans: ["ventrue", "toreador"],
+    tags: ["соц", "presence"],
     body: "БД: преимущество на Запугивание/Выступление/Убеждение 10 мин — БМ / LR. БД: проверка Запугивания → спас Муд. или Испуг 1 мин — БМ / LR.",
   },
   {
@@ -336,6 +353,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Большее освоение дисциплины",
     prereq: "Ур. 8+, Discipline Acquisition",
     levelMin: 8,
+    clans: ["any"],
+    tags: ["дисциплина"],
     body: "Усиление уже взятой дисциплины (см. PDF Greater Discipline Acquisition).",
     repeatable: true,
   },
@@ -344,6 +363,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Закалённая кожа (Hardened Skin)",
     prereq: "Ур. 7+",
     levelMin: 7,
+    clans: ["ventrue"],
+    tags: ["танк", "fortitude"],
     body: "Телосложение +1 (макс. 20). Сопротивление Дробящему или Рубящему (выбор).",
   },
   {
@@ -351,6 +372,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Обострённые чувства",
     prereq: "Ур. 2+",
     levelMin: 2,
+    clans: ["toreador"],
+    tags: ["auspex", "разведка"],
     body: "Преимущество на Проницательность и Внимательность. Blindsight 30 фт. See Invisibility БМ / LR.",
   },
   {
@@ -358,6 +381,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Поцелуй (The Kiss)",
     prereq: "Kindred",
     levelMin: 1,
+    clans: ["toreador", "ventrue"],
+    tags: ["питание", "соц"],
     body: "При питании можно d4 вместо d6: на 4 — +1 ОБК и цель Очарована до конца вашего следующего хода.",
   },
   {
@@ -365,6 +390,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Смертельное тело (Lethal Body)",
     prereq: "Ур. 4+",
     levelMin: 4,
+    clans: ["ventrue", "any"],
+    tags: ["бой", "potence"],
     body: "Сокрушительные удары: +1d8 урона при попадании без оружия (тот же тип). Железная хватка: помеха на побег из вашего захвата.",
   },
   {
@@ -372,6 +399,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Верный слуга (Loyal Servant)",
     prereq: "Ур. 7+",
     levelMin: 7,
+    clans: ["ventrue"],
+    tags: ["миньон"],
     body: "Спутник Beast/Humanoid (CR ≤ ½ БМ), Blood Bound. У него 1 Kindred Feat (как Kindred 2). Можно тратить HD вместо ОБК для черты.",
   },
   {
@@ -379,6 +408,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Трюки разума (Mind Tricks)",
     prereq: "Ур. 2+",
     levelMin: 2,
+    clans: ["ventrue"],
+    tags: ["dominate"],
     body: "«Приказ» без ячейки БМ / LR + особая команда «Забыть» (туманные 5 минут).",
   },
   {
@@ -386,6 +417,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Самоконтроль (Self-Control)",
     prereq: "Ур. 2+",
     levelMin: 2,
+    clans: ["any"],
+    tags: ["зверь"],
     body: "Мудрость +1 (макс. 20). Реакция: мгновенно окончить Голод Зверя — мод. Мудрости раз / LR (мин. 1).",
   },
   {
@@ -393,6 +426,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Превосходное освоение дисциплины",
     prereq: "Ур. 12+, Greater…",
     levelMin: 12,
+    clans: ["any"],
+    tags: ["дисциплина"],
     body: "Дальнейшее усиление дисциплины (PDF Superior Discipline Acquisition).",
     repeatable: true,
   },
@@ -401,6 +436,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Высшее освоение дисциплины",
     prereq: "Ур. 16+, Superior…",
     levelMin: 16,
+    clans: ["any"],
+    tags: ["дисциплина"],
     body: "Максимальное освоение дисциплины (PDF Supreme Discipline Acquisition).",
     repeatable: true,
   },
@@ -409,6 +446,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Касание тьмы (Touch of Darkness)",
     prereq: "Ур. 2+",
     levelMin: 2,
+    clans: ["any"],
+    tags: ["oblivion", "зрение"],
     body: "Видение в тусклом/тьме (маг./немаг.) 120 фт. Преимущество на Скрытность.",
   },
   {
@@ -416,6 +455,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Концентрация vitae",
     prereq: "Ур. 4+",
     levelMin: 4,
+    clans: ["any"],
+    tags: ["кровь"],
     body: "Телосложение +1 (макс. 20). Макс. Очков крови + мод. Телосложения (мин. 1).",
   },
   {
@@ -423,6 +464,8 @@ export const KINDRED_FEATS: FeatDef[] = [
     name: "Благословение поколений",
     prereq: "Ур. 19+, Kindred",
     levelMin: 19,
+    clans: ["any"],
+    tags: ["эпик"],
     body: "Одна характеристика +1 (макс. 30). Feed die: переброс 1. Макс. ОБК +5.",
   },
 ];

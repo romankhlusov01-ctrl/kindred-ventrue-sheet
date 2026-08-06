@@ -1,4 +1,5 @@
 /** Источники: Bound by Blood PDF (RAW) + dnd.su / next.dnd.su (PHB 2024) */
+import { ORIGIN_FEAT_CATALOG } from "@/data/phb-feats-ru";
 
 export type OriginFeatDef = {
   id: string;
@@ -305,5 +306,35 @@ export function backgroundById(id: string) {
 }
 
 export function originFeatById(id: string) {
-  return ORIGIN_FEATS.find((f) => f.id === id);
+  const local = ORIGIN_FEATS.find((f) => f.id === id);
+  if (local) return local;
+  const cat = ORIGIN_FEAT_CATALOG.find((f) => f.id === id);
+  if (!cat) return undefined;
+  return {
+    id: cat.id,
+    name: cat.name,
+    nameEn: cat.nameEn,
+    source: cat.source,
+    body: cat.body,
+    luckPool: cat.luckPool,
+  } satisfies OriginFeatDef;
+}
+
+/** Полный список происхождения: локальные BBB + каталог dnd.su (без дублей) */
+export function allOriginFeats(): OriginFeatDef[] {
+  const map = new Map<string, OriginFeatDef>();
+  for (const f of ORIGIN_FEATS) map.set(f.id, f);
+  for (const cat of ORIGIN_FEAT_CATALOG) {
+    if (!map.has(cat.id)) {
+      map.set(cat.id, {
+        id: cat.id,
+        name: cat.name,
+        nameEn: cat.nameEn,
+        source: cat.source,
+        body: cat.body,
+        luckPool: cat.luckPool,
+      });
+    }
+  }
+  return [...map.values()];
 }

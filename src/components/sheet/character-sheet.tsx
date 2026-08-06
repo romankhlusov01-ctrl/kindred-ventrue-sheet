@@ -45,6 +45,7 @@ import { AcBuilder } from "@/components/sheet/ac-builder";
 import { BloodBond } from "@/components/sheet/blood-bond";
 import { useSessionStore } from "@/lib/session-store";
 import { tableCheckSkill } from "@/lib/table-roll";
+import { GENERAL_FEAT_CATALOG, generalFeatsForLevel } from "@/data/phb-feats-ru";
 
 import {
   featsForLevel,
@@ -1304,6 +1305,32 @@ export function CharacterSheet() {
                 </button>
               );
             })}
+          </div>
+          <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
+            <h2 className="mb-2 font-display text-lg">Универсальные (PHB · dnd.su)</h2>
+            <p className="mb-2 text-xs text-muted">
+              Слоты ASI: {(character.generalFeats ?? []).length} выбрано. Тап — вкл/выкл.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {generalFeatsForLevel(character.level).map((f) => {
+                const on = (character.generalFeats ?? []).includes(f.id);
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => useCharacterStore.getState().toggleGeneralFeat(f.id)}
+                    className={cn(
+                      "rounded-[var(--radius)] border p-3 text-left text-sm",
+                      on ? "border-primary bg-primary/10" : "border-border bg-surface-2",
+                    )}
+                  >
+                    <div className="font-medium">{f.name}</div>
+                    <div className="text-[10px] text-faint">{f.source}</div>
+                    <p className="mt-1 text-xs text-muted line-clamp-3">{f.body}</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <Label>Свободные заметки по чертам / ASI</Label>
