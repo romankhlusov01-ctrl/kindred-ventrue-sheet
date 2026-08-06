@@ -48,16 +48,19 @@ export function DominateDc() {
       </div>
       <ul className="mb-3 space-y-1 text-xs text-muted">
         <li>
-          Forceful Presence: {aweBonus ? "Awe / Daunt есть" : "черта не взята"}
+          Властное присутствие: {aweBonus ? "есть" : "черта не взята"}
         </li>
-        <li>Mind Tricks: {c.selectedFeats.includes("mind-tricks") ? "да" : "нет"}</li>
-        {c.clan === "toreador" ? (
+        <li>Трюки разума: {c.selectedFeats.includes("mind-tricks") ? "да" : "нет"}</li>
+        {c.clan === "toreador" && (
           <li className="text-primary">
             Проклятие Тореадор: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)
           </li>
-        ) : c.preferredBlood ? (
-          <li className="text-primary">Проклятие Вентру · кровь: {c.preferredBlood}</li>
-        ) : null}
+        )}
+        {c.clan === "ventrue" && (
+          <li className="text-primary">
+            Проклятие Вентру · кровь: {c.preferredBlood || "не указана"}
+          </li>
+        )}
       </ul>
 
       {voice && (

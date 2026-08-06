@@ -26,13 +26,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { PlayDock } from "@/components/sheet/play-dock";
 import { TableSheet } from "@/components/sheet/table-sheet";
 import { PrintSheetBlock, PrintSheetButton } from "@/components/sheet/print-sheet";
-import { PlayHub } from "@/components/sheet/play-hub";
 import { Hotkeys } from "@/components/sheet/hotkeys";
 import { AsiHelper } from "@/components/sheet/asi-helper";
 import { LevelUpHelper } from "@/components/sheet/level-up-helper";
 import { ClearLog } from "@/components/sheet/clear-log";
 import { LogSearch } from "@/components/sheet/log-search";
-import { VentrueBuilder } from "@/components/sheet/ventrue-builder";
+import { KindredBuilder } from "@/components/sheet/kindred-builder";
 import { InventoryPanel } from "@/components/sheet/inventory-panel";
 import { OnboardingBanner } from "@/components/sheet/onboarding";
 import { SessionSummary } from "@/components/sheet/session-summary";
@@ -106,10 +105,6 @@ const ABILITY_KEYS: { key: keyof Abilities; label: string; short: string }[] = [
 
 const CLAN_RU: Record<string, string> = {
   ventrue: "Вентру",
-  brujah: "Бруха",
-  gangrel: "Гангрел",
-  lasombra: "Ласомбра",
-  nosferatu: "Носферату",
   toreador: "Тореадор",
   none: "—",
 };
@@ -549,14 +544,14 @@ export function CharacterSheet() {
                 onClick={() => {
                   const lib = releaseLibrary();
                   useCharacterStore.getState().importLibrary(lib.characters, lib.activeId);
-                  toast.success("Библиотека: Вентру 8 + Тореадор 8 (релиз v6)");
+                  toast.success("Библиотека: Вентру 8 + Тореадор 8");
                 }}
               >
                 Сброс демо
               </Button>
             </div>
             <p className="mb-2 text-[10px] text-faint">
-              Релиз v6 · только актуальные пресеты обоих кланов. Старые (колдун, дубли) удалены.
+              Релиз: два демо-листа (Вентру / Тореадор) + пустой. Старая архитектура PlayHub удалена.
             </p>
             <ul className="space-y-1">
               {characters.map((ch) => (
@@ -771,7 +766,7 @@ export function CharacterSheet() {
         ))}
       </div>
 
-      {tab === "builder" && <VentrueBuilder />}
+      {tab === "builder" && <KindredBuilder />}
 
       {tab === "play" && appMode === "play" && (
         <div className="space-y-3">
@@ -1154,18 +1149,11 @@ export function CharacterSheet() {
             </div>
           </section>
 
-          {(character.clan === "ventrue" ||
-            character.clan === "toreador" ||
-            character.clan === "none") && (
+          {(character.clan === "ventrue" || character.clan === "toreador") && (
             <section>
               <h3 className="mb-2 font-display text-base">
                 Клан{" "}
-                {character.clan === "toreador"
-                  ? "Тореадор"
-                  : character.clan === "ventrue" || character.clan === "none"
-                    ? "Вентру"
-                    : character.clan}{" "}
-                · прогрессия
+                {character.clan === "toreador" ? "Тореадор" : "Вентру"} · прогрессия
               </h3>
               <div className="grid gap-2 lg:grid-cols-2">
                 {clanFeatures

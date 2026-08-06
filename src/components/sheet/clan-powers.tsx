@@ -25,7 +25,7 @@ export function ClanPowers() {
 
   function spendVoice(label: string) {
     if (!voice) {
-      toast.error("Нет ресурса «Голос власти» — примените билд Вентру");
+      toast.error("Нет ресурса «Голос власти» — примените билд (Вентру 3+)");
       return false;
     }
     if (voice.current < 1) {
@@ -176,7 +176,14 @@ export function ClanPowers() {
     );
   }
 
-  // Ventrue
+  if (c.clan !== "ventrue") {
+    return (
+      <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3 text-sm text-muted">
+        Выберите клан Вентру или Тореадор в режиме «Создать».
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <DominateDc />

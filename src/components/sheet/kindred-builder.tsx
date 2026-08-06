@@ -77,7 +77,7 @@ import {
 } from "@/data/phb-feats-ru";
 import { useSessionStore } from "@/lib/session-store";
 
-export function VentrueBuilder() {
+export function KindredBuilder() {
   const character = useCharacterStore((s) => s.character);
   const patch = useCharacterStore((s) => s.patch);
   const setField = useCharacterStore((s) => s.setField);
@@ -2006,3 +2006,4 @@ function StatChip({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+

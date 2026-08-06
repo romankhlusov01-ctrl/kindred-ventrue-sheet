@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { COPY } from "@/data/terms-ru";
 
-const KEY = "kindred-onboarding-v4-modes";
+const KEY = "kindred-onboarding-v7";
 
 export function OnboardingBanner() {
   const [open, setOpen] = useState(false);

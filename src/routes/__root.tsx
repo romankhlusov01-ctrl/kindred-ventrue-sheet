@@ -4,7 +4,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { CreatedWithGrokBanner } from "@/components/created-with-grok-banner";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Лист Вентру · Bound by Blood";
+const APP_NAME = "Сородич · Вентру / Тореадор";
 const host = import.meta.env.VITE_PUBLIC_HOSTNAME;
 const ogImage = host
   ? `https://og.grok.me/v1/card.png?host=${encodeURIComponent(host)}&title=${encodeURIComponent(APP_NAME)}`
@@ -22,7 +22,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Интерактивный русский лист Вентру (Kindred) для Vampire: The Masquerade – Bound by Blood, D&D 2024.",
+          "Интерактивный лист сородича (Вентру / Тореадор): билдер + стол, Bound by Blood · dnd.su · PHB 2024.",
       },
       ...(ogImage
         ? [

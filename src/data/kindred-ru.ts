@@ -1,4 +1,4 @@
-/** Полные данные Kindred + Ventrue по Bound by Blood (сжатые, но точные по RAW, на русском) */
+/** Kindred · Ventrue + Toreador · Bound by Blood (сжатые, но точные по RAW, на русском) */
 
 export type FeatureBlock = {
   id: string;
@@ -584,6 +584,6 @@ export function unlockedToreador(level: number) {
 
 export function unlockedClanFeatures(clan: string, level: number) {
   if (clan === "toreador") return unlockedToreador(level);
-  if (clan === "ventrue" || clan === "none" || !clan) return unlockedVentrue(level);
+  if (clan === "ventrue") return unlockedVentrue(level);
   return [];
 }

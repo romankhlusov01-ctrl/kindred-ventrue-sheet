@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type { ClanId } from "@/data/kindred";
 import { getLevelData } from "@/data/kindred-ru";
 import type { ProfLevel, SkillId } from "@/data/skills";
-import { BLANK_TEMPLATE, LEGACY_PRESET_IDS, releaseLibrary } from "@/data/presets";
+import { BLANK_TEMPLATE, releaseLibrary } from "@/data/presets";
 import type { RollMode } from "@/lib/roll-engine";
 import { effectivePb } from "@/lib/level-utils";
 
@@ -75,7 +75,6 @@ export type CharacterSheet = {
   deathFail: number;
   inspiration: boolean;
   concentrating: string;
-  voiceUses: number;
   hitDiceUsed: number;
   sessionLog: LogEntry[];
   customResources: CustomResource[];
@@ -171,6 +170,11 @@ function bpMax(level: number, con: number, selectedFeats: string[]) {
 
 function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): CharacterSheet {
   const base = BLANK_TEMPLATE();
+  // drop unimplemented clans from old architecture
+  const rawClan = (raw as CharacterSheet | undefined)?.clan as string | undefined;
+  if (rawClan && !["ventrue", "toreador", "none"].includes(rawClan)) {
+    raw = { ...raw, clan: "none" as CharacterSheet["clan"] };
+  }
   if (!raw) return base;
   return {
     ...base,
@@ -391,7 +395,6 @@ export const useCharacterStore = create<LibraryState>()(
             ...c,
             beastUsed: 0,
             beastActive: false,
-            voiceUses: 0,
             actionUsed: false,
             bonusUsed: false,
             reactionUsed: false,
@@ -417,8 +420,7 @@ export const useCharacterStore = create<LibraryState>()(
               tempHp: 0,
               beastUsed: 0,
               beastActive: false,
-              voiceUses: 0,
-              luckyUsed: 0,
+                luckyUsed: 0,
               protectedUsed: 0,
               inspiration: true,
               hitDiceUsed: hasBlood ? 0 : c.hitDiceUsed,
@@ -662,8 +664,8 @@ export const useCharacterStore = create<LibraryState>()(
       },
     }),
     {
-      name: "kindred-sheet-v6-release",
-      version: 6,
+      name: "kindred-sheet-v7",
+      version: 7,
       partialize: (s) => ({
         characters: s.characters,
         activeId: s.activeId,
@@ -687,38 +689,16 @@ export const useCharacterStore = create<LibraryState>()(
         );
       },
       migrate: (persisted: unknown, fromVersion: number) => {
-        // v6: drop legacy presets, reseed dual-clan library if empty after purge
-        if (fromVersion < 6) {
+        // v7: purge legacy presets + old PlayHub-era sheets; keep only custom chars
+        if (fromVersion < 7) {
+          const lib = releaseLibrary();
           const p = persisted as {
-            character?: CharacterSheet;
             characters?: CharacterSheet[];
-            activeId?: string;
           } | null;
           const custom = (p?.characters ?? [])
             .map(migrateSheet)
-            .filter(
-              (c) =>
-                !LEGACY_PRESET_IDS.includes(c.id) &&
-                !c.id.startsWith("preset-ventrue") &&
-                !c.id.startsWith("preset-toreador") &&
-                !/^v[p78]-|^to-|^vp-|^tr-/.test(c.id),
-            );
-          // Keep user-named non-preset sheets only if name looks custom
-          const kept = custom.filter(
-            (c) =>
-              c.name &&
-              !["Владыка крови", "Владыка с пактом", "Владыка крови (классика)", "Алая роза"].includes(
-                c.name,
-              ),
-          );
-          const lib = releaseLibrary();
-          const characters = [
-            ...lib.characters.map(migrateSheet),
-            ...kept.map((c) => ({
-              ...c,
-              id: c.id.startsWith("char-") ? c.id : `char-${Date.now()}-${c.id.slice(0, 6)}`,
-            })),
-          ];
+            .filter((c) => c.id.startsWith("char-") && c.name && c.name !== "Новый сородич");
+          const characters = [...lib.characters.map(migrateSheet), ...custom];
           return {
             characters,
             activeId: lib.activeId,
@@ -726,9 +706,9 @@ export const useCharacterStore = create<LibraryState>()(
           };
         }
         const p = persisted as {
-          character?: CharacterSheet;
           characters?: CharacterSheet[];
           activeId?: string;
+          character?: CharacterSheet;
         } | null;
         if (p?.characters?.length) {
           const characters = p.characters.map(migrateSheet);

@@ -153,7 +153,7 @@ export function TableSheet() {
           <div className="min-w-0">
             <div className="font-display text-lg text-fg truncate">{c.name || "Сородич"}</div>
             <div className="text-xs text-muted">
-              {c.species} · {c.clan === "toreador" ? "Тореадор" : "Вентру"} {c.level}
+              {c.species} · {c.clan === "toreador" ? "Тореадор" : c.clan === "ventrue" ? "Вентру" : "Сородич"} {c.level}
               {c.multiclass ? ` / ${c.multiclass}` : ""} · Сл{" "}
               <span className="font-display text-primary">{spellDc}</span>
             </div>
@@ -558,7 +558,9 @@ export function TableSheet() {
           <p className="text-center text-[10px] text-faint">
             {c.clan === "toreador"
               ? "Проклятие Тореадор: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)"
-              : `Проклятие Вентру: ${c.preferredBlood || "укажите кровь"} · иначе ½ костей Питания`}{" "}
+              : c.clan === "ventrue"
+                ? `Проклятие Вентру: ${c.preferredBlood || "укажите кровь"} · иначе ½ костей Питания`
+                : "Выберите клан в билдере"}{" "}
             · PDF · dnd.su
           </p>
         </div>

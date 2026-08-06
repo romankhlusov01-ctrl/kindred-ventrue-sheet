@@ -56,7 +56,7 @@ export function LevelUpHelper() {
     const hp = calcKindredHp(
       next,
       c.abilities.con,
-      c.clan !== "toreador" && next >= 6,
+      c.clan === "ventrue" && next >= 6,
     );
     const gain = Math.max(1, hp - c.hpMax);
     const resources = c.customResources.map((r) => {

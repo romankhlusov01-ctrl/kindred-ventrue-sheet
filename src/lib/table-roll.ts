@@ -158,7 +158,7 @@ export function tableFeed(half = false) {
     store.gainBlood(sixes);
   }
   const label =
-    half && c.clan !== "toreador"
+    half && c.clan === "ventrue"
       ? "½ Питания (Проклятие)"
       : half
         ? "½ кости"

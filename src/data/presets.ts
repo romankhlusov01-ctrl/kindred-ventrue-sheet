@@ -1,5 +1,5 @@
 /**
- * Релизные пресеты · v6
+ * Релизные пресеты · v7 (без legacy PlayHub)
  * Только актуальная логика: dual luck, оба клана, формулы HP/ОБК, Проклятие.
  * Старые id (preset-ventrue-7-wl1, preset-ventrue-8, …) удалены.
  */
@@ -45,7 +45,7 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = (() => {
   const b = pb(level);
   const feats = ["forceful", "lethal"] as string[];
   return base({
-    id: "preset-ventrue-v6",
+    id: "preset-ventrue-v7",
     name: "Владыка крови",
     player: "",
     clan: "ventrue",
@@ -104,7 +104,6 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = (() => {
     deathFail: 0,
     inspiration: true,
     concentrating: "",
-    voiceUses: 0,
     hitDiceUsed: 0,
     sessionLog: [],
     customResources: [
@@ -134,7 +133,7 @@ export const PRESET_TOREADOR_PLAYER: CharacterSheet = (() => {
   const b = pb(level);
   const feats = ["forceful", "alacrity"] as string[];
   return base({
-    id: "preset-toreador-v6",
+    id: "preset-toreador-v7",
     name: "Алая роза",
     player: "",
     clan: "toreador",
@@ -200,7 +199,6 @@ export const PRESET_TOREADOR_PLAYER: CharacterSheet = (() => {
     deathFail: 0,
     inspiration: true,
     concentrating: "",
-    voiceUses: 0,
     hitDiceUsed: 0,
     sessionLog: [],
     customResources: [
@@ -270,7 +268,6 @@ export const BLANK_TEMPLATE = (): CharacterSheet => {
     deathFail: 0,
     inspiration: false,
     concentrating: "",
-    voiceUses: 0,
     hitDiceUsed: 0,
     sessionLog: [],
     customResources: [],
@@ -295,16 +292,6 @@ export const RELEASE_PRESETS: { id: string; label: string; sheet: () => Characte
       id: `tr-${Date.now()}`,
     }),
   },
-];
-
-/** Старые id — при migrate v6 выкидываем */
-export const LEGACY_PRESET_IDS = [
-  "preset-ventrue-player",
-  "preset-ventrue-7-wl1",
-  "preset-ventrue-8",
-  "preset-toreador-1",
-  "preset-ventrue-v5",
-  "preset-toreador-v5",
 ];
 
 /** Стартовая библиотека релиза */
