@@ -649,6 +649,23 @@ export const useCharacterStore = create<LibraryState>()(
     {
       name: "kindred-sheet-v5-solo",
       version: 5,
+      partialize: (s) => ({
+        characters: s.characters,
+        activeId: s.activeId,
+        character: s.character,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state?.characters?.length) return;
+        const active =
+          state.characters.find((c) => c.id === state.activeId) ??
+          state.characters[0]!;
+        state.activeId = active.id;
+        state.character = active;
+        // keep list entries in sync with active snapshot if stale
+        state.characters = state.characters.map((c) =>
+          c.id === active.id ? active : c,
+        );
+      },
       migrate: (persisted: unknown) => {
         const p = persisted as {
           character?: CharacterSheet;
