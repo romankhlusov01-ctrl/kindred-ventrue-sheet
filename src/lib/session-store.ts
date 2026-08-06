@@ -48,6 +48,9 @@ type SessionState = {
   pushUndo: (label: string) => void;
   undo: () => boolean;
   clearUndo: () => void;
+  /** Builder → play handoff */
+  playHandoff: number;
+  requestPlayMode: () => void;
 };
 
 export const useSessionStore = create<SessionState>((set, get) => ({
@@ -132,4 +135,6 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     return true;
   },
   clearUndo: () => set({ undoStack: [] }),
+  playHandoff: 0,
+  requestPlayMode: () => set((s) => ({ playHandoff: s.playHandoff + 1 })),
 }));

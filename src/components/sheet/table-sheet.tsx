@@ -30,6 +30,7 @@ import { BloodPips } from "@/components/sheet/blood-pips";
 import { DominateDc } from "@/components/sheet/dominate-dc";
 import { DeathPanel } from "@/components/sheet/death-panel";
 import { RestWizard } from "@/components/sheet/rest-wizard";
+import { WarlockSnippet } from "@/components/sheet/warlock-snippet";
 import { RollHistory } from "@/components/sheet/roll-history";
 import {
   tableAttack,
@@ -108,7 +109,7 @@ export function TableSheet() {
 
   return (
     <div className="mx-auto max-w-lg space-y-3 pb-2 sm:max-w-none">
-      {/* Last roll hero */}
+      {/* Last roll hero — sticky for table glance */}
       <section
         className={cn(
           "rounded-[var(--radius-lg)] border p-3",
@@ -264,7 +265,7 @@ export function TableSheet() {
               className={cn(
                 "flex h-10 items-center justify-center rounded border text-[10px] font-medium",
                 c[key]
-                  ? "border-primary/40 bg-primary/15 text-primary line-through opacity-70"
+                  ? "border-primary/40 bg-primary/10 text-primary line-through opacity-70"
                   : "border-border bg-surface-2",
               )}
             >
@@ -545,8 +546,9 @@ export function TableSheet() {
             </Button>
           </div>
           <DominateDc />
+          {/колдун|warlock/i.test(c.multiclass || "") && <WarlockSnippet />}
           <p className="text-center text-[10px] text-faint">
-            Bane: {c.preferredBlood || "—"} · источники: BBB PDF · dnd.su Lucky/Human
+            Bane: {c.preferredBlood || "—"} · BBB PDF · dnd.su Lucky/Human · PHB 2024
           </p>
         </div>
       )}

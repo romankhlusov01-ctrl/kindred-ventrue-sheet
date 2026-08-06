@@ -60,6 +60,7 @@ import {
 import { BUILD_PRESETS, defaultAttacks, type BuildPreset } from "@/data/builder-presets";
 import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
 import { FEAT_RECS } from "@/data/feat-recommendations";
+import { useSessionStore } from "@/lib/session-store";
 
 export function VentrueBuilder() {
   const character = useCharacterStore((s) => s.character);
@@ -330,7 +331,8 @@ export function VentrueBuilder() {
     );
 
     addLog("Билдер: билд применён");
-    toast.success("Билд на листе · переключитесь на «Играть»");
+    toast.success("Билд на листе · режим «Играть»");
+    useSessionStore.getState().requestPlayMode();
   }
 
   return (

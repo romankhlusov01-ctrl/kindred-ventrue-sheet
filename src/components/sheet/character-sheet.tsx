@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PlayDock } from "@/components/sheet/play-dock";
 import { TableSheet } from "@/components/sheet/table-sheet";
+import { PrintSheetBlock, PrintSheetButton } from "@/components/sheet/print-sheet";
 import { PlayHub } from "@/components/sheet/play-hub";
 import { Hotkeys } from "@/components/sheet/hotkeys";
 import { AsiHelper } from "@/components/sheet/asi-helper";
@@ -149,6 +150,7 @@ export function CharacterSheet() {
   const pushUndo = useSessionStore((s) => s.pushUndo);
   const undo = useSessionStore((s) => s.undo);
   const undoStack = useSessionStore((s) => s.undoStack);
+  const playHandoff = useSessionStore((s) => s.playHandoff);
 
   const [tab, setTab] = useState<Tab>("play");
   const [appMode, setAppMode] = useState<AppMode>("play");
@@ -182,6 +184,12 @@ export function CharacterSheet() {
     } catch { /* */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    if (!playHandoff) return;
+    setAppMode("play");
+    setTab("play");
+    setFocusMode(true);
+  }, [playHandoff, setFocusMode]);
 
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [openFeature, setOpenFeature] = useState<string | null>(null);
@@ -354,6 +362,7 @@ export function CharacterSheet() {
       {!hideChrome && <OnboardingBanner />}
 
       {/* ═══ Два режима продукта ═══ */}
+      {!hideChrome && (
       <div className="mb-3 grid grid-cols-2 gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-1">
         <button
           type="button"
@@ -377,6 +386,7 @@ export function CharacterSheet() {
           onClick={() => {
             setAppMode("play");
             setTab("play");
+            setFocusMode(true);
           }}
           className={cn(
             "flex h-12 flex-col items-center justify-center rounded-[var(--radius)] text-xs font-semibold transition-colors",
@@ -389,6 +399,7 @@ export function CharacterSheet() {
           <span className="text-[10px] font-normal opacity-80">лист · броски в лог</span>
         </button>
       </div>
+      )}
 
       <header className={cn("mb-3 space-y-3", tab === "play" && "mb-1.5", hideChrome && "mb-1")}>
         {!hideChrome && (
@@ -536,19 +547,34 @@ export function CharacterSheet() {
                 {character.multiclass ? `/${character.multiclass}` : ""}
               </span>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-9 shrink-0"
-              onClick={() => setFocusMode(false)}
-            >
-              <Maximize2 className="size-3.5" />
-            </Button>
+            <div className="flex shrink-0 gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-9"
+                onClick={() => {
+                  setFocusMode(false);
+                  setAppMode("create");
+                  setTab("builder");
+                }}
+              >
+                Билдер
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-9"
+                onClick={() => setFocusMode(false)}
+              >
+                <Maximize2 className="size-3.5" />
+              </Button>
+            </div>
           </div>
         )}
 
-        {tab !== "play" && (
+        {appMode === "create" && tab !== "play" && (
         <details className="group identity-fields" open>
           <summary className="mb-2 cursor-pointer list-none text-xs text-muted sm:hidden">Имя · клан · уровень ▾</summary>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -651,7 +677,7 @@ export function CharacterSheet() {
             }}
           >
             <span className="min-w-0 truncate text-[11px] text-muted">{lastRoll.label}</span>
-            <span className="font-display text-xl tabular-nums leading-none text-primary">
+            <span className="font-display text-2xl tabular-nums leading-none text-primary">
               {lastRoll.total}
             </span>
           </button>
@@ -1244,6 +1270,18 @@ export function CharacterSheet() {
 
       {tab === "log" && (
         <div className="grid gap-4 lg:grid-cols-2">
+          {lastRoll && (
+            <div className="rounded-[var(--radius-lg)] border border-primary/40 bg-primary/10 p-4 lg:col-span-2">
+              <div className="text-xs text-muted">Последний бросок</div>
+              <div className="flex items-end justify-between gap-2">
+                <div>
+                  <div className="font-medium">{lastRoll.label}</div>
+                  <div className="text-xs text-faint">{lastRoll.detail}</div>
+                </div>
+                <div className="font-display text-4xl text-primary">{lastRoll.total}</div>
+              </div>
+            </div>
+          )}
           <SessionNote />
           <SessionSummary />
           <BloodBond />
@@ -1314,6 +1352,7 @@ export function CharacterSheet() {
         </>
       )}
 
+      <PrintSheetBlock />
 
     </div>
   );
