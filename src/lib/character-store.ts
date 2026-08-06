@@ -354,7 +354,8 @@ export const useCharacterStore = create<LibraryState>()(
             if (delta >= 0) {
               return {
                 ...c,
-                hpCurrent: clamp(c.hpCurrent + delta, 0, Math.max(c.hpMax + 100, 0)),
+                // Heal never exceeds max HP (temp HP is separate)
+                hpCurrent: clamp(c.hpCurrent + delta, 0, Math.max(c.hpMax, 0)),
               };
             }
             let dmg = -delta;

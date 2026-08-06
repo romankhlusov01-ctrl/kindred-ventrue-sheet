@@ -374,6 +374,7 @@ export function CharacterSheet() {
       <div className="mb-3 grid grid-cols-2 gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-1">
         <button
           type="button"
+          aria-label="Создать персонажа"
           onClick={() => {
             setAppMode("create");
             setTab("builder");
@@ -387,10 +388,11 @@ export function CharacterSheet() {
           )}
         >
           <span className="font-display text-sm tracking-wide">Создать</span>
-          <span className="text-[10px] font-normal opacity-80">Клан · билдер RAW</span>
+          <span className="text-[10px] font-normal opacity-80">Вентру / Тореадор</span>
         </button>
         <button
           type="button"
+          aria-label="Играть лист"
           onClick={() => {
             setAppMode("play");
             setTab("play");
@@ -442,6 +444,8 @@ export function CharacterSheet() {
                 variant="secondary"
                 size="sm"
                 className="h-10"
+                aria-label="Фокус"
+                title="Фокус"
                 onClick={() => {
                   setFocusMode(true);
                   toast.message("Фокус · меньше хрома");
@@ -451,18 +455,50 @@ export function CharacterSheet() {
                 <span className="hidden sm:inline">Фокус</span>
               </Button>
             )}
-            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={() => setLibraryOpen((v) => !v)}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-10"
+              aria-label="Персонажи"
+              title="Персонажи"
+              onClick={() => setLibraryOpen((v) => !v)}
+            >
               <Users className="size-3.5" />
-              <span className="hidden sm:inline">Персонажи</span>
+              <span className="text-xs sm:text-sm">Герои</span>
             </Button>
-            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={copyShareLink}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-10"
+              aria-label="Ссылка"
+              title="Ссылка"
+              onClick={copyShareLink}
+            >
               <Share2 className="size-3.5" />
               <span className="hidden sm:inline">Ссылка</span>
             </Button>
-            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={exportJson}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-10"
+              aria-label="Экспорт JSON"
+              title="Экспорт JSON"
+              onClick={exportJson}
+            >
               <Download className="size-3.5" />
             </Button>
-            <Button type="button" variant="secondary" size="sm" className="h-10" onClick={importJson}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-10"
+              aria-label="Импорт JSON"
+              title="Импорт JSON"
+              onClick={importJson}
+            >
               <Upload className="size-3.5" />
             </Button>
             <span className="hidden sm:contents">
