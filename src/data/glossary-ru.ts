@@ -49,7 +49,7 @@ export const GLOSSARY: { term: string; body: string }[] = [
   },
   {
     term: "Черта сородича",
-    body: "Слоты 2, 7, 10, 13, 17. Не путать с ASI 4/8/12/16/19.",
+    body: "Класс: 2, 7, 10, 13, 17. На ASI 4/8/12/16 тоже можно взять Kindred Feat вместо +2 (RAW).",
   },
   {
     term: "Сл заклинаний",

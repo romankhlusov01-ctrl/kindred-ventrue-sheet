@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getLevelData, KINDRED_TABLE } from "@/data/kindred-ru";
+import { getLevelData, KINDRED_TABLE, KINDRED_FEATS } from "@/data/kindred-ru";
 import { ASI_LEVELS, calcKindredHp, kindredFeatSlots } from "@/data/builder-ru";
 import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
 import { TOREADOR_MILESTONES } from "@/data/toreador-milestones";
@@ -21,13 +21,15 @@ const ABIL: { key: keyof Abilities; short: string }[] = [
   { key: "cha", short: "ХАР" },
 ];
 
-/** Level up with ASI **or** general feat choice on 4/8/12/16/19 */
+type Asimod = "asi" | "general" | "kindred";
+
+/** Level up: ASI / PHB feat / Kindred Feat on 4·8·12·16; kindred slot on 2·7·10·13·17 */
 export function LevelUpHelper() {
   const c = useCharacterStore((s) => s.character);
   const patch = useCharacterStore((s) => s.patch);
   const addLog = useCharacterStore((s) => s.addLog);
 
-  const [asiOrFeat, setAsiOrFeat] = useState<"asi" | "feat">("asi");
+  const [mode, setMode] = useState<Asimod>("asi");
   const [asiA, setAsiA] = useState<keyof Abilities>("cha");
   const [asiB, setAsiB] = useState<keyof Abilities | "">("");
   const [pickedFeat, setPickedFeat] = useState<string | null>(null);
@@ -36,15 +38,18 @@ export function LevelUpHelper() {
 
   const next = c.level + 1;
   const row = getLevelData(next);
-  const prevSlots = kindredFeatSlots(c.level);
-  const nextSlots = kindredFeatSlots(next);
-  const newKindredFeat = nextSlots > prevSlots;
+  const prevK = kindredFeatSlots(c.level);
+  const nextK = kindredFeatSlots(next);
+  const newClassKindred = nextK > prevK;
   const features = KINDRED_TABLE[next - 1]?.features ?? "";
   const newAsi = (ASI_LEVELS as readonly number[]).includes(next);
   const milestones =
     c.clan === "toreador" ? TOREADOR_MILESTONES : VENTRUE_MILESTONES;
   const milestone = milestones.find((m) => m.level === next);
   const phbFeats = generalFeatsForLevel(next).filter((f) => f.id !== "asi");
+  const kindredOpts = KINDRED_FEATS.filter(
+    (f) => f.levelMin <= next && !c.selectedFeats.includes(f.id),
+  );
 
   function applyLevel() {
     const hp = calcKindredHp(
@@ -60,8 +65,16 @@ export function LevelUpHelper() {
       return r;
     });
 
+    const base = {
+      level: next,
+      hpMax: hp,
+      hpCurrent: c.hpCurrent + gain,
+      bloodCurrent: Math.min(row.bp, c.bloodCurrent + 1),
+      customResources: resources,
+    };
+
     if (newAsi) {
-      if (asiOrFeat === "asi") {
+      if (mode === "asi") {
         const scores = { ...c.abilities };
         if (asiB && asiB !== asiA) {
           scores[asiA] = Math.min(20, scores[asiA] + 1);
@@ -69,21 +82,14 @@ export function LevelUpHelper() {
         } else {
           scores[asiA] = Math.min(20, scores[asiA] + 2);
         }
-        patch({
-          level: next,
-          hpMax: hp,
-          hpCurrent: c.hpCurrent + gain,
-          bloodCurrent: Math.min(row.bp, c.bloodCurrent + 1),
-          customResources: resources,
-          abilities: scores,
-        });
+        patch({ ...base, abilities: scores });
         addLog(
-          `Уровень ${next}: ASI ${asiB && asiB !== asiA ? `+1 ${asiA}/+1 ${asiB}` : `+2 ${asiA}`}, +${gain} ХП`,
+          `Ур.${next}: ASI ${asiB && asiB !== asiA ? `+1 ${asiA}/+1 ${asiB}` : `+2 ${asiA}`}, +${gain} ХП`,
         );
         toast.success(`Ур.${next} · ASI`);
-      } else {
+      } else if (mode === "general") {
         if (!pickedFeat) {
-          toast.error("Выберите черту PHB или переключитесь на ASI");
+          toast.error("Выберите PHB-черту или другой вариант");
           return;
         }
         const feats = c.generalFeats?.includes(pickedFeat)
@@ -91,33 +97,31 @@ export function LevelUpHelper() {
           : [...(c.generalFeats ?? []), pickedFeat];
         const fname =
           GENERAL_FEAT_CATALOG.find((f) => f.id === pickedFeat)?.name ?? pickedFeat;
-        patch({
-          level: next,
-          hpMax: hp,
-          hpCurrent: c.hpCurrent + gain,
-          bloodCurrent: Math.min(row.bp, c.bloodCurrent + 1),
-          customResources: resources,
-          generalFeats: feats,
-        });
-        addLog(`Уровень ${next}: черта PHB «${fname}», +${gain} ХП`);
-        toast.success(`Ур.${next} · черта ${fname}`);
+        patch({ ...base, generalFeats: feats });
+        addLog(`Ур.${next}: PHB «${fname}», +${gain} ХП`);
+        toast.success(`Ур.${next} · ${fname}`);
+      } else {
+        if (!pickedFeat) {
+          toast.error("Выберите Kindred Feat");
+          return;
+        }
+        const feats = c.selectedFeats.includes(pickedFeat)
+          ? c.selectedFeats
+          : [...c.selectedFeats, pickedFeat];
+        const fname = KINDRED_FEATS.find((f) => f.id === pickedFeat)?.name ?? pickedFeat;
+        patch({ ...base, selectedFeats: feats });
+        addLog(`Ур.${next}: Kindred «${fname}», +${gain} ХП`);
+        toast.success(`Ур.${next} · Kindred ${fname}`);
       }
+    } else if (newClassKindred) {
+      // auto open kindred pick optional: just level + toast reminder
+      patch(base);
+      addLog(`Ур.${next}: +${gain} ХП · +слот черты сородича (класс)`);
+      toast.success(`Ур.${next} · возьмите Kindred Feat в билдере/листе`);
     } else {
-      patch({
-        level: next,
-        hpMax: hp,
-        hpCurrent: c.hpCurrent + gain,
-        bloodCurrent: Math.min(row.bp, c.bloodCurrent + 1),
-        customResources: resources,
-      });
-      addLog(
-        `Уровень ${next}: +${gain} макс. ХП, ОБК макс ${row.bp}${
-          newKindredFeat ? " · +слот черты сородича" : ""
-        }`,
-      );
-      toast.success(
-        `Уровень ${next}${newKindredFeat ? " — черта сородича" : ""}`,
-      );
+      patch(base);
+      addLog(`Ур.${next}: +${gain} ХП, ОБК ${row.bp}`);
+      toast.success(`Уровень ${next}`);
     }
     setPickedFeat(null);
   }
@@ -132,46 +136,45 @@ export function LevelUpHelper() {
           {c.level} → {next}
         </strong>
         : {features}. ОБК {row.bp}, питание {row.feed}, БМ +{row.pb}
-        {newKindredFeat ? " · +слот черты сородича" : ""}
-        {newAsi ? " · ASI или черта PHB" : ""}.
+        {newClassKindred ? " · +слот Kindred (класс)" : ""}
+        {newAsi ? " · ASI / PHB / Kindred" : ""}.
         {milestone ? ` · ${milestone.title}` : ""}
       </p>
 
       {newAsi && (
         <div className="mb-3 space-y-2">
           <p className="text-[11px] font-medium text-fg">
-            Ур.{next}: выберите <strong>ASI</strong> или <strong>черту</strong>
+            Ур.{next} RAW: одно из трёх
           </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={() => setAsiOrFeat("asi")}
-              className={cn(
-                "flex h-12 flex-col items-center justify-center rounded-[var(--radius)] border text-xs font-semibold",
-                asiOrFeat === "asi"
-                  ? "border-primary bg-primary/15 text-primary"
-                  : "border-border bg-surface text-muted",
-              )}
-            >
-              ASI
-              <span className="text-[10px] font-normal opacity-80">+2 / +1+1</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setAsiOrFeat("feat")}
-              className={cn(
-                "flex h-12 flex-col items-center justify-center rounded-[var(--radius)] border text-xs font-semibold",
-                asiOrFeat === "feat"
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-border bg-surface text-muted",
-              )}
-            >
-              Черта
-              <span className="text-[10px] font-normal opacity-80">PHB · dnd.su</span>
-            </button>
+          <div className="grid grid-cols-3 gap-1.5">
+            {(
+              [
+                ["asi", "ASI", "+2 / +1+1"],
+                ["general", "PHB", "черта"],
+                ["kindred", "Kindred", "сородич"],
+              ] as const
+            ).map(([id, title, sub]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  setMode(id);
+                  setPickedFeat(null);
+                }}
+                className={cn(
+                  "flex h-14 flex-col items-center justify-center rounded-[var(--radius)] border px-1 text-[11px] font-semibold",
+                  mode === id
+                    ? "border-primary bg-primary/15 text-primary"
+                    : "border-border bg-surface text-muted",
+                )}
+              >
+                {title}
+                <span className="text-[9px] font-normal opacity-80">{sub}</span>
+              </button>
+            ))}
           </div>
 
-          {asiOrFeat === "asi" && (
+          {mode === "asi" && (
             <div className="space-y-2 rounded border border-border bg-surface p-2">
               <label className="flex items-center gap-2 text-xs">
                 {asiB ? "+1" : "+2"}
@@ -196,7 +199,7 @@ export function LevelUpHelper() {
                     setAsiB((e.target.value || "") as keyof Abilities | "")
                   }
                 >
-                  <option value="">— только +2 к первой —</option>
+                  <option value="">— только +2 —</option>
                   {ABIL.filter((a) => a.key !== asiA).map((a) => (
                     <option key={a.key} value={a.key}>
                       {a.short} ({c.abilities[a.key]})
@@ -207,45 +210,70 @@ export function LevelUpHelper() {
             </div>
           )}
 
-          {asiOrFeat === "feat" && (
+          {mode === "general" && (
             <div className="max-h-48 space-y-1 overflow-y-auto rounded border border-border bg-surface p-2">
-              {phbFeats.slice(0, 16).map((f) => {
-                const on = pickedFeat === f.id;
-                const rec = FEAT_RECS[f.id];
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setPickedFeat(f.id)}
-                    className={cn(
-                      "w-full rounded border px-2 py-2 text-left text-xs",
-                      on
-                        ? "border-accent bg-accent/15"
-                        : "border-border bg-surface-2",
-                    )}
-                  >
-                    <span className="font-medium">{f.name}</span>
-                    {rec && (
-                      <span className="mt-0.5 block text-[10px] text-accent">
-                        ★ {rec.note}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {phbFeats.slice(0, 18).map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setPickedFeat(f.id)}
+                  className={cn(
+                    "w-full rounded border px-2 py-2 text-left text-xs",
+                    pickedFeat === f.id
+                      ? "border-accent bg-accent/15"
+                      : "border-border bg-surface-2",
+                  )}
+                >
+                  <span className="font-medium">{f.name}</span>
+                  {FEAT_RECS[f.id] && (
+                    <span className="mt-0.5 block text-[10px] text-accent">
+                      ★ {FEAT_RECS[f.id]!.note}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {mode === "kindred" && (
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded border border-border bg-surface p-2">
+              {kindredOpts.slice(0, 20).map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setPickedFeat(f.id)}
+                  className={cn(
+                    "w-full rounded border px-2 py-2 text-left text-xs",
+                    pickedFeat === f.id
+                      ? "border-primary bg-primary/15"
+                      : "border-border bg-surface-2",
+                  )}
+                >
+                  <span className="font-medium">{f.name}</span>
+                  <span className="mt-0.5 block text-[10px] text-faint">
+                    ур.{f.levelMin}+
+                  </span>
+                </button>
+              ))}
+              {kindredOpts.length === 0 && (
+                <p className="text-[11px] text-muted">Нет доступных / уже взяты</p>
+              )}
             </div>
           )}
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="secondary"
-        className="h-12 w-full"
-        onClick={applyLevel}
-      >
+      <Button type="button" variant="secondary" className="h-12 w-full" onClick={applyLevel}>
         Повысить до {next}
-        {newAsi ? (asiOrFeat === "asi" ? " · ASI" : " · черта") : ""}
+        {newAsi
+          ? mode === "asi"
+            ? " · ASI"
+            : mode === "general"
+              ? " · PHB"
+              : " · Kindred"
+          : newClassKindred
+            ? " · +Kindred-слот"
+            : ""}
       </Button>
     </div>
   );

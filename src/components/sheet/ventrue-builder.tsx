@@ -99,8 +99,10 @@ export function VentrueBuilder() {
   const [asiPlus1, setAsiPlus1] = useState<keyof Abilities>("con");
   /** Extra ASI from levels 4/8/... as freeform +2 total points applied to finals after bg */
   const [asiExtra, setAsiExtra] = useState<Partial<Record<keyof Abilities, number>>>({});
-  /** Per ASI level: take ability boosts OR a general PHB feat (not both for same slot) */
-  const [asiSlotMode, setAsiSlotMode] = useState<Partial<Record<number, "asi" | "feat">>>({});
+  /** Per ASI level RAW: ASI, general PHB feat, OR Kindred Feat */
+  const [asiSlotMode, setAsiSlotMode] = useState<
+    Partial<Record<number, "asi" | "general" | "kindred">>
+  >({});
   const [classSkills, setClassSkills] = useState<SkillId[]>(["intimidation", "insight"]);
   const [openGuide, setOpenGuide] = useState<string | null>("clan");
   const [builderClan, setBuilderClan] = useState<"ventrue" | "toreador">(
@@ -149,29 +151,35 @@ export function VentrueBuilder() {
     () => ASI_LEVELS.filter((l) => level >= l),
     [level],
   );
-  const slotMode = (L: number): "asi" | "feat" => asiSlotMode[L] ?? "asi";
+  const slotMode = (L: number): "asi" | "general" | "kindred" =>
+    asiSlotMode[L] ?? "asi";
   const asiSlotsAsi = unlockedAsiLevels.filter((L) => slotMode(L) === "asi").length;
-  const asiSlotsFeat = unlockedAsiLevels.filter((L) => slotMode(L) === "feat").length;
+  const asiSlotsGeneral = unlockedAsiLevels.filter((L) => slotMode(L) === "general").length;
+  const asiSlotsKindred = unlockedAsiLevels.filter((L) => slotMode(L) === "kindred").length;
   const asiPtsBudget = asiSlotsAsi * 2;
   const asiPtsUsed = Object.values(asiExtra).reduce((a, b) => a + (b ?? 0), 0);
   const asiPtsLeft = asiPtsBudget - asiPtsUsed;
-  /** General PHB feat slots = ASI levels spent on feats (not ability scores) */
-  const gSlots = asiSlotsFeat;
+  /** PHB general feats only for ASI slots spent on «general» */
+  const gSlots = asiSlotsGeneral;
+  /** Kindred feats = class slots 2/7/10/13/17 + ASI spent on Kindred Feat */
+  const kSlots = featSlots + asiSlotsKindred;
   const validation = useMemo(() => {
     const issues: string[] = [];
     if (!character.name.trim()) issues.push("Нет имени");
     if (method === "point" && spent > POINT_BUY_BUDGET)
       issues.push(`Point buy ${spent}/${POINT_BUY_BUDGET}`);
     if (classSkills.length !== 2) issues.push("Нужно 2 навыка класса");
-    if (character.selectedFeats.length > featSlots)
-      issues.push(`Черт сородича ${character.selectedFeats.length}/${featSlots}`);
-        const gTaken = character.generalFeats?.length ?? 0;
+    const kTaken = character.selectedFeats.length;
+    if (kTaken > kSlots)
+      issues.push(`Черт сородича ${kTaken}/${kSlots} (класс + ASI→Kindred)`);
+    // Kindred slots recommended but not hard-required mid-build
+    const gTaken = character.generalFeats?.length ?? 0;
     if (gTaken > gSlots)
       issues.push(
-        `Универсальных черт ${gTaken}/${gSlots} (слоты «черта» на ASI 4/8/12/16/19)`,
+        `Универсальных черт ${gTaken}/${gSlots} (ASI → PHB)`,
       );
     if (gSlots > 0 && gTaken < gSlots)
-      issues.push(`Выберите черту PHB для слотов ASI→черта (${gTaken}/${gSlots})`);
+      issues.push(`Выберите черту PHB для ASI→PHB (${gTaken}/${gSlots})`);
     if (asiPtsLeft < 0) issues.push("Слишком много очков ASI (сбросьте или смените слот на черту)");
     // ASI points optional until user assigns them (presets may leave empty)
     // Bane blood is Ventrue-only; Toreador attention-trap is not preferred blood
@@ -191,9 +199,11 @@ export function VentrueBuilder() {
     classSkills,
     featSlots,
     gSlots,
+    kSlots,
     level,
     asiPtsLeft,
     asiSlotsAsi,
+    asiSlotsKindred,
     asiPlus2,
     asiPlus1,
   ]);
@@ -574,7 +584,7 @@ export function VentrueBuilder() {
             </div>
             <div className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm text-muted">
               <strong className="text-fg">Ур. {level}:</strong> БМ {formatMod(pb)} · ОБК{" "}
-              {bpPreview} · Питание {getLevelData(level).feed} · черты сородича {featSlots} ·
+              {bpPreview} · Питание {getLevelData(level).feed} · Kindred-слоты {featSlots}+ASI ·
               ASI/черта×{asiCount(level)}
               <div className="mt-1 text-xs">{KINDRED_TABLE[level - 1]?.features}</div>
             </div>
@@ -792,7 +802,7 @@ export function VentrueBuilder() {
               {unlockedAsiLevels.length > 0 && (
                 <>
                   , затем на ур. {unlockedAsiLevels.join(", ")} —{" "}
-                  <strong>ASI или черта PHB</strong> (на выбор за каждый уровень)
+                  <strong>ASI / PHB / Kindred Feat</strong> (RAW, одно на уровень)
                 </>
               )}
               .
@@ -940,16 +950,51 @@ export function VentrueBuilder() {
               <div className="space-y-3 rounded-[var(--radius)] border border-primary/30 bg-primary/5 p-3">
                 <div>
                   <div className="text-sm font-medium text-fg">
-                    ASI / черта · уровни {unlockedAsiLevels.join(", ")}
+                    ASI · уровни {unlockedAsiLevels.join(", ")}
                   </div>
                   <p className="mt-1 text-xs text-muted">
-                    На каждом из этих уровней — <strong>либо</strong> улучшение характеристик
-                    (+2 или +1/+1), <strong>либо</strong> универсальная черта PHB (dnd.su). Это{" "}
-                    <strong>не</strong> слот черты сородича (2/7/10/13/17).
+                    RAW: на каждом уровне — <strong>одно</strong>: +2/+1+1,{" "}
+                    <strong>черта PHB</strong> или <strong>Kindred Feat</strong>. Слоты класса
+                    2/7/10/13/17 — <em>дополнительно</em> дают черту сородича.
                   </p>
                 </div>
                 {unlockedAsiLevels.map((L) => {
                   const mode = slotMode(L);
+                  const label =
+                    mode === "asi"
+                      ? "→ +2 / +1+1"
+                      : mode === "general"
+                        ? "→ PHB"
+                        : "→ Kindred";
+                  function pickMode(next: "asi" | "general" | "kindred") {
+                    setAsiSlotMode((m) => ({ ...m, [L]: next }));
+                    if (next !== "asi") {
+                      setAsiExtra((extra) => {
+                        const newAsiCount = unlockedAsiLevels.filter((x) =>
+                          x === L ? false : slotMode(x) === "asi",
+                        ).length;
+                        const newBudget = newAsiCount * 2;
+                        let used = Object.values(extra).reduce((a, b) => a + (b ?? 0), 0);
+                        if (used <= newBudget) return extra;
+                        const out = { ...extra };
+                        for (const k of ["cha", "con", "dex", "str", "wis", "int"] as const) {
+                          while ((out[k] ?? 0) > 0 && used > newBudget) {
+                            out[k] = (out[k] ?? 0) - 1;
+                            used -= 1;
+                          }
+                        }
+                        return out;
+                      });
+                    }
+                    if (next === "general") {
+                      setFeatTab("general");
+                      toast.message(`Ур.${L}: PHB → шаг «Черты»`);
+                    }
+                    if (next === "kindred") {
+                      setFeatTab("kindred");
+                      toast.message(`Ур.${L}: Kindred Feat → шаг «Черты → Сородич»`);
+                    }
+                  }
                   return (
                     <div
                       key={L}
@@ -957,70 +1002,31 @@ export function VentrueBuilder() {
                     >
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <span className="font-display text-sm text-fg">Уровень {L}</span>
-                        <span className="text-[10px] text-faint">
-                          {mode === "asi" ? "→ +2 к характеристикам" : "→ черта PHB"}
-                        </span>
+                        <span className="text-[10px] text-faint">{label}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAsiSlotMode((m) => ({ ...m, [L]: "asi" }));
-                          }}
-                          className={cn(
-                            "flex h-12 flex-col items-center justify-center rounded-[var(--radius-sm)] border text-xs font-semibold",
-                            mode === "asi"
-                              ? "border-primary bg-primary/15 text-primary"
-                              : "border-border bg-surface-2 text-muted",
-                          )}
-                        >
-                          ASI
-                          <span className="text-[10px] font-normal opacity-80">+2 или +1/+1</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAsiSlotMode((m) => ({ ...m, [L]: "feat" }));
-                            // drop excess ability points if budget shrinks
-                            setAsiExtra((extra) => {
-                              const budget =
-                                unlockedAsiLevels.filter(
-                                  (x) => (x === L ? "feat" : slotMode(x)) === "asi",
-                                ).length * 2;
-                              // recompute after mode change: feat for L
-                              const newAsiCount =
-                                unlockedAsiLevels.filter((x) =>
-                                  x === L ? false : slotMode(x) === "asi",
-                                ).length;
-                              const newBudget = newAsiCount * 2;
-                              let used = Object.values(extra).reduce(
-                                (a, b) => a + (b ?? 0),
-                                0,
-                              );
-                              if (used <= newBudget) return extra;
-                              // strip points from end of ability order until fit
-                              const next = { ...extra };
-                              for (const k of ["cha", "con", "dex", "str", "wis", "int"] as const) {
-                                while ((next[k] ?? 0) > 0 && used > newBudget) {
-                                  next[k] = (next[k] ?? 0) - 1;
-                                  used -= 1;
-                                }
-                              }
-                              return next;
-                            });
-                            setFeatTab("general");
-                            toast.message(`Ур.${L}: выберите черту на шаге «Черты → PHB/ASI»`);
-                          }}
-                          className={cn(
-                            "flex h-12 flex-col items-center justify-center rounded-[var(--radius-sm)] border text-xs font-semibold",
-                            mode === "feat"
-                              ? "border-accent bg-accent/15 text-accent"
-                              : "border-border bg-surface-2 text-muted",
-                          )}
-                        >
-                          Черта
-                          <span className="text-[10px] font-normal opacity-80">PHB / dnd.su</span>
-                        </button>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(
+                          [
+                            ["asi", "ASI", "+2 / +1+1"],
+                            ["general", "PHB", "черта"],
+                            ["kindred", "Kindred", "сородич"],
+                          ] as const
+                        ).map(([id, title, sub]) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => pickMode(id)}
+                            className={cn(
+                              "flex h-14 flex-col items-center justify-center rounded-[var(--radius-sm)] border px-1 text-[11px] font-semibold leading-tight",
+                              mode === id
+                                ? "border-primary bg-primary/15 text-primary"
+                                : "border-border bg-surface-2 text-muted",
+                            )}
+                          >
+                            {title}
+                            <span className="mt-0.5 text-[9px] font-normal opacity-80">{sub}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   );
@@ -1030,9 +1036,6 @@ export function VentrueBuilder() {
                     <div className="mb-2 text-sm font-medium">
                       Очки ASI ({asiPtsUsed}/{asiPtsBudget}, осталось {asiPtsLeft})
                     </div>
-                    <p className="mb-2 text-xs text-muted">
-                      Слотов «ASI»: {asiSlotsAsi} × 2 очка. +1 к хар-ке = 1 очко (макс. 20).
-                    </p>
                     <div className="flex flex-wrap gap-2">
                       {ABILITY_LABELS.map(({ key, short }) => (
                         <div
@@ -1058,7 +1061,7 @@ export function VentrueBuilder() {
                             className="size-7 rounded bg-bg text-sm"
                             onClick={() => {
                               if (asiPtsLeft <= 0) {
-                                toast.error("Нет очков ASI — смените слот на «ASI» или снимите +");
+                                toast.error("Нет очков ASI");
                                 return;
                               }
                               setAsiExtra((e) => ({
@@ -1074,14 +1077,9 @@ export function VentrueBuilder() {
                     </div>
                   </div>
                 )}
-                {asiSlotsFeat > 0 && (
+                {asiSlotsGeneral > 0 && (
                   <div className="rounded-[var(--radius)] border border-accent/30 bg-accent/5 p-3 text-xs text-muted">
-                    Слотов «черта»: <strong className="text-fg">{asiSlotsFeat}</strong> · выбрано PHB:{" "}
-                    <strong className="text-fg">
-                      {(character.generalFeats ?? []).length}
-                    </strong>
-                    . Откройте шаг <strong className="text-fg">Черты → PHB/ASI</strong> и отметьте
-                    черты.
+                    ASI → PHB: {asiSlotsGeneral} · выбрано {(character.generalFeats ?? []).length}
                     <Button
                       type="button"
                       size="sm"
@@ -1093,6 +1091,24 @@ export function VentrueBuilder() {
                       }}
                     >
                       Выбрать черты PHB
+                    </Button>
+                  </div>
+                )}
+                {asiSlotsKindred > 0 && (
+                  <div className="rounded-[var(--radius)] border border-primary/30 bg-primary/5 p-3 text-xs text-muted">
+                    ASI → Kindred: {asiSlotsKindred} · всего {character.selectedFeats.length}/{kSlots}{" "}
+                    (класс {featSlots} + ASI {asiSlotsKindred})
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="mt-2 h-10 w-full"
+                      onClick={() => {
+                        setStep("feats");
+                        setFeatTab("kindred");
+                      }}
+                    >
+                      Выбрать черты сородича
                     </Button>
                   </div>
                 )}
@@ -1174,17 +1190,17 @@ export function VentrueBuilder() {
                     key={pack.id}
                     type="button"
                     onClick={() => {
-                      const kMax = featSlots;
                       const gens = pack.general.filter((id) => {
                         const f = GENERAL_FEAT_CATALOG.find((x) => x.id === id);
                         return f && f.levelMin <= level;
                       });
                       const unlocked = ASI_LEVELS.filter((l) => level >= l);
-                      const modes: Partial<Record<number, "asi" | "feat">> = {};
+                      const modes: Partial<Record<number, "asi" | "general" | "kindred">> = {};
                       unlocked.forEach((L, i) => {
-                        modes[L] = i < gens.length ? "feat" : "asi";
+                        modes[L] = i < gens.length ? "general" : "asi";
                       });
                       setAsiSlotMode(modes);
+                      const kMax = featSlots; // class slots; package kindred list is class-sized
                       setField(
                         "selectedFeats",
                         pack.kindred.filter((id) => {
@@ -1306,9 +1322,11 @@ export function VentrueBuilder() {
                   <span>
                     Слоты сородича:{" "}
                     <strong>
-                      {character.selectedFeats.length}/{featSlots}
+                      {character.selectedFeats.length}/{kSlots}
                     </strong>{" "}
-                    (ур. 2, 7, 10, 13, 17)
+                    (класс {featSlots}
+                    {asiSlotsKindred > 0 ? ` + ASI→Kindred ${asiSlotsKindred}` : ""} · 2/7/10/13/17
+                    + опция на 4/8/12/16)
                   </span>
                   <button
                     type="button"
@@ -1346,7 +1364,7 @@ export function VentrueBuilder() {
                       const on = character.selectedFeats.includes(f.id);
                       const full =
                         !on &&
-                        character.selectedFeats.length >= featSlots &&
+                        character.selectedFeats.length >= kSlots &&
                         !f.repeatable;
                       const rec = FEAT_RECS[f.id];
                       const clanHit =
@@ -1647,7 +1665,7 @@ export function VentrueBuilder() {
                   {originFeatById(character.backgroundFeatId)?.name}
                 </li>
                 <li>
-                  Сородич ({character.selectedFeats.length}/{featSlots}):{" "}
+                  Сородич ({character.selectedFeats.length}/{kSlots}):{" "}
                   {character.selectedFeats
                     .map((id) => KINDRED_FEATS.find((f) => f.id === id)?.name ?? id)
                     .join(", ") || "—"}
