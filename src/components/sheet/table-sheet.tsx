@@ -31,6 +31,9 @@ import { DominateDc } from "@/components/sheet/dominate-dc";
 import { DeathPanel } from "@/components/sheet/death-panel";
 import { RestWizard } from "@/components/sheet/rest-wizard";
 import { WarlockSnippet } from "@/components/sheet/warlock-snippet";
+import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
+import { QuickCondition } from "@/components/sheet/quick-condition";
+import { FreeRoll } from "@/components/sheet/free-roll";
 import { RollHistory } from "@/components/sheet/roll-history";
 import {
   tableAttack,
@@ -562,10 +565,12 @@ export function TableSheet() {
         <div className="space-y-3">
           <RestWizard />
           <DeathPanel />
+          <ConcentrationHelper />
+          <QuickCondition />
+          <FreeRoll />
           <RollHistory />
           <p className="text-xs text-muted">
-            Справка по способностям и чертам — режим «Создать» или вкладка Силы в шапке.
-            Все броски пишутся в журнал (Ещё → Журнал).
+            Справка по силам/чертам — режим «Создать» или вкладка Силы. Все броски — в журнал.
           </p>
         </div>
       )}
