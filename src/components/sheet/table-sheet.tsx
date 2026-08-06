@@ -84,6 +84,7 @@ export function TableSheet() {
   const undo = useSessionStore((s) => s.undo);
   const undoStack = useSessionStore((s) => s.undoStack);
   const tickEffects = useSessionStore((s) => s.tickEffects);
+  const addLog = useCharacterStore((s) => s.addLog);
 
   const [tab, setTab] = useState<PlayTab>("checks");
   const [allSkills, setAllSkills] = useState(false);
@@ -297,6 +298,7 @@ export function TableSheet() {
                 pushUndo("Везучий");
                 if (!spendLucky()) return toast.error("Нет очков");
                 setField("pendingAdv", true);
+                addLog("Везучий: преимущество на d20");
                 toast.success("Преим. на d20");
               }}
             >
@@ -311,6 +313,7 @@ export function TableSheet() {
                 pushUndo("Везучий");
                 if (!spendLucky()) return toast.error("Нет очков");
                 setField("pendingDis", true);
+                addLog("Везучий: помеха на атаку по вам");
                 toast.success("Помеха на атаку по вам");
               }}
             >
@@ -331,6 +334,7 @@ export function TableSheet() {
               onClick={() => {
                 pushUndo("Protected");
                 if (!spendProtected()) return toast.error("Нет очков");
+                addLog("Защищённый: переброс d20≤9");
                 toast.success("Переброс ≤9 (dnd.su/PDF)");
               }}
             >
@@ -345,6 +349,7 @@ export function TableSheet() {
                 pushUndo("Protected 0→1");
                 if (!spendProtected()) return toast.error("Нет очков");
                 setField("hpCurrent", 1);
+                addLog("Защищённый: 0→1 ХП");
                 toast.success("1 хит");
               }}
             >
