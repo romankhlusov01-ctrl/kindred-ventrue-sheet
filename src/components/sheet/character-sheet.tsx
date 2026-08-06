@@ -76,10 +76,9 @@ import {
 } from "@/data/origin-ru";
 import { CONDITIONS, SKILLS, type ProfLevel, type SkillId } from "@/data/skills";
 import {
-  PRESET_VENTRUE_7_WARLOCK_1,
-  PRESET_VENTRUE_8,
-  PRESET_VENTRUE_PLAYER,
-  PRESET_TOREADOR_PLAYER,
+  BLANK_TEMPLATE,
+  RELEASE_PRESETS,
+  releaseLibrary,
 } from "@/data/presets";
 import {
   decodeSharePayload,
@@ -517,53 +516,48 @@ export function CharacterSheet() {
         {libraryOpen && !hideChrome && (
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
             <div className="mb-2 flex flex-wrap gap-2">
+              {RELEASE_PRESETS.map((p) => (
+                <Button
+                  key={p.id}
+                  type="button"
+                  size="sm"
+                  variant={p.id.startsWith("ventrue") ? "blood" : "secondary"}
+                  onClick={() => {
+                    addCharacter(p.sheet());
+                    toast.success(`Пресет: ${p.label.replace("+ ", "")}`);
+                  }}
+                >
+                  {p.label}
+                </Button>
+              ))}
               <Button
                 type="button"
                 size="sm"
-                variant="blood"
+                variant="outline"
                 onClick={() => {
-                  addCharacter({ ...PRESET_VENTRUE_PLAYER, id: `vp-${Date.now()}` });
-                  toast.success("Пресет: Вентру · Человек · Опора · 2×удача");
+                  const blank = BLANK_TEMPLATE();
+                  addCharacter(blank);
+                  toast.success("Пустой лист · откройте Создать");
                 }}
               >
-                + Твой билд
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  addCharacter({ ...PRESET_VENTRUE_7_WARLOCK_1, id: `v7-${Date.now()}` });
-                  toast.success("Пресет: 7 / Колдун 1");
-                }}
-              >
-                + 7 / Колдун 1
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  addCharacter({ ...PRESET_VENTRUE_8, id: `v8-${Date.now()}` });
-                }}
-              >
-                + Вентру 8
+                <Plus className="size-3.5" /> Пустой L3
               </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  addCharacter({ ...PRESET_TOREADOR_PLAYER, id: `to-${Date.now()}` });
-                  toast.success("Пресет: Тореадор · Алая роза · dual luck");
+                  const lib = releaseLibrary();
+                  useCharacterStore.getState().importLibrary(lib.characters, lib.activeId);
+                  toast.success("Библиотека: Вентру 8 + Тореадор 8 (релиз v6)");
                 }}
               >
-                + Тореадор
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => addCharacter()}>
-                <Plus className="size-3.5" /> Пустой
+                Сброс демо
               </Button>
             </div>
+            <p className="mb-2 text-[10px] text-faint">
+              Релиз v6 · только актуальные пресеты обоих кланов. Старые (колдун, дубли) удалены.
+            </p>
             <ul className="space-y-1">
               {characters.map((ch) => (
                 <li

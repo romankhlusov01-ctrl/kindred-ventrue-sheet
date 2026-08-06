@@ -1,6 +1,15 @@
+/**
+ * Релизные пресеты · v6
+ * Только актуальная логика: dual luck, оба клана, формулы HP/ОБК, Проклятие.
+ * Старые id (preset-ventrue-7-wl1, preset-ventrue-8, …) удалены.
+ */
 import type { CharacterSheet } from "@/lib/character-store";
+import { calcKindredHp } from "@/data/builder-ru";
+import { getLevelData } from "@/data/kindred-ru";
+import { BANE } from "@/data/terms-ru";
+import { defaultAttacks } from "@/data/builder-presets";
 
-const SOLO_DEFAULTS = {
+const SOLO = {
   actionUsed: false,
   bonusUsed: false,
   reactionUsed: false,
@@ -14,276 +23,301 @@ const SOLO_DEFAULTS = {
   round: 1,
 };
 
+function base(
+  partial: Omit<CharacterSheet, keyof typeof SOLO> & Partial<typeof SOLO>,
+): CharacterSheet {
+  return { ...SOLO, ...partial } as CharacterSheet;
+}
 
+function pb(level: number) {
+  return getLevelData(level).pb;
+}
 
-/**
- * Основной пресет: человек · Опора (Protected) · Везучий (Lucky)
- * Класс Сородич / клан Вентру. Статы под бил: +2 Хар / +1 Тел (Touchstone).
- */
-export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
-  id: "preset-ventrue-player",
-  name: "Владыка крови",
-  player: "",
-  clan: "ventrue",
-  level: 8,
-  background: "Опора (Touchstone)",
-  backgroundId: "touchstone",
-  species: "Человек",
-  alignment: "Законно-нейтральный",
-  abilities: { str: 8, dex: 14, con: 16, int: 8, wis: 10, cha: 17 },
-  hpCurrent: 77,
-  hpMax: 77,
-  tempHp: 0,
-  ac: 14,
-  speed: 30,
-  bloodCurrent: 5,
-  beastUsed: 0,
-  hunger: false,
-  preferredBlood: "солдаты",
-  skillProfs: {
-    persuasion: "proficient",
-    survival: "proficient",
-    intimidation: "proficient",
-    deception: "proficient",
-    insight: "proficient",
-    perception: "proficient",
+function bp(level: number) {
+  return getLevelData(level).bp;
+}
+
+/** ─── Вентру 8 · dual luck · контроль ─── */
+export const PRESET_VENTRUE_PLAYER: CharacterSheet = (() => {
+  const level = 8;
+  const abilities = { str: 8, dex: 14, con: 16, int: 8, wis: 10, cha: 17 };
+  const hp = calcKindredHp(level, abilities.con, true);
+  const b = pb(level);
+  const feats = ["forceful", "lethal"] as string[];
+  return base({
+    id: "preset-ventrue-v6",
+    name: "Владыка крови",
+    player: "",
+    clan: "ventrue",
+    level,
+    background: "Опора (Touchstone)",
+    backgroundId: "touchstone",
+    species: "Человек",
+    alignment: "Законно-нейтральный",
+    abilities,
+    hpCurrent: hp,
+    hpMax: hp,
+    tempHp: 0,
+    ac: 14,
+    speed: 30,
+    bloodCurrent: bp(level),
+    beastUsed: 0,
+    hunger: false,
+    preferredBlood: "солдаты / военные",
+    skillProfs: {
+      persuasion: "proficient",
+      survival: "proficient",
+      intimidation: "proficient",
+      deception: "proficient",
+      insight: "proficient",
+      perception: "proficient",
+    },
+    saveProfs: { con: true, cha: true },
+    selectedFeats: feats,
+    generalFeats: [],
+    originFeatId: "lucky",
+    backgroundFeatId: "protected",
+    luckyUsed: 0,
+    protectedUsed: 0,
+    humanSkill: "deception",
+    fiendishLegacy: "",
+    feats: [
+      "Человек · Везучий (Lucky)",
+      "Опора · Защищённый (Protected)",
+      "Ур.2: Властное присутствие",
+      "Ур.4: ASI (+Хар/+Тел)",
+      "Ур.7: Смертельное тело",
+      "Ур.8: ASI",
+    ].join("\n"),
+    equipment:
+      "Нагрудник\nКороткий меч\n2 кинжала\nДорожная одежда\nФлакон vitae\nПерстень дома\n15 зм",
+    notes: [
+      "Вентру 8 · dual luck · Сл = 8+БМ+Хар.",
+      BANE.ventrueLine("солдаты / военные"),
+      "Голос власти = БМ / короткий. Непоколебимая уверенность: преим. спас Муд.",
+      "Не дрогнуть (6): +макс. ХП.",
+    ].join(" "),
+    multiclass: "",
+    attacks: defaultAttacks(level, abilities, feats),
+    conditions: [],
+    deathSuccess: 0,
+    deathFail: 0,
+    inspiration: true,
+    concentrating: "",
+    voiceUses: 0,
+    hitDiceUsed: 0,
+    sessionLog: [],
+    customResources: [
+      {
+        id: "cr-voice",
+        name: "Голос власти",
+        current: b,
+        max: b,
+        note: "Приказ / Внушение · короткий или продолжительный",
+      },
+      {
+        id: "cr-presence",
+        name: "Властное присутствие",
+        current: b,
+        max: b,
+        note: "Awe / Daunt · LR",
+      },
+    ],
+  });
+})();
+
+/** ─── Тореадор 8 · dual luck · Presence / Auspex ─── */
+export const PRESET_TOREADOR_PLAYER: CharacterSheet = (() => {
+  const level = 8;
+  const abilities = { str: 8, dex: 16, con: 14, int: 12, wis: 12, cha: 16 };
+  const hp = calcKindredHp(level, abilities.con, false);
+  const b = pb(level);
+  const feats = ["forceful", "alacrity"] as string[];
+  return base({
+    id: "preset-toreador-v6",
+    name: "Алая роза",
+    player: "",
+    clan: "toreador",
+    level,
+    background: "Опора (Touchstone)",
+    backgroundId: "touchstone",
+    species: "Человек",
+    alignment: "Хаотично-нейтральный",
+    abilities,
+    hpCurrent: hp,
+    hpMax: hp,
+    tempHp: 0,
+    ac: 14,
+    speed: 40,
+    bloodCurrent: bp(level),
+    beastUsed: 0,
+    hunger: false,
+    preferredBlood: BANE.toreadorField + " · вкус: артисты",
+    skillProfs: {
+      persuasion: "proficient",
+      survival: "proficient",
+      insight: "proficient",
+      perception: "expertise",
+      investigation: "proficient",
+      performance: "proficient",
+      deception: "proficient",
+    },
+    saveProfs: { con: true, cha: true },
+    selectedFeats: feats,
+    generalFeats: [],
+    originFeatId: "lucky",
+    backgroundFeatId: "protected",
+    luckyUsed: 0,
+    protectedUsed: 0,
+    humanSkill: "deception",
+    fiendishLegacy: "",
+    feats: [
+      "Человек · Везучий (Lucky)",
+      "Опора · Защищённый (Protected)",
+      "Ур.2: Властное присутствие",
+      "Ур.3: Душа художника (+Анализ/Вним, ТЗ 120, +2 навыка)",
+      "Ур.4: ASI",
+      "Ур.6: Глубина чувств",
+      "Ур.7: Проворство",
+      "Ур.8: ASI",
+    ].join("\n"),
+    equipment:
+      "Кожаный доспех\nКороткий меч\nКинжал\nЛютня\nВечерняя одежда\n15 зм",
+    notes: [
+      "Тореадор 8 · dual luck · Сл = 8+БМ+Хар.",
+      BANE.toreadorShort,
+      "Душа художника: преим. Анализ/Внимательность. Глубина чувств: ОБК.",
+      "Проворство: +10 ск., преим. иниц.",
+    ].join(" "),
+    multiclass: "",
+    attacks: defaultAttacks(level, abilities, feats).map((a) =>
+      a.id === "atk-feed"
+        ? { ...a, notes: "Урон к макс. ХП · с 5 ур. БД" }
+        : a,
+    ),
+    conditions: [],
+    deathSuccess: 0,
+    deathFail: 0,
+    inspiration: true,
+    concentrating: "",
+    voiceUses: 0,
+    hitDiceUsed: 0,
+    sessionLog: [],
+    customResources: [
+      {
+        id: "cr-presence",
+        name: "Властное присутствие",
+        current: b,
+        max: b,
+        note: "Awe / Daunt · LR",
+      },
+      {
+        id: "cr-alacrity",
+        name: "Проворство",
+        current: b,
+        max: b,
+        note: "доп. действие · 1 ОБК",
+      },
+    ],
+  });
+})();
+
+/** Пустой лист L3 — выбор клана в билдере */
+export const BLANK_TEMPLATE = (): CharacterSheet => {
+  const level = 3;
+  const abilities = { str: 10, dex: 12, con: 14, int: 10, wis: 12, cha: 15 };
+  const hp = calcKindredHp(level, abilities.con, false);
+  return base({
+    id: `char-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name: "Новый сородич",
+    player: "",
+    clan: "none",
+    level,
+    background: "Опора (Touchstone)",
+    backgroundId: "touchstone",
+    species: "Человек",
+    alignment: "",
+    abilities,
+    hpCurrent: hp,
+    hpMax: hp,
+    tempHp: 0,
+    ac: 13,
+    speed: 30,
+    bloodCurrent: bp(level),
+    beastUsed: 0,
+    hunger: false,
+    preferredBlood: "",
+    skillProfs: {
+      persuasion: "proficient",
+      survival: "proficient",
+    },
+    saveProfs: { con: true, cha: true },
+    selectedFeats: [],
+    generalFeats: [],
+    originFeatId: "lucky",
+    backgroundFeatId: "protected",
+    luckyUsed: 0,
+    protectedUsed: 0,
+    humanSkill: "perception",
+    fiendishLegacy: "",
+    feats: "Человек · Везучий · Опора · Защищённый",
+    equipment: "",
+    notes: "Откройте Создать → выберите Вентру или Тореадор → Применить.",
+    multiclass: "",
+    attacks: defaultAttacks(level, abilities, []),
+    conditions: [],
+    deathSuccess: 0,
+    deathFail: 0,
+    inspiration: false,
+    concentrating: "",
+    voiceUses: 0,
+    hitDiceUsed: 0,
+    sessionLog: [],
+    customResources: [],
+  });
+};
+
+/** Каталог релизных пресетов (библиотека) */
+export const RELEASE_PRESETS: { id: string; label: string; sheet: () => CharacterSheet }[] = [
+  {
+    id: "ventrue-8",
+    label: "+ Вентру 8",
+    sheet: () => ({
+      ...PRESET_VENTRUE_PLAYER,
+      id: `vp-${Date.now()}`,
+    }),
   },
-  saveProfs: { con: true, cha: true },
-  selectedFeats: ["forceful", "lethal"],
-  generalFeats: [],
-  originFeatId: "lucky",
-  backgroundFeatId: "protected",
-  luckyUsed: 0,
-  protectedUsed: 0,
-  humanSkill: "deception",
-  fiendishLegacy: "",
-  feats:
-    "Человек · Гибкий: Везучий (Lucky)\nОпора · Защищённый (Protected)\nУр. 2: Властное присутствие\nУр. 4 ASI\nУр. 7: Смертельное тело\nУр. 8 ASI",
-  equipment:
-    "Нагрудник\nКороткий меч\n2 кинжала\nРемесленные инструменты\nДорожная одежда\nФлакон vitae\nПерстень дома\n15 зм",
-  notes:
-    "Соло-режим: вкладка Бой → ход / инициатива / кости.\nПроклятие: солдаты. Сл = 8+БМ+Хар.",
-  multiclass: "",
-  attacks: [
-    {
-      id: "a1",
-      name: "Безоружный (Смертельное тело)",
-      bonus: 2,
-      damage: "1d4+0+1d8",
-      type: "Дробящий",
-      notes: "Lethal Body +1d8",
-    },
-    {
-      id: "a2",
-      name: "Короткий меч (Лов)",
-      bonus: 5,
-      damage: "1d6+2",
-      type: "Колющий",
-      notes: "Лёгкое",
-    },
-    {
-      id: "a3",
-      name: "Питание (улучш.)",
-      bonus: 0,
-      damage: "3d6+3",
-      type: "Некротический",
-      notes: "БД; урон к макс. ХП; ½ костей если не предпочтённая кровь",
-    },
-  ],
-  conditions: [],
-  deathSuccess: 0,
-  deathFail: 0,
-  inspiration: true,
-  concentrating: "",
-  voiceUses: 0,
-  hitDiceUsed: 0,
-  sessionLog: [],
-  customResources: [
-    {
-      id: "cr1",
-      name: "Голос власти",
-      current: 3,
-      max: 3,
-      note: "Приказ / Внушение · БМ · короткий",
-    },
-    {
-      id: "cr2",
-      name: "Властное присутствие",
-      current: 3,
-      max: 3,
-      note: "Awe / Daunt · БМ · LR",
-    },
-  ],
-  ...SOLO_DEFAULTS,
-};
-
-export const PRESET_VENTRUE_7_WARLOCK_1: CharacterSheet = {
-  ...PRESET_VENTRUE_PLAYER,
-  id: "preset-ventrue-7-wl1",
-  name: "Владыка с пактом",
-  level: 7,
-  multiclass: "Колдун 1",
-  bloodCurrent: 4,
-  hpMax: 62,
-  hpCurrent: 62,
-  ac: 14,
-  feats:
-    "Человек: Везучий · Опора: Защищённый\nKindred 2: Властное присутствие\nKindred 4: ASI\nKindred 7: Смертельное тело\nКолдун 1: Мистический заряд + инвокация",
-  notes: "Сородич 7 / Колдун 1. ОБК 4, Питание 3d6.",
-  attacks: [
-    {
-      id: "a1",
-      name: "Мистический заряд",
-      bonus: 6,
-      damage: "1d10",
-      type: "Силовой",
-      notes: "Заговор",
-    },
-    {
-      id: "a2",
-      name: "Питание",
-      bonus: 2,
-      damage: "3d6+3",
-      type: "Некротический",
-      notes: "БД",
-    },
-  ],
-  customResources: [
-    { id: "cr1", name: "Голос власти", current: 3, max: 3, note: "Приказ/Внушение" },
-    { id: "cr2", name: "Ячейка пакта", current: 1, max: 1, note: "1 круг, короткий" },
-  ],
-  ...SOLO_DEFAULTS,
-};
-
-export const PRESET_VENTRUE_8: CharacterSheet = {
-  ...PRESET_VENTRUE_PLAYER,
-  id: "preset-ventrue-8",
-  name: "Владыка крови (классика)",
-  abilities: { str: 14, dex: 10, con: 16, int: 8, wis: 12, cha: 18 },
-  hpMax: 76,
-  hpCurrent: 76,
-  ac: 15,
-  attacks: [
-    {
-      id: "a1",
-      name: "Безоружный (Смертельное тело)",
-      bonus: 6,
-      damage: "1d8+3+1d8",
-      type: "Дробящий",
-      notes: "Crushing Blows + Iron Grip",
-    },
-    {
-      id: "a2",
-      name: "Короткий меч",
-      bonus: 6,
-      damage: "1d6+3",
-      type: "Колющий",
-      notes: "",
-    },
-    {
-      id: "a3",
-      name: "Питание (улучш.)",
-      bonus: 0,
-      damage: "3d6+3",
-      type: "Некротический",
-      notes: "БД",
-    },
-  ],
-  ...SOLO_DEFAULTS,
-};
-
-export const BLANK_TEMPLATE = (): CharacterSheet => ({
-  id: `char-${Date.now()}`,
-  name: "Новый сородич",
-  player: "",
-  clan: "ventrue",
-  level: 3,
-  background: "Опора (Touchstone)",
-  backgroundId: "touchstone",
-  species: "Человек",
-  alignment: "",
-  abilities: { str: 10, dex: 12, con: 14, int: 10, wis: 12, cha: 15 },
-  hpCurrent: 28,
-  hpMax: 28,
-  tempHp: 0,
-  ac: 13,
-  speed: 30,
-  bloodCurrent: 2,
-  beastUsed: 0,
-  hunger: false,
-  preferredBlood: "",
-  skillProfs: {
-    persuasion: "proficient",
-    survival: "proficient",
+  {
+    id: "toreador-8",
+    label: "+ Тореадор 8",
+    sheet: () => ({
+      ...PRESET_TOREADOR_PLAYER,
+      id: `tr-${Date.now()}`,
+    }),
   },
-  saveProfs: { con: true, cha: true },
-  selectedFeats: [],
-  generalFeats: [],
-  originFeatId: "lucky",
-  backgroundFeatId: "protected",
-  luckyUsed: 0,
-  protectedUsed: 0,
-  humanSkill: "perception",
-  fiendishLegacy: "",
-  feats: "",
-  equipment: "",
-  notes: "",
-  multiclass: "",
-  attacks: [],
-  conditions: [],
-  deathSuccess: 0,
-  deathFail: 0,
-  inspiration: false,
-  concentrating: "",
-  voiceUses: 0,
-  hitDiceUsed: 0,
-  sessionLog: [],
-  customResources: [
-    { id: "cr1", name: "Голос власти", current: 2, max: 2, note: "Приказ/Внушение" },
-  ],
-  ...SOLO_DEFAULTS,
-});
+];
 
+/** Старые id — при migrate v6 выкидываем */
+export const LEGACY_PRESET_IDS = [
+  "preset-ventrue-player",
+  "preset-ventrue-7-wl1",
+  "preset-ventrue-8",
+  "preset-toreador-1",
+  "preset-ventrue-v5",
+  "preset-toreador-v5",
+];
 
-export const PRESET_TOREADOR_PLAYER: CharacterSheet = {
-  ...PRESET_VENTRUE_PLAYER,
-  id: "preset-toreador-1",
-  name: "Алая роза",
-  clan: "toreador",
-  preferredBlood:
-    "Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.) · вкус: артисты",
-  abilities: { str: 8, dex: 16, con: 14, int: 12, wis: 12, cha: 16 },
-  hpCurrent: 59,
-  hpMax: 59,
-  bloodCurrent: 5,
-  skillProfs: {
-    persuasion: "proficient",
-    insight: "proficient",
-    perception: "expertise",
-    investigation: "proficient",
-    deception: "proficient",
-    performance: "proficient",
-  },
-  selectedFeats: ["forceful", "alacrity"],
-  customResources: [
-    {
-      id: "cr-presence",
-      name: "Властное присутствие",
-      current: 3,
-      max: 3,
-      note: "Awe / Daunt · LR",
-    },
-  ],
-  notes:
-    "Тореадор 8. Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10). Душа художника. Глубина чувств. Dual luck.",
-  attacks: [
-    {
-      id: "atk-1",
-      name: "Короткий меч",
-      bonus: 7,
-      damage: "1d6+4",
-      type: "колющий",
-      notes: "finesse",
-    },
-  ],
-};
+/** Стартовая библиотека релиза */
+export function releaseLibrary(): {
+  activeId: string;
+  characters: CharacterSheet[];
+  character: CharacterSheet;
+} {
+  const v = { ...PRESET_VENTRUE_PLAYER };
+  const t = { ...PRESET_TOREADOR_PLAYER };
+  return {
+    activeId: v.id,
+    characters: [v, t],
+    character: v,
+  };
+}

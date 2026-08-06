@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type { ClanId } from "@/data/kindred";
 import { getLevelData } from "@/data/kindred-ru";
 import type { ProfLevel, SkillId } from "@/data/skills";
-import { BLANK_TEMPLATE, PRESET_VENTRUE_PLAYER } from "@/data/presets";
+import { BLANK_TEMPLATE, LEGACY_PRESET_IDS, releaseLibrary } from "@/data/presets";
 import type { RollMode } from "@/lib/roll-engine";
 import { effectivePb } from "@/lib/level-utils";
 
@@ -218,11 +218,11 @@ function updateActive(
 }
 
 const initial = (() => {
-  const ventrue = migrateSheet(PRESET_VENTRUE_PLAYER);
+  const lib = releaseLibrary();
   return {
-    activeId: ventrue.id,
-    characters: [ventrue],
-    character: ventrue,
+    activeId: lib.activeId,
+    characters: lib.characters.map(migrateSheet),
+    character: migrateSheet(lib.character),
   };
 })();
 
@@ -662,26 +662,69 @@ export const useCharacterStore = create<LibraryState>()(
       },
     }),
     {
-      name: "kindred-sheet-v5-solo",
-      version: 5,
+      name: "kindred-sheet-v6-release",
+      version: 6,
       partialize: (s) => ({
         characters: s.characters,
         activeId: s.activeId,
         character: s.character,
       }),
       onRehydrateStorage: () => (state) => {
-        if (!state?.characters?.length) return;
+        if (!state?.characters?.length) {
+          const lib = releaseLibrary();
+          state!.activeId = lib.activeId;
+          state!.characters = lib.characters.map(migrateSheet);
+          state!.character = migrateSheet(lib.character);
+          return;
+        }
         const active =
           state.characters.find((c) => c.id === state.activeId) ??
           state.characters[0]!;
         state.activeId = active.id;
         state.character = active;
-        // keep list entries in sync with active snapshot if stale
         state.characters = state.characters.map((c) =>
           c.id === active.id ? active : c,
         );
       },
-      migrate: (persisted: unknown) => {
+      migrate: (persisted: unknown, fromVersion: number) => {
+        // v6: drop legacy presets, reseed dual-clan library if empty after purge
+        if (fromVersion < 6) {
+          const p = persisted as {
+            character?: CharacterSheet;
+            characters?: CharacterSheet[];
+            activeId?: string;
+          } | null;
+          const custom = (p?.characters ?? [])
+            .map(migrateSheet)
+            .filter(
+              (c) =>
+                !LEGACY_PRESET_IDS.includes(c.id) &&
+                !c.id.startsWith("preset-ventrue") &&
+                !c.id.startsWith("preset-toreador") &&
+                !/^v[p78]-|^to-|^vp-|^tr-/.test(c.id),
+            );
+          // Keep user-named non-preset sheets only if name looks custom
+          const kept = custom.filter(
+            (c) =>
+              c.name &&
+              !["Владыка крови", "Владыка с пактом", "Владыка крови (классика)", "Алая роза"].includes(
+                c.name,
+              ),
+          );
+          const lib = releaseLibrary();
+          const characters = [
+            ...lib.characters.map(migrateSheet),
+            ...kept.map((c) => ({
+              ...c,
+              id: c.id.startsWith("char-") ? c.id : `char-${Date.now()}-${c.id.slice(0, 6)}`,
+            })),
+          ];
+          return {
+            characters,
+            activeId: lib.activeId,
+            character: migrateSheet(lib.character),
+          };
+        }
         const p = persisted as {
           character?: CharacterSheet;
           characters?: CharacterSheet[];
@@ -698,10 +741,6 @@ export const useCharacterStore = create<LibraryState>()(
             activeId,
             character: characters.find((c) => c.id === activeId)!,
           };
-        }
-        if (p?.character) {
-          const c = migrateSheet(p.character);
-          return { characters: [c], activeId: c.id, character: c };
         }
         return initial;
       },

@@ -1,16 +1,19 @@
+/**
+ * Билдер-пресеты v6 · по 2 на клан (старт L3 + стол L8)
+ * Без устаревших warlock / дублей.
+ */
 import type { Abilities } from "@/lib/character-store";
 import type { SkillId } from "@/data/skills";
+import { BANE } from "@/data/terms-ru";
 
 export type BuildPreset = {
   id: string;
   name: string;
   blurb: string;
-  /** ventrue | toreador */
-  clan?: "ventrue" | "toreador";
+  clan: "ventrue" | "toreador";
   level: number;
   multiclass: string;
   baseScores: Abilities;
-  /** before bg +2/+1 */
   asiPlus2: keyof Abilities;
   asiPlus1: keyof Abilities;
   backgroundId: string;
@@ -22,12 +25,12 @@ export type BuildPreset = {
   nameSuggestion: string;
 };
 
-/** Готовые оптимизированные направления для Вентру */
 export const BUILD_PRESETS: BuildPreset[] = [
   {
-    id: "social-lord",
-    name: "Социальный лорд",
-    blurb: "Хар 17 · dual luck · Forceful + Lethal · контроль и переговоры",
+    id: "v-table-8",
+    name: "Вентру · стол (8)",
+    blurb: "Хар/Тел · dual luck · Голос · Forceful + Lethal · Проклятие: солдаты",
+    clan: "ventrue",
     level: 8,
     multiclass: "",
     baseScores: { str: 8, dex: 14, con: 15, int: 8, wis: 10, cha: 13 },
@@ -40,48 +43,12 @@ export const BUILD_PRESETS: BuildPreset[] = [
     selectedFeats: ["forceful", "lethal"],
     preferredBlood: "солдаты / военные",
     nameSuggestion: "Владыка крови",
-    clan: "ventrue",
   },
   {
-    id: "iron-tyrant",
-    name: "Железный тиран",
-    blurb: "Сил/Тел · захват · Lethal · ближний бой + Presence",
-    level: 8,
-    multiclass: "",
-    baseScores: { str: 15, dex: 10, con: 14, int: 8, wis: 10, cha: 13 },
-    asiPlus2: "str",
-    asiPlus1: "con",
-    backgroundId: "thrall",
-    originFeatId: "lucky",
-    humanSkill: "athletics",
-    classSkills: ["intimidation", "athletics"],
-    selectedFeats: ["lethal", "forceful"],
-    preferredBlood: "преступники",
-    nameSuggestion: "Железный кулак",
+    id: "v-start-3",
+    name: "Вентру · старт (3)",
+    blurb: "Первый клан · Голос власти · 1 черта сородича · учиться питанию",
     clan: "ventrue",
-  },
-  {
-    id: "pact-prince",
-    name: "Принц с пактом (7+1)",
-    blurb: "Kindred 7 / Колдун 1 · Eldritch Blast · dual luck",
-    level: 7,
-    multiclass: "Колдун 1",
-    baseScores: { str: 8, dex: 14, con: 15, int: 8, wis: 10, cha: 13 },
-    asiPlus2: "cha",
-    asiPlus1: "con",
-    backgroundId: "touchstone",
-    originFeatId: "lucky",
-    humanSkill: "arcana",
-    classSkills: ["persuasion", "insight"],
-    selectedFeats: ["forceful", "lethal"],
-    preferredBlood: "аристократы",
-    nameSuggestion: "Принц с пактом",
-    clan: "ventrue",
-  },
-  {
-    id: "new-blood",
-    name: "Новая кровь (ур.3)",
-    blurb: "Старт с подклассом · минимум слотов · учиться питанию",
     level: 3,
     multiclass: "",
     baseScores: { str: 8, dex: 14, con: 15, int: 10, wis: 12, cha: 13 },
@@ -92,14 +59,13 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "perception",
     classSkills: ["persuasion", "intimidation"],
     selectedFeats: ["forceful"],
-    preferredBlood: "учёные",
+    preferredBlood: "аристократы",
     nameSuggestion: "Новорождённый",
-    clan: "ventrue",
   },
   {
-    id: "rose-siren",
-    name: "Роза-сирена",
-    blurb: "Тореадор · Хар/Лов · Presence · dual luck · социал + внимание",
+    id: "t-table-8",
+    name: "Тореадор · стол (8)",
+    blurb: "Лов/Хар · dual luck · Душа художника · Forceful + Alacrity",
     clan: "toreador",
     level: 8,
     multiclass: "",
@@ -111,13 +77,13 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "perception",
     classSkills: ["persuasion", "insight"],
     selectedFeats: ["forceful", "alacrity"],
-    preferredBlood: "Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)",
+    preferredBlood: BANE.toreadorField,
     nameSuggestion: "Алая роза",
   },
   {
-    id: "gallery-hunter",
-    name: "Охотник галереи",
-    blurb: "Тореадор 3 · старт · Анализ/Внимательность · красота",
+    id: "t-start-3",
+    name: "Тореадор · старт (3)",
+    blurb: "Душа художника · Анализ/Внимательность · Проклятие внимания",
     clan: "toreador",
     level: 3,
     multiclass: "",
@@ -129,32 +95,14 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "investigation",
     classSkills: ["persuasion", "perception"],
     selectedFeats: ["forceful"],
-    preferredBlood: "Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)",
+    preferredBlood: BANE.toreadorField,
     nameSuggestion: "Новая муза",
-  },
-  {
-    id: "live-fast-blade",
-    name: "Живи быстро (9+)",
-    blurb: "Тореадор 9 · Лов 20+ · доп. действие · Celerity-feel",
-    clan: "toreador",
-    level: 9,
-    multiclass: "",
-    baseScores: { str: 8, dex: 15, con: 14, int: 10, wis: 12, cha: 13 },
-    asiPlus2: "dex",
-    asiPlus1: "cha",
-    backgroundId: "thrall",
-    originFeatId: "lucky",
-    humanSkill: "acrobatics",
-    classSkills: ["stealth", "persuasion"],
-    selectedFeats: ["alacrity", "lethal"],
-    preferredBlood: "Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.) · танцоры",
-    nameSuggestion: "Мгновение",
   },
 ];
 
-/** Generate weapon attacks from build */
+/** Атаки по билду · заметки нейтральны к клану */
 export function defaultAttacks(level: number, scores: Abilities, feats: string[]) {
-  const pb = Math.ceil(level / 4) + 1;
+  const pb = level >= 17 ? 6 : level >= 13 ? 5 : level >= 9 ? 4 : level >= 5 ? 3 : 2;
   const strMod = Math.floor((scores.str - 10) / 2);
   const dexMod = Math.floor((scores.dex - 10) / 2);
   const conMod = Math.floor((scores.con - 10) / 2);
@@ -162,6 +110,7 @@ export function defaultAttacks(level: number, scores: Abilities, feats: string[]
   const useDex = dexMod >= strMod;
   const atkMod = useDex ? dexMod : strMod;
   const feed = level >= 17 ? 6 : level >= 13 ? 5 : level >= 9 ? 4 : level >= 5 ? 3 : 2;
+  const conBonus = Math.max(1, conMod);
 
   const attacks = [
     {
@@ -172,7 +121,7 @@ export function defaultAttacks(level: number, scores: Abilities, feats: string[]
         ? `1d4${atkMod >= 0 ? "+" + atkMod : atkMod}+1d8`
         : `1d4${atkMod >= 0 ? "+" + atkMod : atkMod}`,
       type: "Дробящий",
-      notes: feats.includes("lethal") ? "Lethal Body +1d8" : "",
+      notes: feats.includes("lethal") ? "+1d8 Смертельное тело" : "",
     },
     {
       id: "atk-weapon",
@@ -182,19 +131,19 @@ export function defaultAttacks(level: number, scores: Abilities, feats: string[]
         ? `1d6${dexMod >= 0 ? "+" + dexMod : dexMod}`
         : `1d8${strMod >= 0 ? "+" + strMod : strMod}`,
       type: useDex ? "Колющий" : "Рубящий",
-      notes: "",
+      notes: useDex ? "Лёгкое, фехтовальное" : "",
     },
     {
       id: "atk-feed",
       name: level >= 5 ? "Питание (улучш.)" : "Питание",
       bonus: 0,
-      damage: `${feed}d6${conMod >= 0 ? "+" + Math.max(1, conMod) : Math.max(1, conMod)}`,
+      damage: `${feed}d6${conBonus >= 0 ? "+" + conBonus : conBonus}`,
       type: "Некротический",
-      notes: "Макс. хиты; ½ если не предпочтённая кровь",
+      notes: "Урон к макс. ХП · Вентру: ½ если не предпочтённая кровь",
     },
   ];
 
-  if (level >= 7 || scores.cha >= 16) {
+  if (level >= 3 || scores.cha >= 16) {
     attacks.unshift({
       id: "atk-spell",
       name: "Атака заклинанием",
