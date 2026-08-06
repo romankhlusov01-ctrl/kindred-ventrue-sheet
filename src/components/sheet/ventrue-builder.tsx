@@ -99,6 +99,8 @@ export function VentrueBuilder() {
   const [asiPlus1, setAsiPlus1] = useState<keyof Abilities>("con");
   /** Extra ASI from levels 4/8/... as freeform +2 total points applied to finals after bg */
   const [asiExtra, setAsiExtra] = useState<Partial<Record<keyof Abilities, number>>>({});
+  /** Per ASI level: take ability boosts OR a general PHB feat (not both for same slot) */
+  const [asiSlotMode, setAsiSlotMode] = useState<Partial<Record<number, "asi" | "feat">>>({});
   const [classSkills, setClassSkills] = useState<SkillId[]>(["intimidation", "insight"]);
   const [openGuide, setOpenGuide] = useState<string | null>("clan");
   const [builderClan, setBuilderClan] = useState<"ventrue" | "toreador">(
@@ -143,11 +145,18 @@ export function VentrueBuilder() {
   const bgSkillIds = useMemo(() => skillsFromBg(bg.skills), [bg]);
   const humanSkill = (character.humanSkill || "deception") as SkillId;
   const stepIndex = BUILDER_STEPS.findIndex((s) => s.id === step);
-  const asiPtsLeft =
-    asiCount(level) * 2 -
-    Object.values(asiExtra).reduce((a, b) => a + (b ?? 0), 0);
-
-  const gSlots = asiCount(level);
+  const unlockedAsiLevels = useMemo(
+    () => ASI_LEVELS.filter((l) => level >= l),
+    [level],
+  );
+  const slotMode = (L: number): "asi" | "feat" => asiSlotMode[L] ?? "asi";
+  const asiSlotsAsi = unlockedAsiLevels.filter((L) => slotMode(L) === "asi").length;
+  const asiSlotsFeat = unlockedAsiLevels.filter((L) => slotMode(L) === "feat").length;
+  const asiPtsBudget = asiSlotsAsi * 2;
+  const asiPtsUsed = Object.values(asiExtra).reduce((a, b) => a + (b ?? 0), 0);
+  const asiPtsLeft = asiPtsBudget - asiPtsUsed;
+  /** General PHB feat slots = ASI levels spent on feats (not ability scores) */
+  const gSlots = asiSlotsFeat;
   const validation = useMemo(() => {
     const issues: string[] = [];
     if (!character.name.trim()) issues.push("Нет имени");
@@ -158,8 +167,13 @@ export function VentrueBuilder() {
       issues.push(`Черт сородича ${character.selectedFeats.length}/${featSlots}`);
         const gTaken = character.generalFeats?.length ?? 0;
     if (gTaken > gSlots)
-      issues.push(`Универсальных черт ${gTaken}/${gSlots} (слоты ASI 4/8/12/16/19)`);
-    if (asiPtsLeft < 0) issues.push("Слишком много ASI");
+      issues.push(
+        `Универсальных черт ${gTaken}/${gSlots} (слоты «черта» на ASI 4/8/12/16/19)`,
+      );
+    if (gSlots > 0 && gTaken < gSlots)
+      issues.push(`Выберите черту PHB для слотов ASI→черта (${gTaken}/${gSlots})`);
+    if (asiPtsLeft < 0) issues.push("Слишком много очков ASI (сбросьте или смените слот на черту)");
+    // ASI points optional until user assigns them (presets may leave empty)
     // Bane blood is Ventrue-only; Toreador attention-trap is not preferred blood
     if (builderClan === "ventrue" && !character.preferredBlood.trim()) {
       issues.push("Не указан Bane Вентру (предпочтённая кровь)");
@@ -179,6 +193,7 @@ export function VentrueBuilder() {
     gSlots,
     level,
     asiPtsLeft,
+    asiSlotsAsi,
     asiPlus2,
     asiPlus1,
   ]);
@@ -560,7 +575,7 @@ export function VentrueBuilder() {
             <div className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-sm text-muted">
               <strong className="text-fg">Ур. {level}:</strong> БМ {formatMod(pb)} · ОБК{" "}
               {bpPreview} · Питание {getLevelData(level).feed} · черты сородича {featSlots} ·
-              ASI×{asiCount(level)}
+              ASI/черта×{asiCount(level)}
               <div className="mt-1 text-xs">{KINDRED_TABLE[level - 1]?.features}</div>
             </div>
             <div>
@@ -774,10 +789,10 @@ export function VentrueBuilder() {
             <InfoBox>
               Сначала базовые значения, затем биография <strong>+2 / +1</strong> из{" "}
               {bg.abilityScores}
-              {asiCount(level) > 0 && (
+              {unlockedAsiLevels.length > 0 && (
                 <>
-                  , затем ASI уровней ({ASI_LEVELS.filter((l) => level >= l).join(", ")}):{" "}
-                  {asiCount(level) * 2} очков (+1 = 1 очко, макс 20)
+                  , затем на ур. {unlockedAsiLevels.join(", ")} —{" "}
+                  <strong>ASI или черта PHB</strong> (на выбор за каждый уровень)
                 </>
               )}
               .
@@ -921,50 +936,166 @@ export function VentrueBuilder() {
               </div>
             </div>
 
-            {asiCount(level) > 0 && (
-              <div className="rounded-[var(--radius)] border border-border p-3">
-                <div className="mb-2 text-sm font-medium">
-                  ASI уровней (осталось очков: {asiPtsLeft})
+            {unlockedAsiLevels.length > 0 && (
+              <div className="space-y-3 rounded-[var(--radius)] border border-primary/30 bg-primary/5 p-3">
+                <div>
+                  <div className="text-sm font-medium text-fg">
+                    ASI / черта · уровни {unlockedAsiLevels.join(", ")}
+                  </div>
+                  <p className="mt-1 text-xs text-muted">
+                    На каждом из этих уровней — <strong>либо</strong> улучшение характеристик
+                    (+2 или +1/+1), <strong>либо</strong> универсальная черта PHB (dnd.su). Это{" "}
+                    <strong>не</strong> слот черты сородича (2/7/10/13/17).
+                  </p>
                 </div>
-                <p className="mb-2 text-xs text-muted">
-                  Каждый ASI = 2 очка (+2 к одной или +1 к двум). Не заменяет черту сородича.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {ABILITY_LABELS.map(({ key, short }) => (
-                    <div key={key} className="flex items-center gap-1 rounded border border-border px-2 py-1">
-                      <span className="text-xs text-muted">{short}</span>
-                      <button
-                        type="button"
-                        className="size-7 rounded bg-surface-2 text-sm"
-                        onClick={() =>
-                          setAsiExtra((e) => ({
-                            ...e,
-                            [key]: Math.max(0, (e[key] ?? 0) - 1),
-                          }))
-                        }
-                      >
-                        −
-                      </button>
-                      <span className="w-4 text-center text-sm">{asiExtra[key] ?? 0}</span>
-                      <button
-                        type="button"
-                        className="size-7 rounded bg-surface-2 text-sm"
-                        onClick={() => {
-                          if (asiPtsLeft <= 0) {
-                            toast.error("Нет очков ASI");
-                            return;
-                          }
-                          setAsiExtra((e) => ({
-                            ...e,
-                            [key]: (e[key] ?? 0) + 1,
-                          }));
-                        }}
-                      >
-                        +
-                      </button>
+                {unlockedAsiLevels.map((L) => {
+                  const mode = slotMode(L);
+                  return (
+                    <div
+                      key={L}
+                      className="rounded-[var(--radius)] border border-border bg-surface p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className="font-display text-sm text-fg">Уровень {L}</span>
+                        <span className="text-[10px] text-faint">
+                          {mode === "asi" ? "→ +2 к характеристикам" : "→ черта PHB"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAsiSlotMode((m) => ({ ...m, [L]: "asi" }));
+                          }}
+                          className={cn(
+                            "flex h-12 flex-col items-center justify-center rounded-[var(--radius-sm)] border text-xs font-semibold",
+                            mode === "asi"
+                              ? "border-primary bg-primary/15 text-primary"
+                              : "border-border bg-surface-2 text-muted",
+                          )}
+                        >
+                          ASI
+                          <span className="text-[10px] font-normal opacity-80">+2 или +1/+1</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAsiSlotMode((m) => ({ ...m, [L]: "feat" }));
+                            // drop excess ability points if budget shrinks
+                            setAsiExtra((extra) => {
+                              const budget =
+                                unlockedAsiLevels.filter(
+                                  (x) => (x === L ? "feat" : slotMode(x)) === "asi",
+                                ).length * 2;
+                              // recompute after mode change: feat for L
+                              const newAsiCount =
+                                unlockedAsiLevels.filter((x) =>
+                                  x === L ? false : slotMode(x) === "asi",
+                                ).length;
+                              const newBudget = newAsiCount * 2;
+                              let used = Object.values(extra).reduce(
+                                (a, b) => a + (b ?? 0),
+                                0,
+                              );
+                              if (used <= newBudget) return extra;
+                              // strip points from end of ability order until fit
+                              const next = { ...extra };
+                              for (const k of ["cha", "con", "dex", "str", "wis", "int"] as const) {
+                                while ((next[k] ?? 0) > 0 && used > newBudget) {
+                                  next[k] = (next[k] ?? 0) - 1;
+                                  used -= 1;
+                                }
+                              }
+                              return next;
+                            });
+                            setFeatTab("general");
+                            toast.message(`Ур.${L}: выберите черту на шаге «Черты → PHB/ASI»`);
+                          }}
+                          className={cn(
+                            "flex h-12 flex-col items-center justify-center rounded-[var(--radius-sm)] border text-xs font-semibold",
+                            mode === "feat"
+                              ? "border-accent bg-accent/15 text-accent"
+                              : "border-border bg-surface-2 text-muted",
+                          )}
+                        >
+                          Черта
+                          <span className="text-[10px] font-normal opacity-80">PHB / dnd.su</span>
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+                {asiSlotsAsi > 0 && (
+                  <div className="rounded-[var(--radius)] border border-border bg-surface-2 p-3">
+                    <div className="mb-2 text-sm font-medium">
+                      Очки ASI ({asiPtsUsed}/{asiPtsBudget}, осталось {asiPtsLeft})
+                    </div>
+                    <p className="mb-2 text-xs text-muted">
+                      Слотов «ASI»: {asiSlotsAsi} × 2 очка. +1 к хар-ке = 1 очко (макс. 20).
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {ABILITY_LABELS.map(({ key, short }) => (
+                        <div
+                          key={key}
+                          className="flex items-center gap-1 rounded border border-border px-2 py-1"
+                        >
+                          <span className="text-xs text-muted">{short}</span>
+                          <button
+                            type="button"
+                            className="size-7 rounded bg-bg text-sm"
+                            onClick={() =>
+                              setAsiExtra((e) => ({
+                                ...e,
+                                [key]: Math.max(0, (e[key] ?? 0) - 1),
+                              }))
+                            }
+                          >
+                            −
+                          </button>
+                          <span className="w-4 text-center text-sm">{asiExtra[key] ?? 0}</span>
+                          <button
+                            type="button"
+                            className="size-7 rounded bg-bg text-sm"
+                            onClick={() => {
+                              if (asiPtsLeft <= 0) {
+                                toast.error("Нет очков ASI — смените слот на «ASI» или снимите +");
+                                return;
+                              }
+                              setAsiExtra((e) => ({
+                                ...e,
+                                [key]: (e[key] ?? 0) + 1,
+                              }));
+                            }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {asiSlotsFeat > 0 && (
+                  <div className="rounded-[var(--radius)] border border-accent/30 bg-accent/5 p-3 text-xs text-muted">
+                    Слотов «черта»: <strong className="text-fg">{asiSlotsFeat}</strong> · выбрано PHB:{" "}
+                    <strong className="text-fg">
+                      {(character.generalFeats ?? []).length}
+                    </strong>
+                    . Откройте шаг <strong className="text-fg">Черты → PHB/ASI</strong> и отметьте
+                    черты.
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="mt-2 h-10 w-full"
+                      onClick={() => {
+                        setStep("feats");
+                        setFeatTab("general");
+                      }}
+                    >
+                      Выбрать черты PHB
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1044,7 +1175,16 @@ export function VentrueBuilder() {
                     type="button"
                     onClick={() => {
                       const kMax = featSlots;
-                      const gMax = asiCount(level);
+                      const gens = pack.general.filter((id) => {
+                        const f = GENERAL_FEAT_CATALOG.find((x) => x.id === id);
+                        return f && f.levelMin <= level;
+                      });
+                      const unlocked = ASI_LEVELS.filter((l) => level >= l);
+                      const modes: Partial<Record<number, "asi" | "feat">> = {};
+                      unlocked.forEach((L, i) => {
+                        modes[L] = i < gens.length ? "feat" : "asi";
+                      });
+                      setAsiSlotMode(modes);
                       setField(
                         "selectedFeats",
                         pack.kindred.filter((id) => {
@@ -1052,16 +1192,10 @@ export function VentrueBuilder() {
                           return f && f.levelMin <= level;
                         }).slice(0, kMax),
                       );
-                      setField(
-                        "generalFeats",
-                        pack.general.filter((id) => {
-                          const f = GENERAL_FEAT_CATALOG.find((x) => x.id === id);
-                          return f && f.levelMin <= level;
-                        }).slice(0, gMax),
-                      );
+                      setField("generalFeats", gens.slice(0, unlocked.length));
                       if (pack.originFeatId) setField("originFeatId", pack.originFeatId);
                       if (pack.backgroundFeatId) setField("backgroundFeatId", pack.backgroundFeatId);
-                      toast.success(`Пакет «${pack.name}»`);
+                      toast.success(`Пакет «${pack.name}» · ASI/черта настроено`);
                       setFeatTab("kindred");
                     }}
                     className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-left active:scale-[0.99]"
@@ -1258,12 +1392,12 @@ export function VentrueBuilder() {
             {featTab === "general" && (
               <div className="space-y-3">
                 <p className="text-xs text-muted">
-                  Универсальные черты PHB 2024 (dnd.su) — берите вместо +2 к характеристикам на
-                  ASI. Слоты ≈ число ASI:{" "}
+                  Универсальные черты PHB 2024 (dnd.su). Слоты = уровни, где выбрали «Черта»,
+                  не «ASI» (шаг Характеристики):{" "}
                   <strong>
-                    {(character.generalFeats ?? []).length}/{asiCount(level)}
+                    {(character.generalFeats ?? []).length}/{gSlots}
                   </strong>
-                  . Статы по-прежнему правятся на шаге «Характеристики».
+                  . Если 0 — на шаге Характеристики переключите слот 4/8/… на «Черта».
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   <button
@@ -1519,7 +1653,8 @@ export function VentrueBuilder() {
                     .join(", ") || "—"}
                 </li>
                 <li>
-                  PHB/ASI ({(character.generalFeats ?? []).length}/{asiCount(level)}):{" "}
+                  PHB-черты ({(character.generalFeats ?? []).length}/{gSlots}) · ASI-очки{" "}
+                  {asiPtsUsed}/{asiPtsBudget}:{" "}
                   {(character.generalFeats ?? [])
                     .map((id) => GENERAL_FEAT_CATALOG.find((f) => f.id === id)?.name ?? id)
                     .join(", ") || "—"}
