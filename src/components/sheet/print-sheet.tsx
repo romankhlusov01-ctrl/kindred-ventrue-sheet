@@ -13,6 +13,7 @@ import {
 } from "@/lib/character-store";
 import { SKILLS } from "@/data/skills";
 import { originFeatById, speciesByName, fiendishLegacyById } from "@/data/origin-ru";
+import { clanBaneLine } from "@/data/builder-ru";
 
 /** Print / Save-as-PDF the character (browser print dialog). */
 export function PrintSheetButton({ className }: { className?: string }) {
@@ -93,7 +94,7 @@ export function PrintSheetBlock() {
           "—"}
       </p>
       <p>
-        <strong>Bane:</strong> {c.preferredBlood || "—"}
+        <strong>Bane:</strong> {clanBaneLine(c.clan, c.preferredBlood)}
       </p>
       <p>
         <strong>Сородич:</strong>{" "}

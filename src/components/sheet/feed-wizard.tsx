@@ -6,9 +6,13 @@ import { getLevelData } from "@/data/kindred-ru";
 import { useCharacterStore } from "@/lib/character-store";
 import { abilityMod, rollDie } from "@/lib/utils";
 import { useSessionStore } from "@/lib/session-store";
-import { PREFERRED_BLOOD_PRESETS } from "@/data/builder-ru";
+import {
+  PREFERRED_BLOOD_PRESETS,
+  clanBaneLine,
+  isToreadorClan,
+} from "@/data/builder-ru";
 
-/** Feed yourself — Bane half dice when not preferred blood */
+/** Feed yourself — Ventrue: half dice when not preferred blood. Toreador: full feed; Bane is attention trap. */
 export function FeedWizard() {
   const c = useCharacterStore((s) => s.character);
   const gainBlood = useCharacterStore((s) => s.gainBlood);
@@ -18,9 +22,11 @@ export function FeedWizard() {
   const pushUndo = useSessionStore((s) => s.pushUndo);
   const row = getLevelData(c.level);
   const preferred = (c.preferredBlood || "").trim();
+  const toreador = isToreadorClan(c.clan);
 
   function feed(half: boolean) {
     const full = row.feedCount;
+    // Toreador has no blood-type half feed; half button is optional «слабое питание»
     const count = half ? Math.max(1, Math.floor(full / 2)) : full;
     const rolls = Array.from({ length: count }, () => rollDie(6));
     const sixes = rolls.filter((x) => x === 6).length;
@@ -30,19 +36,15 @@ export function FeedWizard() {
       pushUndo("Питание ОБК");
       gainBlood(sixes);
     }
-    const label = half ? "Питание (½ Bane)" : "Питание";
+    const label = half
+      ? toreador
+        ? "Питание ½"
+        : "Питание (½ Bane кровь)"
+      : "Питание";
     setLastRoll({ label, total: sum, detail: `${rolls.join("+")}+Тел`, at: Date.now() });
     addLog(`${label}: ${sum} [${rolls.join("+")}] · +${sixes} ОБК`);
     toast.success(`${label}: ${sum}${sixes ? ` · +${sixes} ОБК` : ""}`);
   }
-
-  const presets = PREFERRED_BLOOD_PRESETS ?? [
-    "аристократы",
-    "вино / пьяные",
-    "художники",
-    "политики",
-    "девы",
-  ];
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
@@ -51,34 +53,39 @@ export function FeedWizard() {
       </h3>
       <p className="mb-2 text-[11px] text-muted">
         {row.feed} · с 5 ур. как БД
-        {preferred ? ` · Bane: ${preferred}` : " · укажите предпочтённую кровь"}
+        <br />
+        <span className="text-accent">{clanBaneLine(c.clan, preferred)}</span>
       </p>
-      <Input
-        className="mb-2 h-11"
-        placeholder="Предпочтённая кровь (Bane)"
-        value={c.preferredBlood}
-        onChange={(e) => setField("preferredBlood", e.target.value)}
-      />
-      <div className="mb-2 flex flex-wrap gap-1">
-        {(Array.isArray(presets) ? presets : []).slice(0, 6).map((p) => (
-          <Button
-            key={String(p)}
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-9 text-[10px]"
-            onClick={() => setField("preferredBlood", String(p))}
-          >
-            {String(p)}
-          </Button>
-        ))}
-      </div>
+      {!toreador && (
+        <>
+          <Input
+            className="mb-2 h-11"
+            placeholder="Предпочтённая кровь (Bane Вентру)"
+            value={c.preferredBlood}
+            onChange={(e) => setField("preferredBlood", e.target.value)}
+          />
+          <div className="mb-2 flex flex-wrap gap-1">
+            {PREFERRED_BLOOD_PRESETS.slice(0, 6).map((p) => (
+              <Button
+                key={String(p)}
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-9 text-[10px]"
+                onClick={() => setField("preferredBlood", String(p).replace("…", "").trim())}
+              >
+                {String(p)}
+              </Button>
+            ))}
+          </div>
+        </>
+      )}
       <div className="grid grid-cols-2 gap-2">
         <Button type="button" variant="blood" className="h-14" onClick={() => feed(false)}>
           Полное
         </Button>
         <Button type="button" variant="secondary" className="h-14" onClick={() => feed(true)}>
-          ½ Bane
+          {toreador ? "½ кости" : "½ Bane"}
         </Button>
       </div>
     </div>

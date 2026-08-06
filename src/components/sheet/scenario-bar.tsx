@@ -3,6 +3,7 @@ import { scenarioHints } from "@/lib/play-helpers";
 import { useCharacterStore } from "@/lib/character-store";
 import { Swords, MessageCircle, Droplets, Moon } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { clanBaneLine, isToreadorClan } from "@/data/builder-ru";
 
 const SCENES = [
   { id: "combat", label: "Бой", icon: Swords },
@@ -14,9 +15,11 @@ const SCENES = [
 export function ScenarioBar() {
   const scenario = useCharacterStore((s) => s.character.scenario ?? "combat");
   const preferredBlood = useCharacterStore((s) => s.character.preferredBlood);
+  const clan = useCharacterStore((s) => s.character.clan);
   const hunger = useCharacterStore((s) => s.character.hunger);
   const setField = useCharacterStore((s) => s.setField);
   const hints = scenarioHints(scenario);
+  const toreador = isToreadorClan(clan);
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
@@ -41,13 +44,16 @@ export function ScenarioBar() {
           </button>
         ))}
       </div>
-      {(scenario === "feed" || scenario === "social") && (
+      <p className="mb-2 rounded border border-border/60 bg-surface-2/50 px-2 py-1.5 text-[11px] text-muted">
+        {clanBaneLine(clan, preferredBlood)}
+      </p>
+      {!toreador && (scenario === "feed" || scenario === "social") && (
         <label className="mb-2 block text-[10px] text-muted">
-          Предпочтённая кровь (Bane)
+          Предпочтённая кровь (Bane Вентру)
           <Input
             className="mt-0.5 h-8"
             value={preferredBlood}
-            placeholder="напр. знать, девы, художники…"
+            placeholder="напр. знать, солдаты, политики…"
             onChange={(e) => setField("preferredBlood", e.target.value)}
           />
         </label>

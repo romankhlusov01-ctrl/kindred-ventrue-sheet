@@ -12,6 +12,7 @@ import {
 } from "@/lib/character-store";
 import { SKILLS } from "@/data/skills";
 import { originFeatById } from "@/data/origin-ru";
+import { clanBaneLine, clanNameRu } from "@/data/builder-ru";
 
 /** Compact text card for Long Story / Discord / notes */
 export function CombatCard() {
@@ -35,11 +36,11 @@ export function CombatCard() {
       .map((a) => `${a.name} ${formatMod(a.bonus)} (${a.damage} ${a.type})`)
       .join("\n  ");
     return [
-      `━━ ${c.name} · Вентру ${c.level}${c.multiclass ? " / " + c.multiclass : ""} ━━`,
+      `━━ ${c.name} · ${clanNameRu(c.clan)} ${c.level}${c.multiclass ? " / " + c.multiclass : ""} ━━`,
       `ХП ${c.hpCurrent}/${c.hpMax} · КД ${c.ac} · Иниц ${formatMod(abilityMod(c.abilities.dex))} · Ск ${c.speed}`,
       `СИЛ ${c.abilities.str} ЛОВ ${c.abilities.dex} ТЕЛ ${c.abilities.con} ИНТ ${c.abilities.int} МУД ${c.abilities.wis} ХАР ${c.abilities.cha}`,
       `ОБК ${c.bloodCurrent}/${bloodMax} · Зверь ${pb - c.beastUsed}/${pb} · Питание ${row.feed}`,
-      `Сл ${dc} · БМ ${formatMod(pb)} · Bane: ${c.preferredBlood || "—"}`,
+      `Сл ${dc} · БМ ${formatMod(pb)} · ${clanBaneLine(c.clan, c.preferredBlood)}`,
       `Везучий ${luckMax - c.luckyUsed}/${luckMax} · Защищ. ${luckMax - c.protectedUsed}/${luckMax}`,
       `Origin: ${originFeatById(c.originFeatId)?.name ?? c.originFeatId} + ${originFeatById(c.backgroundFeatId)?.name ?? c.backgroundFeatId}`,
       `Навыки: ${skills || "—"}`,

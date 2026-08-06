@@ -1,3 +1,4 @@
+import { clanBaneLine } from "@/data/builder-ru";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCharacterStore, getBloodMax, getLuckMax } from "@/lib/character-store";
@@ -53,7 +54,7 @@ export function SessionSummary() {
         )}
         {c.concentrating && <li>Концентрация: {c.concentrating}</li>}
         <li>
-          Сл {8 + pb + abilityMod(c.abilities.cha)} · Bane: {c.preferredBlood || "—"} · Питание{" "}
+          Сл {8 + pb + abilityMod(c.abilities.cha)} · {clanBaneLine(c.clan, c.preferredBlood)} · Питание{" "}
           {getLevelData(c.level).feed} · БМ {formatMod(pb)}
         </li>
         {note && <li className="text-fg">Цель: {note}</li>}

@@ -1,4 +1,4 @@
-/** Справочник билдера Kindred · Ventrue · PHB 2024 + Bound by Blood */
+/** Справочник билдера Kindred · Ventrue / Toreador · PHB 2024 + Bound by Blood */
 
 import type { SkillId } from "@/data/skills";
 import type { Abilities } from "@/lib/character-store";
@@ -81,42 +81,55 @@ export const BUILDER_STEPS = [
 
 export type BuilderStepId = (typeof BUILDER_STEPS)[number]["id"];
 
-export const MECHANICS_GUIDE: { id: string; title: string; body: string }[] = [
+/** ─── Bane by clan (RAW-ish BBB) ─── */
+
+/** Ventrue: preferred blood type for full feed dice */
+export const VENTRUE_BANE_SHORT =
+  "Предпочтённая кровь: питание «не тем» — половина костей (мин. 1).";
+
+/** Toreador: attention trap on Investigation / Perception */
+export const TOREADOR_BANE_SHORT =
+  "d20 ≤9 на Анализ или Внимательность → Обездвижен (Restrained), спас Муд. DC 10.";
+
+export const TOREADOR_BANE_FIELD =
+  "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)";
+
+export function clanNameRu(clan: string | undefined | null): string {
+  if (clan === "toreador") return "Тореадор";
+  if (clan === "ventrue") return "Вентру";
+  return clan || "—";
+}
+
+/** One-line Bane for HUD / export / reminders */
+export function clanBaneLine(
+  clan: string | undefined | null,
+  preferredBlood?: string | null,
+): string {
+  if (clan === "toreador") {
+    return TOREADOR_BANE_SHORT;
+  }
+  // ventrue + default
+  const blood = (preferredBlood || "").trim();
+  return blood
+    ? `Bane (кровь): ${blood} · иначе ½ костей питания`
+    : "Bane (Вентру): укажите предпочтённую кровь";
+}
+
+export function isVentrueClan(clan: string | undefined | null) {
+  return !clan || clan === "ventrue" || clan === "none";
+}
+
+export function isToreadorClan(clan: string | undefined | null) {
+  return clan === "toreador";
+}
+
+export const MECHANICS_GUIDE = [
   {
-    id: "feed",
-    title: "Питание (Feed)",
-    body: `Действие (с 5 ур. — бонусное): цель в 5 фт. — добровольна, Очарована, либо Недееспособна/Схвачена/Парализована/Обездвижена/Оглушена/Без сознания.
-
-Бросок: Кости питания (по таблице) + мод. Тел (мин. 1). Урон некротический только снижает максимум хитов цели.
-
-«6» на d6 → +1 Очко крови. Макс. хитов цели → 0: +1 ОБК.
-Добровольные/Очарованные могут сжечь 1 HD → вы +1 ОБК.
-
-Лимит крови с одной цели за LR: S1 / M3 / L5 / H7 / G10.`,
-  },
-  {
-    id: "beast",
-    title: "Зверь (The Beast)",
-    body: `Бонусное действие: преимущество на d20-тесты до начала вашего следующего хода.
-Использований = БМ; восстановление — короткий или долгий отдых.
-
-Голод: провал d20 со Зверем → кровавая ярость 1 мин (или до Питания): обязаны гнаться за добычей и хватать/питаться.
-1 ОБК снимает Голод при провале.`,
-  },
-  {
-    id: "bp",
-    title: "Очки крови",
-    body: `Пул по таблице уровня (не восстанавливается отдыхом — только Питание и эффекты).
-
-Исцеление ран: БД, 1 ОБК → 1d10 + уровень Kindred хитов.
-Силы клана и черты сородича часто тратят ОБК.
-
-Awaken: чтобы получить пользу долгого отдыха, нужно ≥1 ОБК; иначе только короткий.`,
-  },
-  {
-    id: "biology",
-    title: "Биология сородича",
-    body: `Нежить (Kindred) + ваш тип. Не стареете. Тёмное зрение 60 фт.
+    id: "kindred",
+    title: "База сородича",
+    body: `Питание: кости d6 по уровню; 6 → +1 ОБК.
+Зверь: преимущество, потом Голод.
+Awaken: 1 ОБК после LR (иначе слабость).
 Солнце: 5 лучистого в начале хода.
 Уязвимость к Огню и Лучу.
 Death saves: автоуспех. 0 хитов от Огня/Луча или обезглавливание = смерть.
@@ -132,6 +145,15 @@ Death saves: автоуспех. 0 хитов от Огня/Луча или об
 Непоколебимая уверенность: преимущество на спас Мудрости.
 Ур.6: +макс. хиты; reroll спас vs Charm/Fear/Stun.
 Далее: Entrance, Terrify, Mass Suggestion, Flesh of Marble, Imposing Aura…`,
+  },
+  {
+    id: "toreador",
+    title: "Клан Тореадор",
+    body: `Bane (не про кровь!): если на проверке Анализа или Внимательности на d20 выпало 9 или меньше — вы Обездвижены (Restrained), пока не пройдёте спас Мудрости DC 10 (или как в PDF стола).
+
+Душа художника / Artist's Soul: преимущество на Анализ и Внимательность, тёмное зрение и доп. навыки (см. вехи).
+Presence / Aura: обаяние и контроль через чувства, не Dominate.
+Не путайте с Bane Вентру (предпочтённая кровь).`,
   },
   {
     id: "luck",
@@ -176,7 +198,7 @@ Death saves: автоуспех. 0 хитов от Огня/Луча или об
   {
     id: "sources",
     title: "Источники (RAW)",
-    body: `• Vampire: The Masquerade – Bound by Blood (класс Kindred, Ventrue, Touchstone, Protected).
+    body: `• Vampire: The Masquerade – Bound by Blood (класс Kindred, Ventrue, Toreador, Touchstone, Protected).
 • dnd.su / PHB 2024: Человек, Везучий (Lucky), point buy, стандартный массив, фоны +2/+1.
 • Черты сородича ≠ ASI (PDF): слоты 2, 7, 10, 13, 17 отдельно.`,
   },
@@ -191,13 +213,23 @@ export const ABILITY_LABELS: { key: keyof Abilities; ru: string; short: string }
   { key: "cha", ru: "Харизма", short: "ХАР" },
 ];
 
+/** Ventrue preferred-blood presets only */
 export const PREFERRED_BLOOD_PRESETS = [
   "солдаты / военные",
   "аристократы",
   "преступники",
   "учёные",
   "духовенство",
-  "художники",
-  "дети (тёмный Bane)",
+  "политики",
   "свой вариант…",
+];
+
+/** Optional aesthetic notes for Toreador (not a Bane requirement) */
+export const TOREADOR_AESTHETIC_PRESETS = [
+  "артисты / сцена",
+  "красавцы / модели",
+  "музыка / клубы",
+  "галереи / богема",
+  "ночные вечеринки",
+  "свой вкус…",
 ];

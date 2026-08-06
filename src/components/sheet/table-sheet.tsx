@@ -536,7 +536,7 @@ export function TableSheet() {
               Питание {getLevelData(c.level).feed}
             </Button>
             <Button type="button" variant="secondary" className="h-12" onClick={() => tableFeed(true)}>
-              ½ Bane
+              {c.clan === "toreador" ? "½ кости" : "½ Bane"}
             </Button>
             <Button type="button" variant="blood" className="h-12" onClick={() => tableHealBlood()}>
               Лечение (−1 ОБК)
@@ -556,7 +556,10 @@ export function TableSheet() {
           <ClanPowers />
           {/колдун|warlock/i.test(c.multiclass || "") && <WarlockSnippet />}
           <p className="text-center text-[10px] text-faint">
-            Bane: {c.preferredBlood || "—"} · BBB PDF · dnd.su Lucky/Human · PHB 2024
+            {c.clan === "toreador"
+              ? "Bane Тореадор: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)"
+              : `Bane Вентру: ${c.preferredBlood || "укажите кровь"} · иначе ½ костей`}{" "}
+            · BBB · dnd.su
           </p>
         </div>
       )}

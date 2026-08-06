@@ -1,6 +1,7 @@
 import { Info } from "lucide-react";
 import { useCharacterStore } from "@/lib/character-store";
 import { getLevelData } from "@/data/kindred-ru";
+import { clanBaneLine } from "@/data/builder-ru";
 
 /** One-line RAW reminders for yourself — not a wall of text */
 export function SelfReminders() {
@@ -11,7 +12,7 @@ export function SelfReminders() {
     c.bloodCurrent < 1 ? "0 ОБК · Awaken ограничен" : null,
     c.hunger || c.conditions.includes("Голод") ? "Голод активен" : null,
     `Питание ${row.feed}`,
-    c.preferredBlood ? `Bane: ${c.preferredBlood}` : "Укажите Bane",
+    clanBaneLine(c.clan, c.preferredBlood),
   ].filter(Boolean) as string[];
 
   return (

@@ -23,10 +23,13 @@ import {
   POINT_BUY_BUDGET,
   POINT_BUY_COST,
   PREFERRED_BLOOD_PRESETS,
+  TOREADOR_AESTHETIC_PRESETS,
+  TOREADOR_BANE_FIELD,
   STANDARD_ARRAY,
   abilityMod,
   asiCount,
   calcKindredHp,
+  clanBaneLine,
   kindredFeatSlots,
   pointBuySpent,
   type BuilderStepId,
@@ -157,7 +160,10 @@ export function VentrueBuilder() {
     if (gTaken > gSlots)
       issues.push(`Универсальных черт ${gTaken}/${gSlots} (слоты ASI 4/8/12/16/19)`);
     if (asiPtsLeft < 0) issues.push("Слишком много ASI");
-    if (!character.preferredBlood.trim()) issues.push("Не выбран Bane (кровь)");
+    // Bane blood is Ventrue-only; Toreador attention-trap is not preferred blood
+    if (builderClan === "ventrue" && !character.preferredBlood.trim()) {
+      issues.push("Не указан Bane Вентру (предпочтённая кровь)");
+    }
     if (asiPlus2 === asiPlus1) issues.push("+2 и +1 биографии на одну характеристику");
     return issues;
   }, [
@@ -165,6 +171,7 @@ export function VentrueBuilder() {
     character.selectedFeats,
     character.generalFeats,
     character.preferredBlood,
+    builderClan,
     method,
     spent,
     classSkills,
@@ -368,7 +375,7 @@ export function VentrueBuilder() {
       selectedFeats: character.selectedFeats,
       preferredBlood:
         character.preferredBlood ||
-        (builderClan === "toreador" ? "артисты / красавцы" : "солдаты / военные"),
+        (builderClan === "toreador" ? TOREADOR_BANE_FIELD : "солдаты / военные"),
       attacks,
       feats: [
         sp.id === "tiefling"
@@ -389,7 +396,7 @@ export function VentrueBuilder() {
         `💰 15\n• Короткий меч ×1 (2 lb)\n• Кинжал ×2 (1 lb)\n• Нагрудник ×1 (20 lb)\n• ${bg.equipment}`,
       notes:
         character.notes ||
-        `Сл ${spellDc}. Bane: ${character.preferredBlood}. Dual luck: Везучий + Защищённый.`,
+        `Сл ${spellDc}. ${clanBaneLine(builderClan, character.preferredBlood)}. Dual luck: Везучий + Защищённый.`,
     });
 
     (Object.keys(finalScores) as (keyof Abilities)[]).forEach((k) =>
@@ -473,6 +480,16 @@ export function VentrueBuilder() {
                     onClick={() => {
                       setBuilderClan(id);
                       setField("clan", id);
+                      if (id === "toreador") {
+                        const cur = character.preferredBlood.trim();
+                        // Clear Ventrue blood-only bane requirement noise
+                        if (
+                          !cur ||
+                          /солдат|аристократ|преступн|учёны|духов|политик/i.test(cur)
+                        ) {
+                          setField("preferredBlood", TOREADOR_BANE_FIELD);
+                        }
+                      }
                     }}
                     className={cn(
                       "rounded-[var(--radius)] border p-3 text-left",
@@ -1326,31 +1343,86 @@ export function VentrueBuilder() {
             <div>
               <h3 className="mb-2 font-display text-sm">
                 {builderClan === "toreador"
-                  ? "Заметка / эстетика (Bane Тореадор)"
-                  : "Bane · предпочтённая кровь (Вентру)"}
+                  ? "Bane Тореадор · внимание"
+                  : "Bane Вентру · предпочтённая кровь"}
               </h3>
-              <div className="flex flex-wrap gap-1.5">
-                {PREFERRED_BLOOD_PRESETS.map((p) => (
-                  <button
-                    key={p}
+              {builderClan === "toreador" ? (
+                <>
+                  <div className="mb-2 rounded-[var(--radius)] border border-primary/30 bg-primary/10 p-3 text-xs text-fg">
+                    <strong className="text-primary">Bane (не про кровь):</strong>{" "}
+                    если на <strong>Анализе</strong> или <strong>Внимательности</strong> на d20
+                    выпало ≤9 — вы <strong>Обездвижены</strong> (Restrained), спас Мудрости DC 10.
+                    Это не Bane Вентру с предпочтённой кровью.
+                  </div>
+                  <Button
                     type="button"
-                    onClick={() => setField("preferredBlood", p.replace("…", "").trim())}
-                    className={cn(
-                      "rounded-full border px-2.5 py-1 text-xs",
-                      character.preferredBlood &&
-                        p.startsWith(character.preferredBlood.slice(0, 5))
-                        ? "border-primary bg-primary/15 text-primary"
-                        : "border-border text-muted",
-                    )}
+                    size="sm"
+                    variant="blood"
+                    className="mb-2 h-10"
+                    onClick={() => setField("preferredBlood", TOREADOR_BANE_FIELD)}
                   >
-                    {p}
-                  </button>
-                ))}
-              </div>
+                    Записать Bane на лист
+                  </Button>
+                  <p className="mb-1 text-[11px] text-muted">
+                    Опционально — эстетика / вкус (не требование):
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TOREADOR_AESTHETIC_PRESETS.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() =>
+                          setField(
+                            "preferredBlood",
+                            `${TOREADOR_BANE_FIELD} · вкус: ${p.replace("…", "").trim()}`,
+                          )
+                        }
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-xs",
+                          character.preferredBlood?.includes(p.slice(0, 6))
+                            ? "border-primary bg-primary/15 text-primary"
+                            : "border-border text-muted",
+                        )}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="mb-2 text-[11px] text-muted">
+                    Питание «не своей» кровью — половина костей (мин. 1).
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PREFERRED_BLOOD_PRESETS.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setField("preferredBlood", p.replace("…", "").trim())}
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-xs",
+                          character.preferredBlood &&
+                            p.startsWith(character.preferredBlood.slice(0, 5))
+                            ? "border-primary bg-primary/15 text-primary"
+                            : "border-border text-muted",
+                        )}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
               <Input
                 className="mt-2"
                 value={character.preferredBlood}
                 onChange={(e) => setField("preferredBlood", e.target.value)}
+                placeholder={
+                  builderClan === "toreador"
+                    ? TOREADOR_BANE_FIELD
+                    : "напр. солдаты / военные"
+                }
               />
             </div>
           </div>
@@ -1453,8 +1525,10 @@ export function VentrueBuilder() {
                     .join(", ") || "—"}
                 </li>
                 <li>
-                  {builderClan === "toreador" ? "Эстетика" : "Bane"}:{" "}
-                  {character.preferredBlood || "—"}
+                  Bane:{" "}
+                  {builderClan === "toreador"
+                    ? clanBaneLine("toreador")
+                    : character.preferredBlood || "—"}
                 </li>
               </ul>
             </div>

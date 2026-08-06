@@ -13,6 +13,7 @@ import {
 } from "@/lib/character-store";
 import { SKILLS } from "@/data/skills";
 import { originFeatById } from "@/data/origin-ru";
+import { clanBaneLine, clanNameRu } from "@/data/builder-ru";
 
 export function ExportMarkdown() {
   const c = useCharacterStore((s) => s.character);
@@ -34,8 +35,7 @@ export function ExportMarkdown() {
       .map((id) => GENERAL_FEAT_CATALOG.find((f) => f.id === id))
       .filter(Boolean) as { name: string; body: string }[];
 
-    const clanRu =
-      c.clan === "toreador" ? "Тореадор" : c.clan === "ventrue" ? "Вентру" : c.clan;
+    const clanRu = clanNameRu(c.clan);
 
     const kindredBlock =
       feats.map((f) => `### ${f.name}\n${f.body}`).join("\n\n") || "_нет_";
@@ -56,7 +56,7 @@ export function ExportMarkdown() {
       `- **ХП** ${c.hpCurrent}/${c.hpMax} · **КД** ${c.ac} · **Скорость** ${c.speed}`,
       `- **ОБК** ${c.bloodCurrent}/${getBloodMax(c)} · **Питание** ${getLevelData(c.level).feed}`,
       `- **Сл** ${8 + pb + abilityMod(c.abilities.cha)} · **БМ** ${formatMod(pb)}`,
-      `- **Bane** ${c.preferredBlood || "—"}`,
+      `- **Bane** ${clanBaneLine(c.clan, c.preferredBlood)}`,
       `- **Удача** Везучий ${getLuckMax(c.level, c.multiclass) - c.luckyUsed}/${getLuckMax(c.level, c.multiclass)} · Защищ. ${getLuckMax(c.level, c.multiclass) - c.protectedUsed}/${getLuckMax(c.level, c.multiclass)}`,
       "",
       "## Навыки",
