@@ -49,6 +49,8 @@ import {
   KINDRED_TABLE,
   VENTRUE_LORE,
   VENTRUE_FEATURES,
+  TOREADOR_LORE,
+  TOREADOR_FEATURES,
   getLevelData,
 } from "@/data/kindred-ru";
 import { SKILLS, type SkillId } from "@/data/skills";
@@ -59,6 +61,7 @@ import {
 } from "@/lib/character-store";
 import { BUILD_PRESETS, defaultAttacks, type BuildPreset } from "@/data/builder-presets";
 import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
+import { TOREADOR_MILESTONES } from "@/data/toreador-milestones";
 import { FEAT_RECS } from "@/data/feat-recommendations";
 import { useSessionStore } from "@/lib/session-store";
 
@@ -85,12 +88,18 @@ export function VentrueBuilder() {
   /** Extra ASI from levels 4/8/... as freeform +2 total points applied to finals after bg */
   const [asiExtra, setAsiExtra] = useState<Partial<Record<keyof Abilities, number>>>({});
   const [classSkills, setClassSkills] = useState<SkillId[]>(["intimidation", "insight"]);
-  const [openGuide, setOpenGuide] = useState<string | null>("ventrue");
+  const [openGuide, setOpenGuide] = useState<string | null>("clan");
+  const [builderClan, setBuilderClan] = useState<"ventrue" | "toreador">(
+    () => (character.clan === "toreador" ? "toreador" : "ventrue"),
+  );
   const [arrayPool, setArrayPool] = useState<number[]>([...STANDARD_ARRAY]);
   const [pickedArray, setPickedArray] = useState<number | null>(null);
   const [rolledPool, setRolledPool] = useState<number[] | null>(null);
 
   const level = character.level;
+  const lore = builderClan === "toreador" ? TOREADOR_LORE : VENTRUE_LORE;
+  const clanFeatures = builderClan === "toreador" ? TOREADOR_FEATURES : VENTRUE_FEATURES;
+  const milestones = builderClan === "toreador" ? TOREADOR_MILESTONES : VENTRUE_MILESTONES;
   const bg = backgroundById(character.backgroundId) ?? BACKGROUNDS_PDF[0]!;
   const featSlots = kindredFeatSlots(level);
   const pb = getLevelData(level).pb;
@@ -109,7 +118,11 @@ export function VentrueBuilder() {
   }, [baseScores, asiPlus2, asiPlus1, asiExtra]);
 
   const spent = pointBuySpent(Object.values(baseScores));
-  const hpPreview = calcKindredHp(level, finalScores.con, level >= 6);
+  const hpPreview = calcKindredHp(
+    level,
+    finalScores.con,
+    builderClan === "ventrue" && level >= 6,
+  );
   const bpPreview = getLevelData(level).bp;
   const spellDc = 8 + pb + abilityMod(finalScores.cha);
   const bgSkillIds = useMemo(() => skillsFromBg(bg.skills), [bg]);
@@ -150,6 +163,9 @@ export function VentrueBuilder() {
   }
 
   function applyPreset(p: BuildPreset) {
+    const clan = p.clan === "toreador" ? "toreador" : "ventrue";
+    setBuilderClan(clan);
+    setField("clan", clan);
     setBaseScores({ ...p.baseScores });
     setAsiPlus2(p.asiPlus2);
     setAsiPlus1(p.asiPlus1);
@@ -261,15 +277,26 @@ export function VentrueBuilder() {
     let bgFeat = character.backgroundFeatId || bg.featId;
     if (bgFeat === "magic-initiate" || bgFeat === "well-read") bgFeat = "protected";
 
-    const resources = [
-      {
-        id: "cr-voice",
-        name: "Голос власти",
-        current: pb,
-        max: pb,
-        note: "Приказ / Внушение · короткий",
-      },
-    ];
+    const resources =
+      builderClan === "ventrue"
+        ? [
+            {
+              id: "cr-voice",
+              name: "Голос власти",
+              current: pb,
+              max: pb,
+              note: "Приказ / Внушение · короткий",
+            },
+          ]
+        : [
+            {
+              id: "cr-artist",
+              name: "Aura Sight",
+              current: pb,
+              max: pb,
+              note: "Depth of Feelings · 2 ОБК за использование вне пула",
+            },
+          ];
     if (character.selectedFeats.includes("forceful")) {
       resources.push({
         id: "cr-presence",
@@ -280,7 +307,7 @@ export function VentrueBuilder() {
       });
     }
 
-    const hp = calcKindredHp(level, finalScores.con, level >= 6);
+    const hp = calcKindredHp(level, finalScores.con, builderClan === "ventrue" && level >= 6);
     const attacks = defaultAttacks(level, finalScores, character.selectedFeats);
     const dexMod = abilityMod(finalScores.dex);
     const ac = 10 + dexMod + (level >= 1 ? 2 : 0); // studded-ish
@@ -291,7 +318,7 @@ export function VentrueBuilder() {
       saveProfs: { con: true, cha: true },
       species: sp.name,
       fiendishLegacy: sp.id === "tiefling" ? (character.fiendishLegacy || "infernal") : "",
-      clan: "ventrue",
+      clan: builderClan,
       background: bg.name,
       backgroundId: bg.id,
       originFeatId: originFeat,
@@ -306,7 +333,9 @@ export function VentrueBuilder() {
       luckyUsed: 0,
       protectedUsed: 0,
       customResources: resources,
-      preferredBlood: character.preferredBlood || "солдаты / военные",
+      preferredBlood:
+        character.preferredBlood ||
+        (builderClan === "toreador" ? "артисты / красавцы" : "солдаты / военные"),
       attacks,
       feats: [
         sp.id === "tiefling"
@@ -365,7 +394,7 @@ export function VentrueBuilder() {
           </div>
           <div className="min-w-0">
             <h2 className="font-display text-xl tracking-wide">
-              Билдер · {VENTRUE_LORE.name}
+              Билдер · {lore.name}
             </h2>
             <p className="text-sm text-muted">
               {BUILDER_STEPS[stepIndex]?.title} · шаг {stepIndex + 1}/
@@ -388,14 +417,44 @@ export function VentrueBuilder() {
         {step === "concept" && (
           <div className="space-y-4">
             <InfoBox>
-              Класс <strong>Сородич (Kindred)</strong>, клан <strong>Вентру</strong>. Источники:
-              Bound by Blood + dnd.su (человек, Lucky). Рекомендуется старт с 3 ур.
+              Класс <strong>Сородич (Kindred)</strong>. Клан: <strong>{lore.name}</strong>.
+              Источники: Bound by Blood PDF + dnd.su (человек, Lucky). Старт с 3 ур. рекомендуется.
             </InfoBox>
 
             <div>
-              <h3 className="mb-2 text-sm font-medium">Быстрые пресеты</h3>
+              <h3 className="mb-2 text-sm font-medium">Клан (подкласс)</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ["ventrue", VENTRUE_LORE.name, VENTRUE_LORE.tagline],
+                    ["toreador", TOREADOR_LORE.name, TOREADOR_LORE.tagline],
+                  ] as const
+                ).map(([id, name, tag]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setBuilderClan(id);
+                      setField("clan", id);
+                    }}
+                    className={cn(
+                      "rounded-[var(--radius)] border p-3 text-left",
+                      builderClan === id
+                        ? "border-primary bg-primary/15"
+                        : "border-border bg-surface-2",
+                    )}
+                  >
+                    <div className="font-medium text-fg">{name}</div>
+                    <p className="mt-0.5 text-[11px] text-muted">{tag}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-sm font-medium">Быстрые пресеты · {builderClan === "toreador" ? "Тореадор" : "Вентру"}</h3>
               <div className="grid gap-2 sm:grid-cols-2">
-                {BUILD_PRESETS.map((p) => (
+                {BUILD_PRESETS.filter((p) => (p.clan ?? "ventrue") === builderClan).map((p) => (
                   <button
                     key={p.id}
                     type="button"
@@ -451,9 +510,9 @@ export function VentrueBuilder() {
               <div className="mt-1 text-xs">{KINDRED_TABLE[level - 1]?.features}</div>
             </div>
             <div>
-              <h3 className="mb-2 text-sm font-medium">Веха Вентру</h3>
+              <h3 className="mb-2 text-sm font-medium">Вехи · {lore.name}</h3>
               <ul className="max-h-40 space-y-1 overflow-y-auto scroll-thin text-xs text-muted">
-                {VENTRUE_MILESTONES.filter((m) => m.level <= level).map((m) => (
+                {milestones.filter((m) => m.level <= level).map((m) => (
                   <li
                     key={m.level}
                     className={cn(
@@ -996,10 +1055,15 @@ export function VentrueBuilder() {
               </button>
             ))}
             <div className="rounded-[var(--radius)] border border-primary/30 bg-primary/5 p-3 text-sm">
-              <div className="font-display text-primary">{VENTRUE_LORE.title}</div>
-              <p className="mt-1 text-muted">{VENTRUE_LORE.description}</p>
+              <div className="font-display text-primary">{lore.title}</div>
+              <p className="mt-1 text-muted">{lore.description}</p>
+              {builderClan === "toreador" && (
+                <p className="mt-2 text-xs text-accent">
+                  Bane: d20 ≤9 на Анализ/Внимательность → Обездвижен (DC 10 Муд.).
+                </p>
+              )}
               <ul className="mt-2 space-y-1 text-xs text-faint">
-                {VENTRUE_FEATURES.filter((f) => f.level <= level).map((f) => (
+                {clanFeatures.filter((f) => f.level <= level).map((f) => (
                   <li key={f.id}>
                     ур.{f.level} · {f.name} — {f.summary}
                   </li>

@@ -51,6 +51,8 @@ import {
   getLevelData,
   unlockedCore,
   unlockedVentrue,
+  unlockedToreador,
+  unlockedClanFeatures,
   VENTRUE_LORE,
   type FeatureBlock,
 } from "@/data/kindred-ru";
@@ -74,6 +76,7 @@ import {
   PRESET_VENTRUE_7_WARLOCK_1,
   PRESET_VENTRUE_8,
   PRESET_VENTRUE_PLAYER,
+  PRESET_TOREADOR_PLAYER,
 } from "@/data/presets";
 import {
   decodeSharePayload,
@@ -214,6 +217,11 @@ export function CharacterSheet() {
 
   const core = useMemo(() => unlockedCore(character.level), [character.level]);
   const ventrue = useMemo(() => unlockedVentrue(character.level), [character.level]);
+  const toreador = useMemo(() => unlockedToreador(character.level), [character.level]);
+  const clanFeatures = useMemo(
+    () => unlockedClanFeatures(character.clan, character.level),
+    [character.clan, character.level],
+  );
   const availableFeats = useMemo(() => featsForLevel(character.level), [character.level]);
   const bgDef = backgroundById(character.backgroundId);
   const originFeat = originFeatById(character.originFeatId);
@@ -240,7 +248,7 @@ export function CharacterSheet() {
     } else if (
       !voice &&
       character.level >= 3 &&
-      (character.clan === "ventrue" || character.clan === "none")
+      (character.clan === "ventrue")
     ) {
       useCharacterStore.getState().patch({
         customResources: [
@@ -379,7 +387,7 @@ export function CharacterSheet() {
           )}
         >
           <span className="font-display text-sm tracking-wide">Создать</span>
-          <span className="text-[10px] font-normal opacity-80">Вентру · билдер RAW</span>
+          <span className="text-[10px] font-normal opacity-80">Клан · билдер RAW</span>
         </button>
         <button
           type="button"
@@ -496,10 +504,20 @@ export function CharacterSheet() {
                 variant="secondary"
                 onClick={() => {
                   addCharacter({ ...PRESET_VENTRUE_8, id: `v8-${Date.now()}` });
-                  toast.success("Пресет: Вентру 8 классика");
                 }}
               >
                 + Вентру 8
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  addCharacter({ ...PRESET_TOREADOR_PLAYER, id: `to-${Date.now()}` });
+                  toast.success("Пресет: Тореадор · Алая роза");
+                }}
+              >
+                + Тореадор
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => addCharacter()}>
                 <Plus className="size-3.5" /> Пустой
@@ -740,10 +758,9 @@ export function CharacterSheet() {
 
       {appMode === "create" && tab === "builder" && (
         <div className="mb-3 rounded-[var(--radius-lg)] border border-accent/30 bg-accent/5 p-3 text-sm text-muted">
-          <strong className="text-accent">Режим создания · Вентру</strong>
+          <strong className="text-accent">Режим создания · Вентру / Тореадор</strong>
           <p className="mt-1 text-xs">
-            Источники: Bound by Blood PDF · dnd.su (Человек, Везучий) · PHB 2024. Пройдите шаги →
-            «Применить билд к листу» → переключитесь на <em>Играть</em>.
+            Bound by Blood PDF · dnd.su · PHB 2024. Выберите клан → шаги → Применить → <em>Играть</em>.
           </p>
         </div>
       )}
@@ -1098,11 +1115,21 @@ export function CharacterSheet() {
             </div>
           </section>
 
-          {(character.clan === "ventrue" || character.clan === "none") && (
+          {(character.clan === "ventrue" ||
+            character.clan === "toreador" ||
+            character.clan === "none") && (
             <section>
-              <h3 className="mb-2 font-display text-base">Клан Вентру · прогрессия</h3>
+              <h3 className="mb-2 font-display text-base">
+                Клан{" "}
+                {character.clan === "toreador"
+                  ? "Тореадор"
+                  : character.clan === "ventrue" || character.clan === "none"
+                    ? "Вентру"
+                    : character.clan}{" "}
+                · прогрессия
+              </h3>
               <div className="grid gap-2 lg:grid-cols-2">
-                {ventrue
+                {clanFeatures
                   .filter(
                     (f) =>
                       !featureQ.trim() ||
@@ -1123,7 +1150,10 @@ export function CharacterSheet() {
               {character.level < 18 && (
                 <p className="mt-2 text-xs text-muted">
                   Ещё не открыто:{" "}
-                  {unlockedVentrue(20)
+                  {(character.clan === "toreador"
+                    ? unlockedToreador(20)
+                    : unlockedVentrue(20)
+                  )
                     .filter((f) => f.level > character.level)
                     .map((f) => `ур.${f.level} ${f.name}`)
                     .join(" · ")}

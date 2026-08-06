@@ -241,3 +241,42 @@ export const BLANK_TEMPLATE = (): CharacterSheet => ({
   ],
   ...SOLO_DEFAULTS,
 });
+
+
+export const PRESET_TOREADOR_PLAYER: CharacterSheet = {
+  ...PRESET_VENTRUE_PLAYER,
+  id: "preset-toreador-1",
+  name: "Алая роза",
+  clan: "toreador",
+  preferredBlood: "артисты / красавцы",
+  abilities: { str: 8, dex: 16, con: 14, int: 12, wis: 12, cha: 16 },
+  skillProfs: {
+    persuasion: "proficient",
+    insight: "proficient",
+    perception: "expertise",
+    investigation: "proficient",
+    deception: "proficient",
+    performance: "proficient",
+  },
+  customResources: [
+    {
+      id: "cr-artist",
+      name: "Auspex / Presence",
+      current: 3,
+      max: 3,
+      note: "Aura Sight / Charm · см. фичи",
+    },
+  ],
+  notes:
+    "Тореадор 8. Bane: d20≤9 Анализ/Внимательность → Restrained DC10. Dual luck. Artist's Soul. Depth of Feelings.",
+  attacks: [
+    {
+      id: "atk-1",
+      name: "Короткий меч",
+      bonus: 7,
+      damage: "1d6+4",
+      type: "колющий",
+      notes: "finesse",
+    },
+  ],
+};

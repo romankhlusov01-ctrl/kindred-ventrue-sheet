@@ -27,7 +27,7 @@ import { SKILLS, type SkillId } from "@/data/skills";
 import { getLevelData } from "@/data/kindred-ru";
 import { RollModeBar } from "@/components/sheet/roll-mode-bar";
 import { BloodPips } from "@/components/sheet/blood-pips";
-import { DominateDc } from "@/components/sheet/dominate-dc";
+import { ClanPowers } from "@/components/sheet/clan-powers";
 import { DeathPanel } from "@/components/sheet/death-panel";
 import { RestWizard } from "@/components/sheet/rest-wizard";
 import { WarlockSnippet } from "@/components/sheet/warlock-snippet";
@@ -153,7 +153,7 @@ export function TableSheet() {
           <div className="min-w-0">
             <div className="font-display text-lg text-fg truncate">{c.name || "Сородич"}</div>
             <div className="text-xs text-muted">
-              {c.species} · Вентру {c.level}
+              {c.species} · {c.clan === "toreador" ? "Тореадор" : "Вентру"} {c.level}
               {c.multiclass ? ` / ${c.multiclass}` : ""} · Сл{" "}
               <span className="font-display text-primary">{spellDc}</span>
             </div>
@@ -553,7 +553,7 @@ export function TableSheet() {
               Голод
             </Button>
           </div>
-          <DominateDc />
+          <ClanPowers />
           {/колдун|warlock/i.test(c.multiclass || "") && <WarlockSnippet />}
           <p className="text-center text-[10px] text-faint">
             Bane: {c.preferredBlood || "—"} · BBB PDF · dnd.su Lucky/Human · PHB 2024

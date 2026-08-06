@@ -5,6 +5,8 @@ export type BuildPreset = {
   id: string;
   name: string;
   blurb: string;
+  /** ventrue | toreador */
+  clan?: "ventrue" | "toreador";
   level: number;
   multiclass: string;
   baseScores: Abilities;
@@ -38,6 +40,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     selectedFeats: ["forceful", "lethal"],
     preferredBlood: "солдаты / военные",
     nameSuggestion: "Владыка крови",
+    clan: "ventrue",
   },
   {
     id: "iron-tyrant",
@@ -55,6 +58,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     selectedFeats: ["lethal", "forceful"],
     preferredBlood: "преступники",
     nameSuggestion: "Железный кулак",
+    clan: "ventrue",
   },
   {
     id: "pact-prince",
@@ -72,6 +76,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     selectedFeats: ["forceful", "lethal"],
     preferredBlood: "аристократы",
     nameSuggestion: "Принц с пактом",
+    clan: "ventrue",
   },
   {
     id: "new-blood",
@@ -89,6 +94,61 @@ export const BUILD_PRESETS: BuildPreset[] = [
     selectedFeats: ["forceful"],
     preferredBlood: "учёные",
     nameSuggestion: "Новорождённый",
+    clan: "ventrue",
+  },
+  {
+    id: "rose-siren",
+    name: "Роза-сирена",
+    blurb: "Тореадор · Хар/Лов · Presence · dual luck · социал + внимание",
+    clan: "toreador",
+    level: 8,
+    multiclass: "",
+    baseScores: { str: 8, dex: 15, con: 14, int: 10, wis: 12, cha: 13 },
+    asiPlus2: "dex",
+    asiPlus1: "cha",
+    backgroundId: "touchstone",
+    originFeatId: "lucky",
+    humanSkill: "perception",
+    classSkills: ["persuasion", "insight"],
+    selectedFeats: ["forceful", "alacrity"],
+    preferredBlood: "артисты / красавцы",
+    nameSuggestion: "Алая роза",
+  },
+  {
+    id: "gallery-hunter",
+    name: "Охотник галереи",
+    blurb: "Тореадор 3 · старт · Анализ/Внимательность · красота",
+    clan: "toreador",
+    level: 3,
+    multiclass: "",
+    baseScores: { str: 8, dex: 14, con: 14, int: 12, wis: 13, cha: 15 },
+    asiPlus2: "cha",
+    asiPlus1: "dex",
+    backgroundId: "touchstone",
+    originFeatId: "lucky",
+    humanSkill: "investigation",
+    classSkills: ["persuasion", "perception"],
+    selectedFeats: ["forceful"],
+    preferredBlood: "артисты / красавцы",
+    nameSuggestion: "Новая муза",
+  },
+  {
+    id: "live-fast-blade",
+    name: "Живи быстро (9+)",
+    blurb: "Тореадор 9 · Лов 20+ · доп. действие · Celerity-feel",
+    clan: "toreador",
+    level: 9,
+    multiclass: "",
+    baseScores: { str: 8, dex: 15, con: 14, int: 10, wis: 12, cha: 13 },
+    asiPlus2: "dex",
+    asiPlus1: "cha",
+    backgroundId: "thrall",
+    originFeatId: "lucky",
+    humanSkill: "acrobatics",
+    classSkills: ["stealth", "persuasion"],
+    selectedFeats: ["alacrity", "lethal"],
+    preferredBlood: "танцоры",
+    nameSuggestion: "Мгновение",
   },
 ];
 

@@ -438,3 +438,107 @@ export function unlockedVentrue(level: number) {
 export function featsForLevel(level: number) {
   return KINDRED_FEATS.filter((f) => f.levelMin <= level);
 }
+
+/** Тореадор (Toreador) — Bound by Blood, зеркало детализации Ventrue */
+export const TOREADOR_FEATURES: FeatureBlock[] = [
+  {
+    id: "toreador-bane",
+    level: 3,
+    name: "Проклятие Тореадор (Bane)",
+    summary: "При 1–9 на Investigation/Perception — Restrained.",
+    body: `При броске d20 на проверку Интеллекта (Анализ) или Мудрости (Внимательность), если результат кости 9 или ниже — вы получаете состояние Обездвижен (Restrained). В конце каждого своего хода: спас Мудрости DC 10, чтобы окончить эффект.
+
+Красота и детали захватывают ваш взгляд — цена дара Auspex/Presence.`,
+    tags: ["bane", "toreador"],
+  },
+  {
+    id: "artists-soul",
+    level: 3,
+    name: "Душа художника (An Artist's Soul)",
+    summary: "Adv Анализ/Внимательность; ТЗ 120; +2 навыка +1 инструмент.",
+    body: `• Преимущество на проверки Интеллекта (Анализ) и Мудрости (Внимательность).
+• Тёмное зрение 120 футов (заменяет 60 фт. биологии, если уже есть — берите лучшее).
+• Владение двумя навыками на выбор и одним инструментом (если уже владеете — Экспертиза в нём).
+
+Источник: Bound by Blood · подкласс Toreador ур.3.`,
+    tags: ["toreador", "auspex"],
+  },
+  {
+    id: "depth-feelings",
+    level: 6,
+    name: "Глубина чувств (Depth of Feelings)",
+    summary: "Aura Sight 2 ОБК; Calm/Charm 1 ОБК.",
+    body: `• Взгляд ауры (Aura Sight): 2 Очка крови — магическое действие. Выберите существо в 30 фт., которое видите. Задайте два вопроса «да/нет» о его эмоциях, намерениях или связи с вами (как в описании PDF Aura Sight).
+• 1 Очко крови — сотворите «Успокоение эмоций», «Очаровать чудовище» или «Очаровать личность» без ячейки (Харизма).
+
+Восстановление ОБК — только через Питание и особые эффекты.`,
+    costs: ["1–2 ОБК"],
+    tags: ["toreador", "presence", "auspex"],
+  },
+  {
+    id: "live-fast",
+    level: 9,
+    name: "Живи быстро… (Live Fast…)",
+    summary: "Лов +2 (макс. 25); БД 1 ОБК — доп. действие.",
+    body: `• Ловкость +2 (максимум 25).
+• Бонусное действие, 1 ОБК: на число ходов = БМ вы получаете дополнительное действие в свой ход. Это действие можно использовать только для: Атака (одна атака), Рывок, Отход, Засада (Hide) или Использовать (Utilize).
+
+Нельзя складывать с другими источниками «доп. действия» сверх правил стекинга, если мастер не разрешит.`,
+    costs: ["1 ОБК", "БД"],
+    tags: ["toreador", "celerity"],
+  },
+  {
+    id: "visionary",
+    level: 11,
+    name: "Провидец (Visionary)",
+    summary: "Экспертиза ×3; Spirit's Touch 2 ОБК.",
+    body: `• Выберите три навыка, которыми владеете — получите Экспертизу (удвоенный БМ).
+• Касание духа (Spirit's Touch): 2 ОБК, магическое действие — касание объекта или следа. Задайте число вопросов = БМ о владельце/событиях (как Spirit's Touch в PDF).`,
+    costs: ["2 ОБК"],
+    tags: ["toreador", "auspex"],
+  },
+  {
+    id: "truly-majestic",
+    level: 15,
+    name: "Истинно величественный (Truly Majestic)",
+    summary: "Adv Обман/Убеждение; Entrancement; Sanctuary 3 ОБК.",
+    body: `• Преимущество на проверки Харизмы (Обман) и (Убеждение).
+• Очарование / Entrancement: спасброски против ваших эффектов Очарования совершаются с помехой (как в PDF Truly Majestic).
+• 3 ОБК — «Убежище» (Sanctuary) на себя без риска прервать атакой, пока длится (по тексту PDF).`,
+    costs: ["3 ОБК"],
+    tags: ["toreador", "presence"],
+  },
+  {
+    id: "magnum-opus",
+    level: 18,
+    name: "Magnum Opus",
+    summary: "Выберите 2: Flicker, Clairvoyance, Open Mind, Star Magnetism.",
+    body: `Выберите два из четырёх (PDF Magnum Opus):
+
+• Flicker — краткий миг скорости/смещения (как в PDF).
+• Clairvoyance — ясновидение через ОБК/действие (как в PDF).
+• Open Mind — чтение/раскрытие разума (как в PDF).
+• Star Magnetism — мощное Presence-притяжение (как в PDF).
+
+Зафиксируйте выбор в заметках листа.`,
+    tags: ["toreador", "эпик"],
+  },
+];
+
+export const TOREADOR_LORE = {
+  name: "Тореадор (Toreador)",
+  title: "Клан розы",
+  tagline: "Смотри на мир, как никто другой",
+  description:
+    "Тореадор — эстеты и хищники чувств. Они видят детали, которых не замечают другие, и обращают красоту и обаяние в оружие. Их Bane — пленение вниманием: низкий d20 на Анализ/Внимательность может Обездвижить их.",
+};
+
+export function unlockedToreador(level: number) {
+  return TOREADOR_FEATURES.filter((f) => f.level <= level);
+}
+
+export function unlockedClanFeatures(clan: string, level: number) {
+  if (clan === "toreador") return unlockedToreador(level);
+  if (clan === "ventrue" || clan === "none" || !clan) return unlockedVentrue(level);
+  return [];
+}
