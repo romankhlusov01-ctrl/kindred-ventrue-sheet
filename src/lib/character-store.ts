@@ -184,7 +184,11 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     skillProfs: { ...raw.skillProfs },
     saveProfs: { con: true, cha: true, ...raw.saveProfs },
     selectedFeats: raw.selectedFeats ?? [],
-    generalFeats: (raw as CharacterSheet).generalFeats ?? [],
+    generalFeats: (() => {
+      const g = (raw as CharacterSheet).generalFeats ?? [];
+      // migrate legacy "resilient" → resilient-con
+      return g.map((id) => (id === "resilient" ? "resilient-con" : id));
+    })(),
     attacks: raw.attacks ?? [],
     conditions: raw.conditions ?? [],
     sessionLog: raw.sessionLog ?? [],
@@ -325,10 +329,19 @@ export const useCharacterStore = create<LibraryState>()(
       toggleGeneralFeat: (featId) =>
         set((s) =>
           updateActive(s, (c) => {
-            const has = (c.generalFeats ?? []).includes(featId);
-            const generalFeats = has
-              ? (c.generalFeats ?? []).filter((x) => x !== featId)
-              : [...(c.generalFeats ?? []), featId];
+            const cur = c.generalFeats ?? [];
+            const has = cur.includes(featId);
+            let generalFeats: string[];
+            if (has) {
+              generalFeats = cur.filter((x) => x !== featId);
+            } else {
+              // only one Resilient pick
+              const isRes = featId === "resilient" || featId.startsWith("resilient-");
+              const base = isRes
+                ? cur.filter((x) => x !== "resilient" && !x.startsWith("resilient-"))
+                : cur;
+              generalFeats = [...base, featId];
+            }
             return { ...c, generalFeats };
           }),
         ),

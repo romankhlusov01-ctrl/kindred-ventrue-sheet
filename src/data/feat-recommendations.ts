@@ -65,7 +65,37 @@ export const FEAT_RECS: Record<string, { tags: string[]; note: string; clans?: s
     note: "Свита лорда Вентру.",
     clans: ["ventrue"],
   },
-  // general
+  // ─── PHB general ───
+  "resilient-con": {
+    tags: ["спас", "концентрация"],
+    note: "Устойчивый Тел — топ для концентрации. Оба клана.",
+    clans: ["ventrue", "toreador"],
+  },
+  "resilient-wis": {
+    tags: ["спас"],
+    note: "Устойчивый Муд — ментальная защита. Оба клана.",
+    clans: ["ventrue", "toreador"],
+  },
+  "resilient-dex": {
+    tags: ["спас"],
+    note: "Устойчивый Лов — finesse / AoE. Тореадор и мобильные.",
+    clans: ["toreador", "ventrue"],
+  },
+  "resilient-str": {
+    tags: ["спас"],
+    note: "Устойчивый Сил — захват-танк Вентру.",
+    clans: ["ventrue"],
+  },
+  "resilient-int": {
+    tags: ["спас"],
+    note: "Устойчивый Инт — редко, но для Auspex-линии.",
+    clans: ["toreador"],
+  },
+  "resilient-cha": {
+    tags: ["спас"],
+    note: "У Kindred уже спас Хар — обычно берите Тел/Муд/Лов.",
+    clans: ["ventrue", "toreador"],
+  },
   actor: {
     tags: ["соц"],
     note: "Тореадор-актёр / Вентру-двойник.",
@@ -73,28 +103,23 @@ export const FEAT_RECS: Record<string, { tags: string[]; note: string; clans?: s
   },
   "war-caster": {
     tags: ["концентрация"],
-    note: "Если держите Suggestion / Presence-эффекты с концентрацией.",
+    note: "Концентрация + соматика. Вместе с Устойчивый·Тел — железо.",
     clans: ["ventrue", "toreador"],
-  },
-  resilient: {
-    tags: ["спас"],
-    note: "Часто Тел (концентрация) или Муд.",
-    clans: ["ventrue"],
   },
   observant: {
     tags: ["внимательность"],
-    note: "Тореадор: ещё сильнее читает комнату.",
-    clans: ["toreador"],
+    note: "Тореадор: ещё сильнее читает комнату. Вентру — соц-разведка.",
+    clans: ["toreador", "ventrue"],
   },
   "skill-expert": {
     tags: ["навыки"],
-    note: "Экспертиза Убеждения / Внимательности / Обмана.",
+    note: "Экспертиза Убеждения / Внимательности / Обмана. Оба клана.",
     clans: ["toreador", "ventrue"],
   },
   "inspiring-leader": {
     tags: ["лидер"],
-    note: "Вентру-вождь: temp HP свите.",
-    clans: ["ventrue"],
+    note: "Temp HP свите — Вентру-вождь и Тореадор-икона.",
+    clans: ["ventrue", "toreador"],
   },
   telepathic: {
     tags: ["контроль"],
@@ -104,6 +129,11 @@ export const FEAT_RECS: Record<string, { tags: string[]; note: string; clans?: s
   "fey-touched": {
     tags: ["магия"],
     note: "Misty Step + очарование — мобильный хищник.",
+    clans: ["toreador", "ventrue"],
+  },
+  "shadow-touched": {
+    tags: ["магия"],
+    note: "Невидимость + некро/иллюзия 1 круга.",
     clans: ["toreador", "ventrue"],
   },
   grappler: {
@@ -120,5 +150,35 @@ export const FEAT_RECS: Record<string, { tags: string[]; note: string; clans?: s
     tags: ["мобильность"],
     note: "С Alacrity / Live Fast.",
     clans: ["toreador"],
+  },
+  durable: {
+    tags: ["хиты"],
+    note: "Hit Dice эффективнее — оба клана.",
+    clans: ["ventrue", "toreador"],
+  },
+  crusher: {
+    tags: ["бой"],
+    note: "Дробящий контроль — безоружный / Lethal Вентру.",
+    clans: ["ventrue"],
+  },
+  piercer: {
+    tags: ["бой"],
+    note: "Короткий меч / клыки finesse — Тореадор.",
+    clans: ["toreador"],
+  },
+  slasher: {
+    tags: ["бой"],
+    note: "Рубящий контроль скорости.",
+    clans: ["ventrue", "toreador"],
+  },
+  "tough-general": {
+    tags: ["хиты"],
+    note: "+2 ХП/уровень — если не брали origin Крепкий.",
+    clans: ["ventrue", "toreador"],
+  },
+  "weapon-master": {
+    tags: ["оружие"],
+    note: "Weapon Mastery PHB 2024 — оба клана с оружием.",
+    clans: ["ventrue", "toreador"],
   },
 };

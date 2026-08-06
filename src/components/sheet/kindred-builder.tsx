@@ -422,25 +422,44 @@ export function KindredBuilder() {
       appliedScores.dex = Math.min(25, appliedScores.dex + 2);
     }
 
+    // Class saves Con + Cha; Resilient adds save + half-feat +1 (before HP)
+    const saveProfs: CharacterSheet["saveProfs"] = { con: true, cha: true };
+    const gens = character.generalFeats ?? [];
+    const resilientMap: Record<string, keyof Abilities> = {
+      "resilient-str": "str",
+      "resilient-dex": "dex",
+      "resilient-con": "con",
+      "resilient-int": "int",
+      "resilient-wis": "wis",
+      "resilient-cha": "cha",
+      resilient: "wis",
+    };
+    for (const id of gens) {
+      const ab = resilientMap[id];
+      if (ab) {
+        saveProfs[ab] = true;
+        if (appliedScores[ab] < 20) {
+          appliedScores[ab] = Math.min(20, appliedScores[ab] + 1);
+        }
+      }
+    }
+
     let hp = calcKindredHp(
       level,
       appliedScores.con,
       builderClan === "ventrue" && level >= 6,
     );
-    // Tough (PHB origin): +2 HP per level
-    if (character.originFeatId === "tough" || character.backgroundFeatId === "tough") {
+    // Tough (origin or general ASI feat)
+    if (
+      character.originFeatId === "tough" ||
+      character.backgroundFeatId === "tough" ||
+      gens.includes("tough-general")
+    ) {
       hp += level * 2;
     }
     const attacks = defaultAttacks(level, appliedScores, character.selectedFeats);
     const dexMod = abilityMod(appliedScores.dex);
     const ac = 10 + dexMod + (level >= 1 ? 2 : 0); // studded-ish
-
-    // Resilient-style: if general resilient, leave notes; CHA/CON already class saves
-    const saveProfs: CharacterSheet["saveProfs"] = { con: true, cha: true };
-    if ((character.generalFeats ?? []).includes("resilient")) {
-      // default Wis if not already — common pick for casters/controllers
-      saveProfs.wis = true;
-    }
 
     let speed = 30;
     if (character.selectedFeats.includes("alacrity")) speed += 10;
@@ -1625,12 +1644,13 @@ export function KindredBuilder() {
             {featTab === "general" && (
               <div className="space-y-3">
                 <p className="text-xs text-muted">
-                  Универсальные черты PHB 2024 (dnd.su). Слоты = уровни, где выбрали «Черта»,
-                  не «ASI» (шаг Характеристики):{" "}
+                  Универсальные черты PHB 2024 (dnd.su). Слоты = уровни ASI, где выбрали «Черта PHB»:{" "}
                   <strong>
                     {(character.generalFeats ?? []).length}/{gSlots}
                   </strong>
-                  . Если 0 — на шаге Характеристики переключите слот 4/8/… на «Черта».
+                  .{" "}
+                  <strong className="text-accent">Устойчивый</strong> — 6 вариантов (Тел/Муд/Лов…);
+                  берите один. На шаге Характеристики: ASI → «Черта».
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   <button
@@ -1643,7 +1663,24 @@ export function KindredBuilder() {
                     )}
                     onClick={() => setFeatClanOnly((v) => !v)}
                   >
-                    {featClanOnly ? "Рекомендованные клану" : "Полный список"}
+                    {featClanOnly ? "★ Рекомендованные" : "Полный список PHB"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs text-accent"
+                    onClick={() => {
+                      setFeatQuery("Устойчивый");
+                      setFeatClanOnly(false);
+                    }}
+                  >
+                    Устойчивый (все)
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-border px-3 py-1.5 text-xs text-muted"
+                    onClick={() => setFeatQuery("")}
+                  >
+                    Сброс фильтра
                   </button>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
