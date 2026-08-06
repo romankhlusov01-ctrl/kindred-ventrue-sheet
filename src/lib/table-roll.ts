@@ -43,12 +43,19 @@ export function tableCheckSkill(id: SkillId) {
   const bonus = skillBonus(c.abilities[sk.ability], pb, c.skillProfs[id]);
 
   // Toreador Artist's Soul L3+: advantage on Investigation / Perception
+  // Truly Majestic L15+: advantage on Deception / Persuasion
+  // Heightened Senses feat: advantage on Insight / Perception
   let mode = modeFor("check");
-  if (
-    c.clan === "toreador" &&
-    c.level >= 3 &&
-    (id === "investigation" || id === "perception")
-  ) {
+  const forceAdv =
+    (c.clan === "toreador" &&
+      c.level >= 3 &&
+      (id === "investigation" || id === "perception")) ||
+    (c.clan === "toreador" &&
+      c.level >= 15 &&
+      (id === "deception" || id === "persuasion")) ||
+    (c.selectedFeats.includes("heightened") &&
+      (id === "insight" || id === "perception"));
+  if (forceAdv) {
     mode = mode === "dis" ? "norm" : "adv";
   }
 
@@ -63,6 +70,13 @@ export function tableCheckSkill(id: SkillId) {
     (id === "investigation" || id === "perception")
   ) {
     detail += " · Душа художника";
+  }
+  if (
+    c.clan === "toreador" &&
+    c.level >= 15 &&
+    (id === "deception" || id === "persuasion")
+  ) {
+    detail += " · Величие";
   }
 
   // Toreador Bane: natural d20 ≤9 on Inv/Perc → Restrained (Wis DC 10 EoT)

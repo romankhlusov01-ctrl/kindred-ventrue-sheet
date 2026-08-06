@@ -67,9 +67,10 @@ const CORE_SKILLS: SkillId[] = [
   "deception",
   "insight",
   "perception",
+  "investigation",
   "athletics",
   "stealth",
-  "arcana",
+  "performance",
 ];
 
 export function TableSheet() {
@@ -337,8 +338,14 @@ export function TableSheet() {
               onClick={() => {
                 pushUndo("Protected");
                 if (!spendProtected()) return toast.error("Нет очков");
-                addLog("Защищённый: переброс d20≤9");
-                toast.success("Переброс ≤9 (dnd.su/PDF)");
+                if (lastRoll) {
+                  tableD20Plain("Защищённый · переброс");
+                  addLog(`Защищённый: переброс (было ${lastRoll.total})`);
+                  toast.success("Переброс d20");
+                } else {
+                  addLog("Защищённый: переброс d20≤9 — бросьте снова");
+                  toast.success("Переброс ≤9");
+                }
               }}
             >
               Переброс ≤9
@@ -535,9 +542,15 @@ export function TableSheet() {
             <Button type="button" variant="blood" className="h-12" onClick={() => tableFeed(false)}>
               Питание {getLevelData(c.level).feed}
             </Button>
-            <Button type="button" variant="secondary" className="h-12" onClick={() => tableFeed(true)}>
-              {c.clan === "toreador" ? "½ кости" : "½ Проклятие"}
-            </Button>
+            {c.clan === "ventrue" ? (
+              <Button type="button" variant="secondary" className="h-12" onClick={() => tableFeed(true)}>
+                ½ Проклятие
+              </Button>
+            ) : (
+              <Button type="button" variant="secondary" className="h-12" onClick={() => tableFeed(true)}>
+                ½ кости
+              </Button>
+            )}
             <Button type="button" variant="blood" className="h-12" onClick={() => tableHealBlood()}>
               Лечение (−1 ОБК)
             </Button>

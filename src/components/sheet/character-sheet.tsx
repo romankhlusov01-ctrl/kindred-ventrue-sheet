@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PlayDock } from "@/components/sheet/play-dock";
 import { TableSheet } from "@/components/sheet/table-sheet";
 import { PrintSheetBlock, PrintSheetButton } from "@/components/sheet/print-sheet";
 import { Hotkeys } from "@/components/sheet/hotkeys";
@@ -361,7 +360,7 @@ export function CharacterSheet() {
     <div
       className={cn(
         "mx-auto w-full max-w-6xl overflow-x-hidden px-3 sm:px-5",
-        hideChrome ? "pb-52 pt-1 sm:pb-28 sm:pt-2" : "pb-52 pt-3 sm:pb-28 sm:pt-5",
+        hideChrome ? "pb-28 pt-1 sm:pb-28 sm:pt-2" : "pb-28 pt-3 sm:pb-28 sm:pt-5",
       )}
     >
       {!hideChrome && <OnboardingBanner />}
@@ -1458,12 +1457,7 @@ export function CharacterSheet() {
         </div>
       </nav>
 
-      {appMode === "play" && tab === "play" && (
-        <>
-          <PlayDock />
-          <Hotkeys />
-        </>
-      )}
+      {appMode === "play" && tab === "play" && <Hotkeys />}
 
       <PrintSheetBlock />
 

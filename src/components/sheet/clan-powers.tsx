@@ -235,28 +235,30 @@ export function ClanPowers() {
                 variant="secondary"
                 className="h-12 text-xs"
                 onClick={() => {
-                  if (c.bloodCurrent < 1) return toast.error("Нет ОБК");
+                  if (c.bloodCurrent < 2) return toast.error("2 ОБК");
                   pushUndo("Entrance");
-                  spendBlood(1);
-                  addLog(`Entrance (−1 ОБК) · Сл ${dc}`);
-                  toast.success("Entrance");
+                  spendBlood(2);
+                  tableCheckSkill("persuasion");
+                  addLog(`Entrance (−2 ОБК) · Сл = проверка Убеждения`);
+                  toast.success("Entrance · 2 ОБК");
                 }}
               >
-                Entrance (−1 ОБК)
+                Entrance (−2 ОБК)
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 className="h-12 text-xs"
                 onClick={() => {
-                  if (c.bloodCurrent < 2) return toast.error("2 ОБК");
+                  if (c.bloodCurrent < 1) return toast.error("1 ОБК");
                   pushUndo("Terrify");
-                  spendBlood(2);
-                  addLog(`Terrify (−2 ОБК) · Сл ${dc}`);
-                  toast.success("Terrify");
+                  spendBlood(1);
+                  tableCheckSkill("intimidation");
+                  addLog(`Terrify (−1 ОБК) · Сл = проверка Запугивания`);
+                  toast.success("Terrify · 1 ОБК");
                 }}
               >
-                Terrify (−2 ОБК)
+                Terrify (−1 ОБК)
               </Button>
             </>
           )}
@@ -282,30 +284,46 @@ export function ClanPowers() {
               variant="outline"
               className="col-span-2 h-12 text-xs"
               onClick={() => {
+                if (c.bloodCurrent < 2) return toast.error("2 ОБК");
                 pushUndo("Flesh of Marble");
-                useSessionStore.getState().addEffect("Flesh of Marble (½ урон)", null);
-                addLog("Flesh of Marble: ½ от удара (не огонь/луч) · реакция");
-                toast.success("Flesh of Marble");
+                spendBlood(2);
+                useSessionStore.getState().addEffect("Плоть мрамора (½ урон)", null);
+                addLog("Плоть мрамора (−2 ОБК, реакция): ½ урона (не огонь/луч); 4 ОБК → 0");
+                toast.success("Плоть мрамора · −2 ОБК");
               }}
             >
-              Flesh of Marble (реакция)
+              Плоть мрамора (−2 ОБК · реакция)
             </Button>
           )}
           {c.level >= 18 && (
+            <>
             <Button
               type="button"
               variant="outline"
               className="col-span-2 h-12 text-xs"
               onClick={() => {
-                if (c.bloodCurrent < 2) return toast.error("2 ОБК");
-                pushUndo("Imposing Aura");
-                spendBlood(2);
-                addLog(`Imposing Aura (−2 ОБК) · Сл ${dc}`);
-                toast.success("Imposing Aura");
+                const auraDc = 8 + pb + abilityMod(c.abilities.str);
+                addLog(`Внушительная аура (пассивно) · спас Муд. Сл ${auraDc} (8+Сил+БМ)`);
+                toast.message(`Аура · Сл ${auraDc}`);
               }}
             >
-              Imposing Aura (−2 ОБК)
+              Внушительная аура (пасс. · Сл Сил)
             </Button>
+            <Button
+              type="button"
+              variant="blood"
+              className="col-span-2 h-12 text-xs"
+              onClick={() => {
+                if (c.bloodCurrent < 3) return toast.error("3 ОБК");
+                pushUndo("Summon");
+                spendBlood(3);
+                addLog(`Призыв (−3 ОБК) · Сл ${dc}`);
+                toast.success("Призыв");
+              }}
+            >
+              Призыв (−3 ОБК)
+            </Button>
+            </>
           )}
         </div>
       </div>

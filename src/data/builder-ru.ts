@@ -49,9 +49,9 @@ export function calcKindredHp(level: number, con: number, ventrueDareNotFalter: 
   for (let i = 2; i <= level; i++) {
     hp += 5 + conMod;
   }
+  // Dare Not Falter: +level at gain, then +1 per further level ⇒ total +level
   if (ventrueDareNotFalter && level >= 6) {
     hp += level;
-    hp += Math.max(0, level - 6);
   }
   return Math.max(1, hp);
 }
