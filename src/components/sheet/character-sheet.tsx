@@ -43,6 +43,7 @@ import { AbilityEditor } from "@/components/sheet/ability-editor";
 import { AcBuilder } from "@/components/sheet/ac-builder";
 import { BloodBond } from "@/components/sheet/blood-bond";
 import { useSessionStore } from "@/lib/session-store";
+import { tableCheckSkill } from "@/lib/table-roll";
 
 import {
   featsForLevel,
@@ -777,27 +778,7 @@ export function CharacterSheet() {
                     <button
                       type="button"
                       className="flex h-11 min-w-[3.25rem] items-center justify-center rounded-[var(--radius)] border border-accent/40 bg-accent/10 px-2 font-display text-base tabular-nums text-accent active:scale-[0.97]"
-                      onClick={() => {
-                        const mode = conditionMode(
-                          character,
-                          "check",
-                          character.beastActive || character.pendingAdv
-                            ? "adv"
-                            : character.rollMode ?? "norm",
-                        );
-                        const r = rollD20(sk.nameRu, bonus, mode);
-                        useCharacterStore.getState().consumeRollMode();
-                        useSessionStore.getState().setLastRoll({
-                          label: r.label,
-                          total: r.total,
-                          detail: r.detail,
-                          at: Date.now(),
-                        });
-                        toast.message(
-                          `${sk.nameRu}: ${r.detail} = ${r.total}`,
-                        );
-                        addLog(`${sk.nameRu}: ${r.total} (${r.detail})`);
-                      }}
+                      onClick={() => tableCheckSkill(sk.id)}
                     >
                       {formatMod(bonus)}
                     </button>
