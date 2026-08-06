@@ -63,10 +63,16 @@ export function kindredFeatSlots(level: number): number {
 }
 
 /** ASI levels for Kindred */
-export const ASI_LEVELS = [4, 8, 12, 16, 19] as const;
+/** Ability Score Improvement levels (feat or ASI). L19 is Epic Boon separately. */
+export const ASI_LEVELS = [4, 8, 12, 16] as const;
+export const EPIC_BOON_LEVEL = 19;
 
 export function asiCount(level: number) {
   return ASI_LEVELS.filter((l) => level >= l).length;
+}
+
+export function hasEpicBoon(level: number) {
+  return level >= EPIC_BOON_LEVEL;
 }
 
 export const BUILDER_STEPS = [
@@ -93,6 +99,15 @@ export const TOREADOR_BANE_SHORT =
 
 export const TOREADOR_BANE_FIELD =
   "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)";
+
+export const TOREADOR_TOOLS = [
+  "Лютня / музыкальный инструмент",
+  "Набор художника",
+  "Инструменты каллиграфа",
+  "Воровские инструменты",
+  "Набор гримёра",
+  "Свой инструмент…",
+] as const;
 
 export function clanNameRu(clan: string | undefined | null): string {
   if (clan === "toreador") return "Тореадор";

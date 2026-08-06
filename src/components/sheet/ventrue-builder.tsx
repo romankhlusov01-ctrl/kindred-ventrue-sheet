@@ -25,6 +25,7 @@ import {
   PREFERRED_BLOOD_PRESETS,
   TOREADOR_AESTHETIC_PRESETS,
   TOREADOR_BANE_FIELD,
+  TOREADOR_TOOLS,
   STANDARD_ARRAY,
   abilityMod,
   asiCount,
@@ -114,6 +115,13 @@ export function VentrueBuilder() {
   const [featTab, setFeatTab] = useState<"origin" | "kindred" | "general">("kindred");
   const [featClanOnly, setFeatClanOnly] = useState(true);
   const [featQuery, setFeatQuery] = useState("");
+  /** Toreador Artist's Soul L3: +2 skills (expertise if already proficient) */
+  const [artistSkills, setArtistSkills] = useState<SkillId[]>(() =>
+    character.clan === "toreador" ? ["performance", "investigation"] : [],
+  );
+  const [artistTool, setArtistTool] = useState("Лютня / музыкальный инструмент");
+  /** Visionary L11: 3 expertise skills */
+  const [visionaryExpertise, setVisionaryExpertise] = useState<SkillId[]>([]);
 
   const level = character.level;
   const lore = builderClan === "toreador" ? TOREADOR_LORE : VENTRUE_LORE;
@@ -179,7 +187,7 @@ export function VentrueBuilder() {
         `Универсальных черт ${gTaken}/${gSlots} (ASI → PHB)`,
       );
     if (gSlots > 0 && gTaken < gSlots)
-      issues.push(`Выберите черту PHB для ASI→PHB (${gTaken}/${gSlots})`);
+      issues.push(`ASI→PHB: выберите черту (${gTaken}/${gSlots}) или смените слот на ASI/Kindred`);
     if (asiPtsLeft < 0) issues.push("Слишком много очков ASI (сбросьте или смените слот на черту)");
     // ASI points optional until user assigns them (presets may leave empty)
     // Bane blood is Ventrue-only; Toreador attention-trap is not preferred blood
@@ -187,6 +195,25 @@ export function VentrueBuilder() {
       issues.push("Не указан Bane Вентру (предпочтённая кровь)");
     }
     if (asiPlus2 === asiPlus1) issues.push("+2 и +1 биографии на одну характеристику");
+    if (builderClan === "toreador" && level >= 3 && artistSkills.length !== 2) {
+      issues.push("Тореадор L3+: выберите 2 навыка Artist's Soul");
+    }
+    if (builderClan === "toreador" && level >= 11 && visionaryExpertise.length !== 3) {
+      issues.push("Тореадор L11+: выберите 3 навыка для Экспертизы (Visionary)");
+    }
+    // illegal kindred feats
+    for (const id of character.selectedFeats) {
+      const f = KINDRED_FEATS.find((x) => x.id === id);
+      if (!f) continue;
+      if (f.levelMin > level) issues.push(`${f.name}: нужен ур. ${f.levelMin}+`);
+      if (
+        f.clans &&
+        !f.clans.includes("any") &&
+        !f.clans.includes(builderClan)
+      ) {
+        issues.push(`${f.name}: не для ${builderClan === "toreador" ? "Тореадор" : "Вентру"}`);
+      }
+    }
     return issues;
   }, [
     character.name,
@@ -206,6 +233,8 @@ export function VentrueBuilder() {
     asiSlotsKindred,
     asiPlus2,
     asiPlus1,
+    artistSkills,
+    visionaryExpertise,
   ]);
 
   function go(delta: number) {
@@ -231,6 +260,15 @@ export function VentrueBuilder() {
     setField("humanSkill", p.humanSkill);
     setField("preferredBlood", p.preferredBlood);
     setField("name", p.nameSuggestion);
+    if (clan === "toreador") {
+      setArtistSkills(["performance", "investigation"]);
+      if (p.level >= 11) {
+        setVisionaryExpertise(["performance", "persuasion", "insight"]);
+      }
+    } else {
+      setArtistSkills([]);
+      setVisionaryExpertise([]);
+    }
     // feats
     const current = new Set(character.selectedFeats);
     // clear then set via patch
@@ -324,31 +362,41 @@ export function VentrueBuilder() {
     for (const id of bgSkillIds) skillProfs[id] = "proficient";
     const sp = speciesByName(character.species);
     if (sp.skillful && humanSkill) skillProfs[humanSkill] = "proficient";
+    // Artist's Soul: +2 skills; if already proficient → expertise
+    if (builderClan === "toreador" && level >= 3) {
+      for (const id of artistSkills) {
+        if (skillProfs[id]) skillProfs[id] = "expertise";
+        else skillProfs[id] = "proficient";
+      }
+    }
+    // Visionary L11: expertise on 3 skilled
+    if (builderClan === "toreador" && level >= 11) {
+      for (const id of visionaryExpertise) {
+        if (skillProfs[id]) skillProfs[id] = "expertise";
+      }
+    }
 
     const originFeat = character.originFeatId || "lucky";
     let bgFeat = character.backgroundFeatId || bg.featId;
     if (bgFeat === "magic-initiate" || bgFeat === "well-read") bgFeat = "protected";
 
-    const resources =
-      builderClan === "ventrue"
-        ? [
-            {
-              id: "cr-voice",
-              name: "Голос власти",
-              current: pb,
-              max: pb,
-              note: "Приказ / Внушение · короткий",
-            },
-          ]
-        : [
-            {
-              id: "cr-artist",
-              name: "Aura Sight",
-              current: pb,
-              max: pb,
-              note: "Depth of Feelings · 2 ОБК за использование вне пула",
-            },
-          ];
+    const resources: {
+      id: string;
+      name: string;
+      current: number;
+      max: number;
+      note: string;
+    }[] = [];
+    if (builderClan === "ventrue" && level >= 3) {
+      resources.push({
+        id: "cr-voice",
+        name: "Голос власти",
+        current: pb,
+        max: pb,
+        note: "Приказ / Внушение · короткий/долгий",
+      });
+    }
+    // Toreador Depth of Feelings costs BP only — no fake PB pool
     if (character.selectedFeats.includes("forceful")) {
       resources.push({
         id: "cr-presence",
@@ -358,14 +406,33 @@ export function VentrueBuilder() {
         note: "Awe / Daunt · LR",
       });
     }
+    if (character.selectedFeats.includes("alacrity")) {
+      resources.push({
+        id: "cr-alacrity",
+        name: "Проворство (Alacrity)",
+        current: pb,
+        max: pb,
+        note: "доп. действие · 1 ОБК · LR note",
+      });
+    }
 
-    let hp = calcKindredHp(level, finalScores.con, builderClan === "ventrue" && level >= 6);
+    // Live Fast L9: Dex +2 (max 25)
+    const appliedScores = { ...finalScores };
+    if (builderClan === "toreador" && level >= 9) {
+      appliedScores.dex = Math.min(25, appliedScores.dex + 2);
+    }
+
+    let hp = calcKindredHp(
+      level,
+      appliedScores.con,
+      builderClan === "ventrue" && level >= 6,
+    );
     // Tough (PHB origin): +2 HP per level
     if (character.originFeatId === "tough" || character.backgroundFeatId === "tough") {
       hp += level * 2;
     }
-    const attacks = defaultAttacks(level, finalScores, character.selectedFeats);
-    const dexMod = abilityMod(finalScores.dex);
+    const attacks = defaultAttacks(level, appliedScores, character.selectedFeats);
+    const dexMod = abilityMod(appliedScores.dex);
     const ac = 10 + dexMod + (level >= 1 ? 2 : 0); // studded-ish
 
     // Resilient-style: if general resilient, leave notes; CHA/CON already class saves
@@ -375,8 +442,20 @@ export function VentrueBuilder() {
       saveProfs.wis = true;
     }
 
+    let speed = 30;
+    if (character.selectedFeats.includes("alacrity")) speed += 10;
+
+    const visionNote =
+      builderClan === "toreador" && level >= 3
+        ? "Тёмное зрение 120 фт. (Artist's Soul)"
+        : "Тёмное зрение 60 фт.";
+    const toolNote =
+      builderClan === "toreador" && level >= 3
+        ? `Инструмент Artist's Soul: ${artistTool}`
+        : "";
+
     patch({
-      abilities: finalScores,
+      abilities: appliedScores,
       skillProfs,
       saveProfs,
       species: sp.name,
@@ -391,7 +470,7 @@ export function VentrueBuilder() {
       hpCurrent: hp,
       bloodCurrent: bpPreview,
       ac,
-      speed: 30,
+      speed,
       inspiration: true,
       luckyUsed: 0,
       protectedUsed: 0,
@@ -419,13 +498,33 @@ export function VentrueBuilder() {
       equipment:
         character.equipment ||
         `💰 15\n• Короткий меч ×1 (2 lb)\n• Кинжал ×2 (1 lb)\n• Нагрудник ×1 (20 lb)\n• ${bg.equipment}`,
-      notes:
-        character.notes ||
-        `Сл ${spellDc}. ${clanBaneLine(builderClan, character.preferredBlood)}. Dual luck: Везучий + Защищённый.`,
+      notes: (() => {
+        const auto = [
+          `Сл ${spellDc}. ${clanBaneLine(builderClan, character.preferredBlood)}.`,
+          visionNote,
+          toolNote,
+          builderClan === "toreador" && level >= 3
+            ? "Artist's Soul: преимущество на Анализ и Внимательность."
+            : "",
+          builderClan === "toreador" && level >= 9
+            ? `Live Fast: Лов ${appliedScores.dex} (incl. +2, макс 25).`
+            : "",
+          builderClan === "ventrue" && level >= 6
+            ? "Dare Not Falter: +макс.ХП; reroll Charm/Fear/Stun."
+            : "",
+          "Dual luck: Везучий + Защищённый.",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const prev = (character.notes || "").trim();
+        if (!prev) return auto;
+        if (/Artist's Soul|Dare Not Falter|Live Fast|Тёмное зрение/i.test(prev)) return prev;
+        return `${prev}\n${auto}`;
+      })(),
     });
 
-    (Object.keys(finalScores) as (keyof Abilities)[]).forEach((k) =>
-      setAbility(k, finalScores[k]),
+    (Object.keys(appliedScores) as (keyof Abilities)[]).forEach((k) =>
+      setAbility(k, appliedScores[k]),
     );
 
     addLog("Билдер: билд применён");
@@ -507,12 +606,20 @@ export function VentrueBuilder() {
                       setField("clan", id);
                       if (id === "toreador") {
                         const cur = character.preferredBlood.trim();
-                        // Clear Ventrue blood-only bane requirement noise
                         if (
                           !cur ||
                           /солдат|аристократ|преступн|учёны|духов|политик/i.test(cur)
                         ) {
                           setField("preferredBlood", TOREADOR_BANE_FIELD);
+                        }
+                        setArtistSkills((prev) =>
+                          prev.length === 2 ? prev : (["performance", "investigation"] as SkillId[]),
+                        );
+                      } else {
+                        // switching to Ventrue: drop Toreador bane text
+                        const cur = character.preferredBlood.trim();
+                        if (!cur || /d20|Обездвиж|Restrained|Bane:/i.test(cur)) {
+                          setField("preferredBlood", "");
                         }
                       }
                     }}
@@ -1168,6 +1275,114 @@ export function VentrueBuilder() {
                 <li>• {SKILLS.find((s) => s.id === humanSkill)?.nameRu} — человек</li>
               )}
             </ul>
+
+            {builderClan === "toreador" && level >= 3 && (
+              <div className="rounded-[var(--radius)] border border-primary/30 bg-primary/5 p-3">
+                <h3 className="mb-1 font-display text-sm">Artist's Soul (L3) · +2 навыка</h3>
+                <p className="mb-2 text-[11px] text-muted">
+                  RAW: два навыка на выбор. Если уже владеете — Экспертиза. +1 инструмент.
+                  Также: преимущество на Анализ/Внимательность, ТЗ 120.
+                </p>
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {SKILLS.map((sk) => {
+                    const on = artistSkills.includes(sk.id);
+                    return (
+                      <button
+                        key={sk.id}
+                        type="button"
+                        onClick={() => {
+                          setArtistSkills((prev) => {
+                            if (prev.includes(sk.id)) return prev.filter((x) => x !== sk.id);
+                            if (prev.length >= 2) {
+                              toast.error("Artist's Soul: ровно 2 навыка");
+                              return prev;
+                            }
+                            return [...prev, sk.id];
+                          });
+                        }}
+                        className={cn(
+                          "rounded-full border px-2.5 py-1.5 text-[11px] font-medium",
+                          on
+                            ? "border-primary bg-primary/20 text-primary"
+                            : "border-border bg-surface text-muted",
+                        )}
+                      >
+                        {sk.nameRu}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mb-1 text-[11px] text-muted">Инструмент:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TOREADOR_TOOLS.map((tool) => (
+                    <button
+                      key={tool}
+                      type="button"
+                      onClick={() => setArtistTool(tool.replace("…", "").trim())}
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-[11px]",
+                        artistTool.startsWith(tool.slice(0, 6))
+                          ? "border-accent bg-accent/15 text-accent"
+                          : "border-border text-muted",
+                      )}
+                    >
+                      {tool}
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  className="mt-2 h-9"
+                  value={artistTool}
+                  onChange={(e) => setArtistTool(e.target.value)}
+                  placeholder="Инструмент"
+                />
+              </div>
+            )}
+
+            {builderClan === "toreador" && level >= 11 && (
+              <div className="rounded-[var(--radius)] border border-accent/30 bg-accent/5 p-3">
+                <h3 className="mb-1 font-display text-sm">Visionary (L11) · Экспертиза ×3</h3>
+                <p className="mb-2 text-[11px] text-muted">
+                  Выберите 3 навыка, которыми уже владеете (класс/био/Artist/человек).
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SKILLS.filter((sk) => {
+                    const owned =
+                      classSkills.includes(sk.id) ||
+                      bgSkillIds.includes(sk.id) ||
+                      artistSkills.includes(sk.id) ||
+                      humanSkill === sk.id;
+                    return owned;
+                  }).map((sk) => {
+                    const on = visionaryExpertise.includes(sk.id);
+                    return (
+                      <button
+                        key={sk.id}
+                        type="button"
+                        onClick={() => {
+                          setVisionaryExpertise((prev) => {
+                            if (prev.includes(sk.id)) return prev.filter((x) => x !== sk.id);
+                            if (prev.length >= 3) {
+                              toast.error("Visionary: ровно 3");
+                              return prev;
+                            }
+                            return [...prev, sk.id];
+                          });
+                        }}
+                        className={cn(
+                          "rounded-full border px-2.5 py-1.5 text-[11px]",
+                          on
+                            ? "border-accent bg-accent/20 text-accent"
+                            : "border-border text-muted",
+                        )}
+                      >
+                        {sk.nameRu}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

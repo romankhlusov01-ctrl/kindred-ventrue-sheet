@@ -111,7 +111,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "perception",
     classSkills: ["persuasion", "insight"],
     selectedFeats: ["forceful", "alacrity"],
-    preferredBlood: "артисты / красавцы",
+    preferredBlood: "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)",
     nameSuggestion: "Алая роза",
   },
   {
@@ -129,7 +129,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "investigation",
     classSkills: ["persuasion", "perception"],
     selectedFeats: ["forceful"],
-    preferredBlood: "артисты / красавцы",
+    preferredBlood: "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.)",
     nameSuggestion: "Новая муза",
   },
   {
@@ -147,7 +147,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     humanSkill: "acrobatics",
     classSkills: ["stealth", "persuasion"],
     selectedFeats: ["alacrity", "lethal"],
-    preferredBlood: "танцоры",
+    preferredBlood: "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.) · танцоры",
     nameSuggestion: "Мгновение",
   },
 ];

@@ -31,8 +31,8 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = {
   species: "Человек",
   alignment: "Законно-нейтральный",
   abilities: { str: 8, dex: 14, con: 16, int: 8, wis: 10, cha: 17 },
-  hpCurrent: 71,
-  hpMax: 71,
+  hpCurrent: 77,
+  hpMax: 77,
   tempHp: 0,
   ac: 14,
   speed: 30,
@@ -250,8 +250,12 @@ export const PRESET_TOREADOR_PLAYER: CharacterSheet = {
   id: "preset-toreador-1",
   name: "Алая роза",
   clan: "toreador",
-  preferredBlood: "артисты / красавцы",
+  preferredBlood:
+    "Bane: d20≤9 Анализ/Внимательность → Обездвижен (DC 10 Муд.) · вкус: артисты",
   abilities: { str: 8, dex: 16, con: 14, int: 12, wis: 12, cha: 16 },
+  hpCurrent: 59,
+  hpMax: 59,
+  bloodCurrent: 5,
   skillProfs: {
     persuasion: "proficient",
     insight: "proficient",
@@ -260,17 +264,18 @@ export const PRESET_TOREADOR_PLAYER: CharacterSheet = {
     deception: "proficient",
     performance: "proficient",
   },
+  selectedFeats: ["forceful", "alacrity"],
   customResources: [
     {
-      id: "cr-artist",
-      name: "Auspex / Presence",
+      id: "cr-presence",
+      name: "Властное присутствие",
       current: 3,
       max: 3,
-      note: "Aura Sight / Charm · см. фичи",
+      note: "Awe / Daunt · LR",
     },
   ],
   notes:
-    "Тореадор 8. Bane: d20≤9 Анализ/Внимательность → Restrained DC10. Dual luck. Artist's Soul. Depth of Feelings.",
+    "Тореадор 8. Bane: d20≤9 Анализ/Внимательность → Restrained DC10. Artist's Soul (adv Анал/Вним, ТЗ 120, +2 навыка). Depth of Feelings (ОБК). Dual luck.",
   attacks: [
     {
       id: "atk-1",

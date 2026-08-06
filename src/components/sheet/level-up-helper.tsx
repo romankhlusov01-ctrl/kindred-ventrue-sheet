@@ -43,6 +43,7 @@ export function LevelUpHelper() {
   const newClassKindred = nextK > prevK;
   const features = KINDRED_TABLE[next - 1]?.features ?? "";
   const newAsi = (ASI_LEVELS as readonly number[]).includes(next);
+
   const milestones =
     c.clan === "toreador" ? TOREADOR_MILESTONES : VENTRUE_MILESTONES;
   const milestone = milestones.find((m) => m.level === next);

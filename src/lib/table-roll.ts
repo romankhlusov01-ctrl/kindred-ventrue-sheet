@@ -41,9 +41,46 @@ export function tableCheckSkill(id: SkillId) {
   if (!sk) return null;
   const pb = effectivePb(c.level, c.multiclass);
   const bonus = skillBonus(c.abilities[sk.ability], pb, c.skillProfs[id]);
-  const r = rollD20(sk.nameRu, bonus, modeFor("check"));
+
+  // Toreador Artist's Soul L3+: advantage on Investigation / Perception
+  let mode = modeFor("check");
+  if (
+    c.clan === "toreador" &&
+    c.level >= 3 &&
+    (id === "investigation" || id === "perception")
+  ) {
+    mode = mode === "dis" ? "norm" : "adv";
+  }
+
+  const r = rollD20(sk.nameRu, bonus, mode);
   useCharacterStore.getState().consumeRollMode();
-  publish(r.label, r.total, r.detail + (r.crit ? " · крит" : r.fumble ? " · провал" : ""));
+
+  let detail =
+    r.detail + (r.crit ? " · крит" : r.fumble ? " · провал" : "");
+  if (
+    c.clan === "toreador" &&
+    c.level >= 3 &&
+    (id === "investigation" || id === "perception")
+  ) {
+    detail += " · Artist's Soul";
+  }
+
+  // Toreador Bane: natural d20 ≤9 on Inv/Perc → Restrained (Wis DC 10 EoT)
+  if (
+    c.clan === "toreador" &&
+    c.level >= 3 &&
+    (id === "investigation" || id === "perception") &&
+    r.used <= 9
+  ) {
+    detail += " · BANE d20≤9 → Обездвижен";
+    const store = useCharacterStore.getState();
+    if (!store.character.conditions.includes("Обездвижен (Bane)")) {
+      store.toggleCondition("Обездвижен (Bane)");
+    }
+    toast.error("Bane Тореадор: d20≤9 → Обездвижен (спас Муд. DC 10)");
+  }
+
+  publish(r.label, r.total, detail);
   return r;
 }
 
@@ -60,12 +97,17 @@ export function tableSave(key: keyof Abilities, labelRu: string) {
   const pb = effectivePb(c.level, c.multiclass);
   const prof = c.saveProfs[key] ? pb : 0;
   let m = modeFor("save");
-  if (c.clan === "ventrue" && key === "wis") {
+  // Ventrue Unshakably Confident: advantage on Wisdom saves
+  if (c.clan === "ventrue" && key === "wis" && c.level >= 3) {
     m = m === "dis" ? "norm" : "adv";
   }
   const r = rollD20(`Спас ${labelRu}`, abilityMod(c.abilities[key]) + prof, m);
   useCharacterStore.getState().consumeRollMode();
-  publish(r.label, r.total, r.detail);
+  publish(
+    r.label,
+    r.total,
+    r.detail + (c.clan === "ventrue" && key === "wis" ? " · Unshakable" : ""),
+  );
   return r;
 }
 
@@ -103,16 +145,27 @@ export function tableFeed(half = false) {
   const store = useCharacterStore.getState();
   const c = store.character;
   const row = getLevelData(c.level);
-  const count = half ? Math.max(1, Math.floor(row.feedCount / 2)) : row.feedCount;
+  const full = row.feedCount;
+  // Ventrue Bane: half dice when not preferred blood (caller decides half)
+  // Toreador: half is optional weak feed only
+  const count = half ? Math.max(1, Math.floor(full / 2)) : full;
   const rolls = Array.from({ length: count }, () => rollDie(6));
   const sixes = rolls.filter((x) => x === 6).length;
   const con = Math.max(1, abilityMod(c.abilities.con));
   const sum = rolls.reduce((a, b) => a + b, 0) + con;
-  if (sixes) store.gainBlood(sixes);
-  const label = half ? "Питание ½ Bane" : "Питание";
-  publish(label, sum, `${rolls.join("+")}+Тел${sixes ? ` · +${sixes} ОБК` : ""}`);
+  if (sixes) {
+    useSessionStore.getState().pushUndo("Питание ОБК");
+    store.gainBlood(sixes);
+  }
+  const label =
+    half && c.clan !== "toreador"
+      ? "Питание ½ Bane"
+      : half
+        ? "Питание ½"
+        : "Питание";
+  publish(label, sum, `${rolls.join("+")}+Тел · +${sixes} ОБК`);
   toast.success(`${label}: ${sum}${sixes ? ` · +${sixes} ОБК` : ""}`);
-  return { sum, sixes, rolls };
+  return sum;
 }
 
 export function tableHealBlood() {
@@ -122,12 +175,12 @@ export function tableHealBlood() {
     toast.error("Нет ОБК");
     return null;
   }
-  useSessionStore.getState().pushUndo("Исцеление");
+  useSessionStore.getState().pushUndo("Лечение ОБК");
   store.spendBlood(1);
   const heal = rollDie(10) + c.level;
   store.adjustHp(heal);
-  publish("Исцеление ран", heal, `1d10+${c.level} (−1 ОБК)`);
-  toast.success(`+${heal} ХП`);
+  publish("Лечение (−1 ОБК)", heal, `1d10+ур = ${heal}`);
+  toast.success(`+${heal} ХП (−1 ОБК)`);
   return heal;
 }
 
