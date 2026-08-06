@@ -64,10 +64,12 @@ import { BUILD_PRESETS, defaultAttacks, type BuildPreset } from "@/data/builder-
 import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
 import { TOREADOR_MILESTONES } from "@/data/toreador-milestones";
 import { FEAT_RECS } from "@/data/feat-recommendations";
+import { packagesFor } from "@/data/talent-packages";
 import {
   GENERAL_FEAT_CATALOG,
   generalFeatsForLevel,
   recommendedForClan,
+  clanFeatSortKey,
 } from "@/data/phb-feats-ru";
 import { useSessionStore } from "@/lib/session-store";
 
@@ -142,6 +144,7 @@ export function VentrueBuilder() {
     asiCount(level) * 2 -
     Object.values(asiExtra).reduce((a, b) => a + (b ?? 0), 0);
 
+  const gSlots = asiCount(level);
   const validation = useMemo(() => {
     const issues: string[] = [];
     if (!character.name.trim()) issues.push("Нет имени");
@@ -150,8 +153,7 @@ export function VentrueBuilder() {
     if (classSkills.length !== 2) issues.push("Нужно 2 навыка класса");
     if (character.selectedFeats.length > featSlots)
       issues.push(`Черт сородича ${character.selectedFeats.length}/${featSlots}`);
-    const gSlots = asiCount(level);
-    const gTaken = character.generalFeats?.length ?? 0;
+        const gTaken = character.generalFeats?.length ?? 0;
     if (gTaken > gSlots)
       issues.push(`Универсальных черт ${gTaken}/${gSlots} (слоты ASI 4/8/12/16/19)`);
     if (asiPtsLeft < 0) issues.push("Слишком много ASI");
@@ -161,11 +163,14 @@ export function VentrueBuilder() {
   }, [
     character.name,
     character.selectedFeats,
+    character.generalFeats,
     character.preferredBlood,
     method,
     spent,
     classSkills,
     featSlots,
+    gSlots,
+    level,
     asiPtsLeft,
     asiPlus2,
     asiPlus1,
@@ -280,6 +285,7 @@ export function VentrueBuilder() {
   function applyToSheet() {
     if (validation.length) {
       toast.error(validation[0]);
+      return;
     }
     const skillProfs: CharacterSheet["skillProfs"] = {};
     for (const id of classSkills) skillProfs[id] = "proficient";
@@ -321,15 +327,26 @@ export function VentrueBuilder() {
       });
     }
 
-    const hp = calcKindredHp(level, finalScores.con, builderClan === "ventrue" && level >= 6);
+    let hp = calcKindredHp(level, finalScores.con, builderClan === "ventrue" && level >= 6);
+    // Tough (PHB origin): +2 HP per level
+    if (character.originFeatId === "tough" || character.backgroundFeatId === "tough") {
+      hp += level * 2;
+    }
     const attacks = defaultAttacks(level, finalScores, character.selectedFeats);
     const dexMod = abilityMod(finalScores.dex);
     const ac = 10 + dexMod + (level >= 1 ? 2 : 0); // studded-ish
 
+    // Resilient-style: if general resilient, leave notes; CHA/CON already class saves
+    const saveProfs: CharacterSheet["saveProfs"] = { con: true, cha: true };
+    if ((character.generalFeats ?? []).includes("resilient")) {
+      // default Wis if not already — common pick for casters/controllers
+      saveProfs.wis = true;
+    }
+
     patch({
       abilities: finalScores,
       skillProfs,
-      saveProfs: { con: true, cha: true },
+      saveProfs,
       species: sp.name,
       fiendishLegacy: sp.id === "tiefling" ? (character.fiendishLegacy || "infernal") : "",
       clan: builderClan,
@@ -347,6 +364,8 @@ export function VentrueBuilder() {
       luckyUsed: 0,
       protectedUsed: 0,
       customResources: resources,
+      generalFeats: character.generalFeats ?? [],
+      selectedFeats: character.selectedFeats,
       preferredBlood:
         character.preferredBlood ||
         (builderClan === "toreador" ? "артисты / красавцы" : "солдаты / военные"),
@@ -981,7 +1000,9 @@ export function VentrueBuilder() {
               {bgSkillIds.map((id) => (
                 <li key={`b-${id}`}>• {SKILLS.find((s) => s.id === id)?.nameRu} — био</li>
               ))}
-              <li>• {SKILLS.find((s) => s.id === humanSkill)?.nameRu} — человек</li>
+              {speciesByName(character.species).skillful && (
+                <li>• {SKILLS.find((s) => s.id === humanSkill)?.nameRu} — человек</li>
+              )}
             </ul>
           </div>
         )}
@@ -995,6 +1016,45 @@ export function VentrueBuilder() {
               Рекомендации подстраиваются под{" "}
               <strong>{builderClan === "toreador" ? "Тореадор" : "Вентру"}</strong>.
             </InfoBox>
+
+
+            <div className="space-y-2">
+              <h3 className="font-display text-sm">Пакеты талантов · 1 тап</h3>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {packagesFor(builderClan, level).map((pack) => (
+                  <button
+                    key={pack.id}
+                    type="button"
+                    onClick={() => {
+                      const kMax = featSlots;
+                      const gMax = asiCount(level);
+                      setField(
+                        "selectedFeats",
+                        pack.kindred.filter((id) => {
+                          const f = KINDRED_FEATS.find((x) => x.id === id);
+                          return f && f.levelMin <= level;
+                        }).slice(0, kMax),
+                      );
+                      setField(
+                        "generalFeats",
+                        pack.general.filter((id) => {
+                          const f = GENERAL_FEAT_CATALOG.find((x) => x.id === id);
+                          return f && f.levelMin <= level;
+                        }).slice(0, gMax),
+                      );
+                      if (pack.originFeatId) setField("originFeatId", pack.originFeatId);
+                      if (pack.backgroundFeatId) setField("backgroundFeatId", pack.backgroundFeatId);
+                      toast.success(`Пакет «${pack.name}»`);
+                      setFeatTab("kindred");
+                    }}
+                    className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-left active:scale-[0.99]"
+                  >
+                    <div className="font-medium text-fg">{pack.name}</div>
+                    <p className="mt-0.5 text-[11px] text-muted">{pack.blurb}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="grid grid-cols-3 gap-1 rounded-[var(--radius)] border border-border bg-surface-2 p-1">
               {(
@@ -1127,8 +1187,8 @@ export function VentrueBuilder() {
                       return f.clans.includes(builderClan);
                     })
                     .sort((a, b) => {
-                      const ra = FEAT_RECS[a.id]?.clans?.includes(builderClan) ? 0 : 1;
-                      const rb = FEAT_RECS[b.id]?.clans?.includes(builderClan) ? 0 : 1;
+                      const ra = clanFeatSortKey(a, builderClan);
+                      const rb = clanFeatSortKey(b, builderClan);
                       return ra - rb || a.levelMin - b.levelMin;
                     })
                     .map((f) => {
@@ -1211,11 +1271,17 @@ export function VentrueBuilder() {
                         .toLowerCase()
                         .includes(q);
                     })
-                    .filter((f) => !featClanOnly || recommendedForClan(f, builderClan))
+                    .filter((f) => {
+                      if (!featClanOnly) return true;
+                      return (
+                        recommendedForClan(f, builderClan) ||
+                        !!FEAT_RECS[f.id]?.clans?.includes(builderClan)
+                      );
+                    })
+                    .sort((a, b) => clanFeatSortKey(a, builderClan) - clanFeatSortKey(b, builderClan) || a.levelMin - b.levelMin)
                     .map((f) => {
                       const on = (character.generalFeats ?? []).includes(f.id);
-                      const gSlots = asiCount(level);
-                      const full =
+                                            const full =
                         !on && (character.generalFeats ?? []).length >= gSlots;
                       const rec = FEAT_RECS[f.id];
                       return (
@@ -1347,7 +1413,8 @@ export function VentrueBuilder() {
             <div className="rounded-[var(--radius)] border border-accent/40 bg-accent/5 p-4">
               <h3 className="font-display text-lg">{character.name || "Без имени"}</h3>
               <p className="text-sm text-muted">
-                {character.species || "Вид"} · Вентру · Kindred {level}
+                {character.species || "Вид"} ·{" "}
+                {builderClan === "toreador" ? "Тореадор" : "Вентру"} · Kindred {level}
                 {character.multiclass ? ` / ${character.multiclass}` : ""}
               </p>
               <div className="mt-3 grid grid-cols-3 gap-2 text-center sm:grid-cols-6">
@@ -1363,19 +1430,32 @@ export function VentrueBuilder() {
               </div>
               <ul className="mt-3 space-y-1 text-sm text-muted">
                 <li>
-                  ХП {hpPreview} · ОБК {bpPreview} · Сл {spellDc} · БМ {formatMod(pb)}
+                  ХП {hpPreview}
+                  {(character.originFeatId === "tough" || character.backgroundFeatId === "tough")
+                    ? ` (+${level * 2} Крепкий)`
+                    : ""}{" "}
+                  · ОБК {bpPreview} · Сл {spellDc} · БМ {formatMod(pb)}
                 </li>
                 <li>
                   {bg.name} · {originFeatById(character.originFeatId)?.name} +{" "}
                   {originFeatById(character.backgroundFeatId)?.name}
                 </li>
                 <li>
-                  Черты:{" "}
+                  Сородич ({character.selectedFeats.length}/{featSlots}):{" "}
                   {character.selectedFeats
                     .map((id) => KINDRED_FEATS.find((f) => f.id === id)?.name ?? id)
                     .join(", ") || "—"}
                 </li>
-                <li>Bane: {character.preferredBlood || "—"}</li>
+                <li>
+                  PHB/ASI ({(character.generalFeats ?? []).length}/{asiCount(level)}):{" "}
+                  {(character.generalFeats ?? [])
+                    .map((id) => GENERAL_FEAT_CATALOG.find((f) => f.id === id)?.name ?? id)
+                    .join(", ") || "—"}
+                </li>
+                <li>
+                  {builderClan === "toreador" ? "Эстетика" : "Bane"}:{" "}
+                  {character.preferredBlood || "—"}
+                </li>
               </ul>
             </div>
             <Button

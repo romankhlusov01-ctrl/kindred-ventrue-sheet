@@ -2,7 +2,8 @@ import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { abilityMod, formatMod } from "@/lib/utils";
-import { getLevelData } from "@/data/kindred-ru";
+import { getLevelData, KINDRED_FEATS } from "@/data/kindred-ru";
+import { GENERAL_FEAT_CATALOG } from "@/data/phb-feats-ru";
 import { effectivePb } from "@/lib/level-utils";
 import {
   getBloodMax,
@@ -60,7 +61,7 @@ export function PrintSheetBlock() {
   return (
     <div id="print-character-sheet" className="print-only">
       <h1>
-        {c.name || "Сородич"} — Kindred {c.level} · Ventrue
+        {c.name || "Сородич"} — Kindred {c.level} · {c.clan === "toreador" ? "Toreador" : "Ventrue"}
       </h1>
       <p>
         {sp.name}
@@ -95,10 +96,18 @@ export function PrintSheetBlock() {
         <strong>Bane:</strong> {c.preferredBlood || "—"}
       </p>
       <p>
-        <strong>Черты:</strong> {c.selectedFeats.join(", ") || "—"}
+        <strong>Сородич:</strong>{" "}
+        {c.selectedFeats
+          .map((id) => KINDRED_FEATS.find((f) => f.id === id)?.name ?? id)
+          .join(", ") || "—"}
+        <br />
+        <strong>PHB:</strong>{" "}
+        {(c.generalFeats ?? [])
+          .map((id) => GENERAL_FEAT_CATALOG.find((f) => f.id === id)?.name ?? id)
+          .join(", ") || "—"}
       </p>
       <p className="src">
-        Источники: Bound by Blood PDF · dnd.su (Human, Lucky) · PHB 2024 · лист Kindred Ventrue
+        Источники: Bound by Blood PDF · dnd.su (Human, Lucky) · PHB 2024 · лист Kindred {c.clan === "toreador" ? "Toreador" : "Ventrue"}
       </p>
       <pre>{c.notes}</pre>
     </div>

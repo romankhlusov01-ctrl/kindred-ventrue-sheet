@@ -368,7 +368,7 @@ export function TableSheet() {
           [
             ["checks", "Проверки", Dices],
             ["fight", "Бой", Swords],
-            ["kindred", "Kindred", Droplets],
+            ["kindred", "Кровь", Droplets],
             ["more", "Ещё", Zap],
           ] as const
         ).map(([id, label, Icon]) => (

@@ -578,6 +578,17 @@ export function recommendedForClan(
   feat: CatalogFeat,
   clan: "ventrue" | "toreador" | string,
 ) {
-  if (!feat.clans || feat.clans.includes("any")) return clan === "ventrue" || clan === "toreador";
+  // Explicit clan hit only — "any" is neutral (shown in full list, not "recommended")
+  if (!feat.clans?.length) return false;
   return feat.clans.includes(clan as "ventrue" | "toreador");
+}
+
+/** Sort key: clan-recommended first, then any, then other */
+export function clanFeatSortKey(
+  feat: { id: string; clans?: ("ventrue" | "toreador" | "any")[]; levelMin?: number },
+  clan: string,
+) {
+  if (feat.clans?.includes(clan as "ventrue" | "toreador")) return 0;
+  if (!feat.clans || feat.clans.includes("any")) return 1;
+  return 2;
 }

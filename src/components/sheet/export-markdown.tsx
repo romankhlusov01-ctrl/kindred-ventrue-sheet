@@ -3,6 +3,7 @@ import { FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { abilityMod, formatMod } from "@/lib/utils";
 import { getLevelData, KINDRED_FEATS } from "@/data/kindred-ru";
+import { GENERAL_FEAT_CATALOG } from "@/data/phb-feats-ru";
 import { effectivePb } from "@/lib/level-utils";
 import {
   getBloodMax,
@@ -24,45 +25,66 @@ export function ExportMarkdown() {
       const b = skillBonus(c.abilities[sk.ability], pb, prof);
       return `- **${sk.nameRu}** ${formatMod(b)} (${prof})`;
     }).filter(Boolean);
+
     const feats = c.selectedFeats
       .map((id) => KINDRED_FEATS.find((f) => f.id === id))
-      .filter(Boolean);
-    return `# ${c.name}
+      .filter(Boolean) as { name: string; body: string }[];
 
-**${c.species} · Вентру · Kindred ${c.level}**${c.multiclass ? ` / ${c.multiclass}` : ""}  
-Био: ${c.background} · ${originFeatById(c.originFeatId)?.name} + ${originFeatById(c.backgroundFeatId)?.name}
+    const general = (c.generalFeats ?? [])
+      .map((id) => GENERAL_FEAT_CATALOG.find((f) => f.id === id))
+      .filter(Boolean) as { name: string; body: string }[];
 
-| СИЛ | ЛОВ | ТЕЛ | ИНТ | МУД | ХАР |
-|----:|----:|----:|----:|----:|----:|
-| ${c.abilities.str} | ${c.abilities.dex} | ${c.abilities.con} | ${c.abilities.int} | ${c.abilities.wis} | ${c.abilities.cha} |
-| ${formatMod(abilityMod(c.abilities.str))} | ${formatMod(abilityMod(c.abilities.dex))} | ${formatMod(abilityMod(c.abilities.con))} | ${formatMod(abilityMod(c.abilities.int))} | ${formatMod(abilityMod(c.abilities.wis))} | ${formatMod(abilityMod(c.abilities.cha))} |
+    const clanRu =
+      c.clan === "toreador" ? "Тореадор" : c.clan === "ventrue" ? "Вентру" : c.clan;
 
-- **ХП** ${c.hpCurrent}/${c.hpMax} · **КД** ${c.ac} · **Скорость** ${c.speed}
-- **ОБК** ${c.bloodCurrent}/${getBloodMax(c)} · **Питание** ${getLevelData(c.level).feed}
-- **Сл** ${8 + pb + abilityMod(c.abilities.cha)} · **БМ** ${formatMod(pb)}
-- **Bane** ${c.preferredBlood || "—"}
-- **Удача** Везучий ${getLuckMax(c.level, c.multiclass) - c.luckyUsed}/${getLuckMax(c.level, c.multiclass)} · Защищ. ${getLuckMax(c.level, c.multiclass) - c.protectedUsed}/${getLuckMax(c.level, c.multiclass)}
+    const kindredBlock =
+      feats.map((f) => `### ${f.name}\n${f.body}`).join("\n\n") || "_нет_";
+    const generalBlock =
+      general.map((f) => `### ${f.name}\n${f.body}`).join("\n\n") || "_нет_";
 
-## Навыки
-${skills.join("\n") || "_нет_"}
-
-## Атаки
-${c.attacks.map((a) => `- **${a.name}** ${formatMod(a.bonus)} — ${a.damage} ${a.type}`).join("\n") || "_нет_"}
-
-## Черты сородича
-${feats.map((f) => f && `### ${f.name}\n${f.body}`).join("\n\n") || "_нет_"}
-
-## Снаряжение
-\`\`\`
-${c.equipment}
-\`\`\`
-
-## Заметки
-${c.notes || "—"}
-
----
-*Сгенерировано листом Kindred Ventrue · Bound by Blood + dnd.su*
-`;
+    const lines = [
+      `# ${c.name}`,
+      "",
+      `**${c.species} · ${clanRu} · Kindred ${c.level}**${c.multiclass ? ` / ${c.multiclass}` : ""}`,
+      `Био: ${c.background} · ${originFeatById(c.originFeatId)?.name} + ${originFeatById(c.backgroundFeatId)?.name}`,
+      "",
+      "| СИЛ | ЛОВ | ТЕЛ | ИНТ | МУД | ХАР |",
+      "|----:|----:|----:|----:|----:|----:|",
+      `| ${c.abilities.str} | ${c.abilities.dex} | ${c.abilities.con} | ${c.abilities.int} | ${c.abilities.wis} | ${c.abilities.cha} |`,
+      `| ${formatMod(abilityMod(c.abilities.str))} | ${formatMod(abilityMod(c.abilities.dex))} | ${formatMod(abilityMod(c.abilities.con))} | ${formatMod(abilityMod(c.abilities.int))} | ${formatMod(abilityMod(c.abilities.wis))} | ${formatMod(abilityMod(c.abilities.cha))} |`,
+      "",
+      `- **ХП** ${c.hpCurrent}/${c.hpMax} · **КД** ${c.ac} · **Скорость** ${c.speed}`,
+      `- **ОБК** ${c.bloodCurrent}/${getBloodMax(c)} · **Питание** ${getLevelData(c.level).feed}`,
+      `- **Сл** ${8 + pb + abilityMod(c.abilities.cha)} · **БМ** ${formatMod(pb)}`,
+      `- **Bane** ${c.preferredBlood || "—"}`,
+      `- **Удача** Везучий ${getLuckMax(c.level, c.multiclass) - c.luckyUsed}/${getLuckMax(c.level, c.multiclass)} · Защищ. ${getLuckMax(c.level, c.multiclass) - c.protectedUsed}/${getLuckMax(c.level, c.multiclass)}`,
+      "",
+      "## Навыки",
+      skills.join("\n") || "_нет_",
+      "",
+      "## Атаки",
+      c.attacks.map((a) => `- **${a.name}** ${formatMod(a.bonus)} — ${a.damage} ${a.type}`).join("\n") ||
+        "_нет_",
+      "",
+      "## Черты сородича",
+      kindredBlock,
+      "",
+      "## Универсальные (PHB · dnd.su)",
+      generalBlock,
+      "",
+      "## Снаряжение",
+      "```",
+      c.equipment,
+      "```",
+      "",
+      "## Заметки",
+      c.notes || "—",
+      "",
+      "---",
+      "*Сгенерировано листом Kindred · Bound by Blood + dnd.su*",
+      "",
+    ];
+    return lines.join("\n");
   }
 
   return (

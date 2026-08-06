@@ -46,6 +46,7 @@ import { BloodBond } from "@/components/sheet/blood-bond";
 import { useSessionStore } from "@/lib/session-store";
 import { tableCheckSkill } from "@/lib/table-roll";
 import { GENERAL_FEAT_CATALOG, generalFeatsForLevel } from "@/data/phb-feats-ru";
+import { TalentSummary } from "@/components/sheet/talent-summary";
 
 import {
   featsForLevel,
@@ -55,6 +56,7 @@ import {
   unlockedToreador,
   unlockedClanFeatures,
   VENTRUE_LORE,
+  TOREADOR_LORE,
   type FeatureBlock,
 } from "@/data/kindred-ru";
 import { CLANS, type ClanId } from "@/data/kindred";
@@ -478,7 +480,7 @@ export function CharacterSheet() {
               onClick={copyShareLink}
             >
               <Share2 className="size-3.5" />
-              <span className="hidden sm:inline">Ссылка</span>
+              <span className="text-xs sm:text-sm">Ссылка</span>
             </Button>
             <Button
               type="button"
@@ -490,6 +492,7 @@ export function CharacterSheet() {
               onClick={exportJson}
             >
               <Download className="size-3.5" />
+              <span className="text-xs sm:text-sm">JSON↓</span>
             </Button>
             <Button
               type="button"
@@ -501,6 +504,7 @@ export function CharacterSheet() {
               onClick={importJson}
             >
               <Upload className="size-3.5" />
+              <span className="text-xs sm:text-sm">JSON↑</span>
             </Button>
             <span className="hidden sm:contents">
               <ExportMarkdown />
@@ -777,6 +781,7 @@ export function CharacterSheet() {
 
       {tab === "play" && appMode === "play" && (
         <div className="space-y-3">
+          <TalentSummary className="mb-3" />
           <TableSheet />
           {!hideChrome && (
           <details className="rounded-[var(--radius-lg)] border border-border bg-surface p-3 text-sm">
@@ -1041,9 +1046,12 @@ export function CharacterSheet() {
       {tab === "features" && (
         <div className="space-y-4">
           <div className="rounded-[var(--radius-lg)] border border-primary/30 bg-surface p-4">
-            <h2 className="font-display text-lg text-accent">{VENTRUE_LORE.title}</h2>
+            <h2 className="font-display text-lg text-accent">
+              {(character.clan === "toreador" ? TOREADOR_LORE : VENTRUE_LORE).title}
+            </h2>
             <p className="mt-1 text-sm text-muted">
-              {VENTRUE_LORE.description} Уровень листа: {character.level} — открыто всё ≤ этого
+              {(character.clan === "toreador" ? TOREADOR_LORE : VENTRUE_LORE).description}{" "}
+              Уровень листа: {character.level} — открыто всё ≤ этого
               уровня. Меняй уровень в шапке, чтобы крутить прогрессию.
             </p>
             <Input
@@ -1116,7 +1124,7 @@ export function CharacterSheet() {
                 ) : null,
               )}
               {!originFeat && !bgFeat && (
-                <p className="text-sm text-muted">Выбери черты на вкладке Навыки.</p>
+                <p className="text-sm text-muted">Выбери черты в билдере (Создать → Черты) или на вкладке Черты.</p>
               )}
             </div>
             {character.originFeatId === "lucky" &&
@@ -1236,7 +1244,7 @@ export function CharacterSheet() {
       {tab === "feats" && (
         <div className="space-y-4">
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
-            <h2 className="font-display text-lg">Черты сородича + происхождение</h2>
+            <h2 className="font-display text-lg">Таланты · сородич · PHB · происхождение</h2>
             <p className="mt-1 text-sm text-muted">
               Слоты Kindred Feat: 2, 7, 10, 13, 17 — <strong>отдельно</strong> от ASI (4/8/12/16/19).
               ASI не заменяет черту сородича (RAW PDF). Origin: {FEAT_LUCKY.name} +{" "}
@@ -1257,6 +1265,17 @@ export function CharacterSheet() {
                     className="rounded-full border border-primary bg-primary/20 px-3 py-1 text-xs"
                   >
                     {f?.name ?? id}
+                  </span>
+                );
+              })}
+              {(character.generalFeats ?? []).map((id) => {
+                const f = GENERAL_FEAT_CATALOG.find((x) => x.id === id);
+                return (
+                  <span
+                    key={`g-${id}`}
+                    className="rounded-full border border-border bg-surface-2 px-3 py-1 text-xs text-muted"
+                  >
+                    PHB · {f?.name ?? id}
                   </span>
                 );
               })}
@@ -1309,18 +1328,34 @@ export function CharacterSheet() {
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <h2 className="mb-2 font-display text-lg">Универсальные (PHB · dnd.su)</h2>
             <p className="mb-2 text-xs text-muted">
-              Слоты ASI: {(character.generalFeats ?? []).length} выбрано. Тап — вкл/выкл.
+              Слоты ASI (4/8/12/16/19):{" "}
+              <strong>
+                {(character.generalFeats ?? []).length}/
+                {[4, 8, 12, 16, 19].filter((l) => character.level >= l).length}
+              </strong>
+              . Тап — вкл/выкл (лишние не даём).
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
-              {generalFeatsForLevel(character.level).map((f) => {
+              {generalFeatsForLevel(character.level)
+              .filter(
+                (f) =>
+                  !featureQ.trim() ||
+                  `${f.name} ${f.body} ${f.nameEn}`
+                    .toLowerCase()
+                    .includes(featureQ.toLowerCase()),
+              )
+              .map((f) => {
                 const on = (character.generalFeats ?? []).includes(f.id);
+                const gMax = [4, 8, 12, 16, 19].filter((l) => character.level >= l).length;
+                const full = !on && (character.generalFeats ?? []).length >= gMax;
                 return (
                   <button
                     key={f.id}
                     type="button"
+                    disabled={full}
                     onClick={() => useCharacterStore.getState().toggleGeneralFeat(f.id)}
                     className={cn(
-                      "rounded-[var(--radius)] border p-3 text-left text-sm",
+                      "rounded-[var(--radius)] border p-3 text-left text-sm disabled:opacity-40",
                       on ? "border-primary bg-primary/10" : "border-border bg-surface-2",
                     )}
                   >
@@ -1420,7 +1455,10 @@ export function CharacterSheet() {
       
       {/* Mobile bottom tabs — thumb zone */}
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-bg/98 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-7 gap-0 px-0.5 py-1">
+        <div
+          className="mx-auto grid max-w-lg gap-0 px-0.5 py-1"
+          style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+        >
           {tabs.map((tb) => (
             <button
               key={tb.id}
