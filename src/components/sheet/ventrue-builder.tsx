@@ -330,7 +330,7 @@ export function VentrueBuilder() {
     );
 
     addLog("Билдер: билд применён");
-    toast.success("Билд на листе · открой «Игра»");
+    toast.success("Билд на листе · переключитесь на «Играть»");
   }
 
   return (

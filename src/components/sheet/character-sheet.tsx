@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PlayDock } from "@/components/sheet/play-dock";
+import { TableSheet } from "@/components/sheet/table-sheet";
 import { PlayHub } from "@/components/sheet/play-hub";
 import { Hotkeys } from "@/components/sheet/hotkeys";
 import { AsiHelper } from "@/components/sheet/asi-helper";
@@ -107,6 +108,7 @@ const CLAN_RU: Record<string, string> = {
 };
 
 type Tab = "play" | "builder" | "skills" | "features" | "feats" | "gear" | "log";
+type AppMode = "create" | "play";
 
 export function CharacterSheet() {
   const character = useCharacterStore((s) => s.character);
@@ -148,6 +150,7 @@ export function CharacterSheet() {
   const undoStack = useSessionStore((s) => s.undoStack);
 
   const [tab, setTab] = useState<Tab>("play");
+  const [appMode, setAppMode] = useState<AppMode>("play");
   const [tabReady, setTabReady] = useState(false);
   useEffect(() => {
     try {
@@ -155,9 +158,19 @@ export function CharacterSheet() {
       if (s && ["play","builder","skills","features","feats","gear","log"].includes(s)) {
         setTab(s);
       }
+      const m = localStorage.getItem("kindred-app-mode") as AppMode | null;
+      if (m === "create" || m === "play") {
+        setAppMode(m);
+        if (m === "create") setTab("builder");
+        if (m === "play" && s === "builder") setTab("play");
+      }
     } catch { /* */ }
     setTabReady(true);
   }, []);
+  useEffect(() => {
+    if (!tabReady) return;
+    try { localStorage.setItem("kindred-app-mode", appMode); } catch { /* */ }
+  }, [appMode, tabReady]);
   useEffect(() => {
     if (!tabReady) return;
     try { localStorage.setItem("kindred-tab", tab); } catch { /* */ }
@@ -314,17 +327,21 @@ export function CharacterSheet() {
     toast.success(`Предыстория: ${bg.name}`);
   }
 
-  const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
-    { id: "play", label: "Игра", icon: <Swords className="size-3.5" /> },
+  const allTabs: { id: Tab; label: string; icon: ReactNode }[] = [
+    { id: "play", label: "Лист", icon: <Swords className="size-3.5" /> },
     { id: "builder", label: "Билдер", icon: <User className="size-3.5" /> },
     { id: "skills", label: "Навыки", icon: <Zap className="size-3.5" /> },
     { id: "features", label: "Силы", icon: <Crown className="size-3.5" /> },
     { id: "feats", label: "Черты", icon: <Sparkles className="size-3.5" /> },
     { id: "gear", label: "Вещи", icon: <BookOpen className="size-3.5" /> },
-    { id: "log", label: "Ещё", icon: <Heart className="size-3.5" /> },
+    { id: "log", label: "Журнал", icon: <Heart className="size-3.5" /> },
   ];
+  const tabs =
+    appMode === "create"
+      ? allTabs.filter((t) => ["builder", "feats", "features", "skills"].includes(t.id))
+      : allTabs.filter((t) => ["play", "features", "gear", "log"].includes(t.id));
 
-  const hideChrome = tab === "play" && focusMode;
+  const hideChrome = appMode === "play" && tab === "play" && focusMode;
 
   return (
     <div
@@ -334,6 +351,44 @@ export function CharacterSheet() {
       )}
     >
       {!hideChrome && <OnboardingBanner />}
+
+      {/* ═══ Два режима продукта ═══ */}
+      <div className="mb-3 grid grid-cols-2 gap-1 rounded-[var(--radius-lg)] border border-border bg-surface p-1">
+        <button
+          type="button"
+          onClick={() => {
+            setAppMode("create");
+            setTab("builder");
+            setFocusMode(false);
+          }}
+          className={cn(
+            "flex h-12 flex-col items-center justify-center rounded-[var(--radius)] text-xs font-semibold transition-colors",
+            appMode === "create"
+              ? "bg-primary text-primary-fg"
+              : "text-muted hover:bg-surface-2 hover:text-fg",
+          )}
+        >
+          <span className="font-display text-sm tracking-wide">Создать</span>
+          <span className="text-[10px] font-normal opacity-80">Вентру · билдер RAW</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setAppMode("play");
+            setTab("play");
+          }}
+          className={cn(
+            "flex h-12 flex-col items-center justify-center rounded-[var(--radius)] text-xs font-semibold transition-colors",
+            appMode === "play"
+              ? "bg-primary text-primary-fg"
+              : "text-muted hover:bg-surface-2 hover:text-fg",
+          )}
+        >
+          <span className="font-display text-sm tracking-wide">Играть</span>
+          <span className="text-[10px] font-normal opacity-80">лист · броски в лог</span>
+        </button>
+      </div>
+
       <header className={cn("mb-3 space-y-3", tab === "play" && "mb-1.5", hideChrome && "mb-1")}>
         {!hideChrome && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -638,9 +693,9 @@ export function CharacterSheet() {
 
       {tab === "builder" && <VentrueBuilder />}
 
-      {tab === "play" && (
+      {tab === "play" && appMode === "play" && (
         <div className="space-y-3">
-          <PlayHub />
+          <TableSheet />
           {!hideChrome && (
           <details className="rounded-[var(--radius-lg)] border border-border bg-surface p-3 text-sm">
             <summary className="cursor-pointer font-display text-sm text-muted">
@@ -653,6 +708,16 @@ export function CharacterSheet() {
             </div>
           </details>
           )}
+        </div>
+      )}
+
+      {appMode === "create" && tab === "builder" && (
+        <div className="mb-3 rounded-[var(--radius-lg)] border border-accent/30 bg-accent/5 p-3 text-sm text-muted">
+          <strong className="text-accent">Режим создания · Вентру</strong>
+          <p className="mt-1 text-xs">
+            Источники: Bound by Blood PDF · dnd.su (Человек, Везучий) · PHB 2024. Пройдите шаги →
+            «Применить билд к листу» → переключитесь на <em>Играть</em>.
+          </p>
         </div>
       )}
 
@@ -1261,7 +1326,7 @@ export function CharacterSheet() {
         </div>
       </nav>
 
-      {tab === "play" && (
+      {appMode === "play" && tab === "play" && (
         <>
           <PlayDock />
           <Hotkeys />

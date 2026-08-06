@@ -57,7 +57,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     if (r) buzz(10);
     set((s) => ({
       lastRoll: r,
-      rollHistory: r ? [r, ...s.rollHistory].slice(0, 12) : s.rollHistory,
+      rollHistory: r ? [r, ...s.rollHistory].slice(0, 20) : s.rollHistory,
     }));
   },
   effects: [],
@@ -112,7 +112,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
           at: Date.now(),
         },
         ...s.undoStack,
-      ].slice(0, 12),
+      ].slice(0, 20),
     }));
   },
   undo: () => {

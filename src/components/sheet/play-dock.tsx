@@ -20,6 +20,12 @@ import { rollD20, rollDamage } from "@/lib/roll-engine";
 import { conditionMode } from "@/lib/play-helpers";
 import { SKILLS } from "@/data/skills";
 import { useSessionStore } from "@/lib/session-store";
+import {
+  tableAttack,
+  tableFeed,
+  tableInitiative,
+  tableCheckSkill,
+} from "@/lib/table-roll";
 
 /**
  * One-thumb bottom dock — only self actions.
@@ -74,13 +80,7 @@ export function PlayDock() {
   }
 
   function rollInit() {
-    const m = modeFor("init");
-    const force = c.selectedFeats.includes("alacrity") ? ("adv" as const) : m;
-    const r = rollD20("Инициатива", abilityMod(c.abilities.dex), force);
-    consumeRollMode();
-    setField("initiative", r.total);
-    show(r.label, r.total, r.detail);
-    toast.message(`Иниц ${r.total}`);
+    tableInitiative();
   }
 
   function rollPrimaryAttack() {
@@ -88,39 +88,15 @@ export function PlayDock() {
       toast.error("Нет атак");
       return;
     }
-    const m = modeFor("attack");
-    const r = rollD20(primary.name, primary.bonus, m);
-    consumeRollMode();
-    show(r.label, r.total, r.detail);
-    const dmg = rollDamage(primary.damage);
-    let total = dmg.total;
-    if (r.crit) {
-      total += rollDamage(primary.damage).total;
-    }
-    show(`Урон · ${primary.name}`, total, dmg.detail + (r.crit ? " · крит×2" : ""));
-    toast.success(`${primary.name}: ${r.total} → ${total} ${primary.type}`);
+    tableAttack(primary.id);
   }
 
   function rollFeed() {
-    const rolls = Array.from({ length: feedCount }, () => rollDie(6));
-    const sixes = rolls.filter((x) => x === 6).length;
-    const con = Math.max(1, abilityMod(c.abilities.con));
-    const sum = rolls.reduce((a, b) => a + b, 0) + con;
-    if (sixes) {
-      pushUndo("Питание ОБК");
-      gainBlood(sixes);
-    }
-    show("Питание", sum, `${rolls.join("+")}+Тел`);
-    toast.success(`Питание ${sum}${sixes ? ` · +${sixes} ОБК` : ""}`);
+    tableFeed(false);
   }
 
   function rollPersuade() {
-    const sk = SKILLS.find((s) => s.id === "persuasion")!;
-    const bonus = skillBonus(c.abilities.cha, pb, c.skillProfs.persuasion);
-    const r = rollD20(sk.nameRu, bonus, modeFor("check"));
-    consumeRollMode();
-    show(r.label, r.total, r.detail);
-    toast.message(`${sk.nameRu}: ${r.total}`);
+    tableCheckSkill("persuasion");
   }
 
   if (!open) {
