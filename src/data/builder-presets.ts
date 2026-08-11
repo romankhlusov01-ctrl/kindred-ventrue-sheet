@@ -1,6 +1,6 @@
 /**
- * Билдер-пресеты v6 · по 2 на клан (старт L3 + стол L8)
- * Без устаревших warlock / дублей.
+ * Билдер-пресеты · старт L3 + стол L8 на клан.
+ * Итоговые статы согласованы с release presets (presets.ts).
  */
 import type { Abilities } from "@/lib/character-store";
 import type { SkillId } from "@/data/skills";
@@ -14,12 +14,18 @@ export type BuildPreset = {
   level: number;
   multiclass: string;
   baseScores: Abilities;
+  /** Background +2 */
   asiPlus2: keyof Abilities;
+  /** Background +1 */
   asiPlus1: keyof Abilities;
+  /** ASI levels 4/8/… spent as points (not feats) */
+  asiExtra: Partial<Abilities>;
   backgroundId: string;
   originFeatId: string;
   humanSkill: SkillId;
   classSkills: SkillId[];
+  /** Toreador Artist's Soul picks (2) */
+  artistSkills?: SkillId[];
   selectedFeats: string[];
   preferredBlood: string;
   nameSuggestion: string;
@@ -29,13 +35,16 @@ export const BUILD_PRESETS: BuildPreset[] = [
   {
     id: "v-table-8",
     name: "Вентру · стол (8)",
-    blurb: "Хар/Тел · dual luck · Голос · Forceful + Lethal · Проклятие: солдаты",
+    blurb: "Хар 17 / Тел 16 · dual luck · Голос · Forceful + Lethal · кровь: солдаты",
     clan: "ventrue",
     level: 8,
     multiclass: "",
+    // standard-ish array before bg/ASI
     baseScores: { str: 8, dex: 14, con: 15, int: 8, wis: 10, cha: 13 },
     asiPlus2: "cha",
     asiPlus1: "con",
+    // L4+L8 as ASI: +2 Cha → 17 (после bg 15)
+    asiExtra: { cha: 2 },
     backgroundId: "touchstone",
     originFeatId: "lucky",
     humanSkill: "deception",
@@ -47,13 +56,14 @@ export const BUILD_PRESETS: BuildPreset[] = [
   {
     id: "v-start-3",
     name: "Вентру · старт (3)",
-    blurb: "Первый клан · Голос власти · 1 черта сородича · учиться питанию",
+    blurb: "Первый клан · Голос · Forceful · учиться питанию",
     clan: "ventrue",
     level: 3,
     multiclass: "",
     baseScores: { str: 8, dex: 14, con: 15, int: 10, wis: 12, cha: 13 },
     asiPlus2: "cha",
     asiPlus1: "con",
+    asiExtra: {},
     backgroundId: "touchstone",
     originFeatId: "lucky",
     humanSkill: "perception",
@@ -65,17 +75,20 @@ export const BUILD_PRESETS: BuildPreset[] = [
   {
     id: "t-table-8",
     name: "Тореадор · стол (8)",
-    blurb: "Лов/Хар · dual luck · Душа художника · Forceful + Alacrity",
+    blurb: "Лов 16 / Хар 16 · Душа художника · Forceful + Alacrity",
     clan: "toreador",
     level: 8,
     multiclass: "",
-    baseScores: { str: 8, dex: 15, con: 14, int: 10, wis: 12, cha: 13 },
+    baseScores: { str: 8, dex: 14, con: 14, int: 12, wis: 12, cha: 14 },
     asiPlus2: "dex",
     asiPlus1: "cha",
+    // bg: dex16 cha15 · ASI +1 cha → 16 (и +1 leftover unused → +1 int already in base)
+    asiExtra: { cha: 1 },
     backgroundId: "touchstone",
     originFeatId: "lucky",
     humanSkill: "perception",
     classSkills: ["persuasion", "insight"],
+    artistSkills: ["perception", "performance"],
     selectedFeats: ["forceful", "alacrity"],
     preferredBlood: BANE.toreadorField,
     nameSuggestion: "Алая роза",
@@ -83,24 +96,26 @@ export const BUILD_PRESETS: BuildPreset[] = [
   {
     id: "t-start-3",
     name: "Тореадор · старт (3)",
-    blurb: "Душа художника · Анализ/Внимательность · Проклятие внимания",
+    blurb: "Душа художника · Проклятие внимания · Forceful",
     clan: "toreador",
     level: 3,
     multiclass: "",
     baseScores: { str: 8, dex: 14, con: 14, int: 12, wis: 13, cha: 15 },
     asiPlus2: "cha",
     asiPlus1: "dex",
+    asiExtra: {},
     backgroundId: "touchstone",
     originFeatId: "lucky",
     humanSkill: "investigation",
     classSkills: ["persuasion", "perception"],
+    artistSkills: ["investigation", "performance"],
     selectedFeats: ["forceful"],
     preferredBlood: BANE.toreadorField,
     nameSuggestion: "Новая муза",
   },
 ];
 
-/** Атаки по билду · заметки нейтральны к клану */
+/** Атаки по билду */
 export function defaultAttacks(level: number, scores: Abilities, feats: string[]) {
   const pb = level >= 17 ? 6 : level >= 13 ? 5 : level >= 9 ? 4 : level >= 5 ? 3 : 2;
   const strMod = Math.floor((scores.str - 10) / 2);

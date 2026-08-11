@@ -37,21 +37,38 @@ function publish(label: string, total: number, detail: string) {
 }
 
 /** After a d20 with Beast: fail → Hunger (RAW Kindred Beast) */
+export function applyBeastHunger(reason = "провал d20") {
+  const store = useCharacterStore.getState();
+  store.setField("hunger", true);
+  if (!store.character.conditions.includes("Голод")) {
+    store.toggleCondition("Голод");
+  }
+  store.addLog(`Зверь · ${reason} → Голод / кровавая ярость`);
+  toast.error("Зверь: провал → Голод (1 ОБК чтобы игнорировать)");
+}
+
 function maybeBeastHunger(used: number, total: number, dcHint?: number) {
   const store = useCharacterStore.getState();
   const c = store.character;
-  if (!c.beastActive && !c.pendingAdv) return;
-  // Heuristic: natural 1 always fails; total ≤ 10 often fail (no DC known)
-  const failed = used === 1 || (dcHint != null ? total < dcHint : false);
-  // For open checks we only auto-Hunger on natural 1; log note for other fails
-  if (used === 1) {
-    store.setField("hunger", true);
-    if (!store.character.conditions.includes("Голод")) {
-      store.toggleCondition("Голод");
-    }
-    store.addLog("Зверь · провал (нат. 1) → Голод / кровавая ярость");
-    toast.error("Зверь: провал → Голод (1 ОБК чтобы игнорировать)");
+  if (!c.beastActive) return;
+  // RAW: any failed d20 Test under Beast → Hunger
+  const failed =
+    used === 1 ||
+    (dcHint != null ? total < dcHint : false) ||
+    // solo table without DC: nat 1 always; total ≤ 8 treated as likely fail → still prompt
+    false;
+  if (failed) {
+    applyBeastHunger(used === 1 ? "нат. 1" : `итог ${total} < Сл`);
+    return;
   }
+  // Always surface action for manual fail (master names DC)
+  toast.message("Зверь активен — при провале нажмите «Голод»", {
+    duration: 4000,
+    action: {
+      label: "Провал → Голод",
+      onClick: () => applyBeastHunger("провал (ручной)"),
+    },
+  });
 }
 
 export function tableCheckSkill(id: SkillId) {

@@ -53,11 +53,20 @@ export function LevelUpHelper() {
   );
 
   function applyLevel() {
-    const hp = calcKindredHp(
+    let hp = calcKindredHp(
       next,
       c.abilities.con,
       c.clan === "ventrue" && next >= 6,
     );
+    // Tough origin / general: +2 HP per level (match applyToSheet)
+    if (
+      c.originFeatId === "tough" ||
+      c.backgroundFeatId === "tough" ||
+      (c.generalFeats ?? []).includes("tough-general")
+    ) {
+      hp += next * 2;
+    }
+    // Live Fast L9: if leveling into 9+ as Toreador and Dex not yet bumped — leave to builder notes
     const gain = Math.max(1, hp - c.hpMax);
     const resources = c.customResources.map((r) => {
       if (/голос|присутств|forceful|aura/i.test(r.name)) {
@@ -70,7 +79,15 @@ export function LevelUpHelper() {
       level: next,
       hpMax: hp,
       hpCurrent: c.hpCurrent + gain,
-      bloodCurrent: Math.min(row.bp, c.bloodCurrent + 1),
+      bloodCurrent: Math.min(
+        // table BP; vitae feats applied via getBloodMax if imported — keep row.bp+feats soft
+        row.bp +
+          (c.selectedFeats.includes("vitae-conc")
+            ? Math.max(1, Math.floor((c.abilities.con - 10) / 2))
+            : 0) +
+          (c.selectedFeats.includes("boon-gen") ? 5 : 0),
+        c.bloodCurrent + 1,
+      ),
       customResources: resources,
     };
 

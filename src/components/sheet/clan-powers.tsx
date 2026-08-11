@@ -260,6 +260,34 @@ export function ClanPowers() {
               >
                 Terrify (−1 ОБК)
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 text-xs"
+                onClick={() => {
+                  if (c.bloodCurrent < 1) return toast.error("1 ОБК");
+                  pushUndo("Befuddle");
+                  spendBlood(1);
+                  addLog(`Замешательство / Befuddle (−1 ОБК) · Гипнотический узор · Сл ${dc}`);
+                  toast.success("Befuddle · 1 ОБК");
+                }}
+              >
+                Befuddle (−1 ОБК)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 text-xs"
+                onClick={() => {
+                  if (c.bloodCurrent < 1) return toast.error("1 ОБК");
+                  pushUndo("Persuade");
+                  spendBlood(1);
+                  addLog(`Убеждение / Persuade (−1 ОБК) · Очаровать чудовище · Сл ${dc}`);
+                  toast.success("Persuade · 1 ОБК");
+                }}
+              >
+                Persuade (−1 ОБК)
+              </Button>
             </>
           )}
           {c.level >= 11 && (
@@ -268,14 +296,17 @@ export function ClanPowers() {
               variant="blood"
               className="col-span-2 h-12 text-xs"
               onClick={() => {
-                if (c.bloodCurrent < 3) return toast.error("3 ОБК");
+                const cost =
+                  c.level >= 20 ? 6 : c.level >= 18 ? 5 : c.level >= 15 ? 4 : 3;
+                if (c.bloodCurrent < cost) return toast.error(`${cost} ОБК`);
                 pushUndo("Mass Suggestion");
-                spendBlood(3);
-                addLog(`Mass Suggestion (−3 ОБК) · Сл ${dc}`);
-                toast.success("Mass Suggestion");
+                spendBlood(cost);
+                addLog(`Mass Suggestion (−${cost} ОБК) · Сл ${dc}`);
+                toast.success(`Mass Suggestion · ${cost} ОБК`);
               }}
             >
-              Mass Suggestion (−3 ОБК)
+              Mass Suggestion (−
+              {c.level >= 20 ? 6 : c.level >= 18 ? 5 : c.level >= 15 ? 4 : 3} ОБК)
             </Button>
           )}
           {c.level >= 15 && (

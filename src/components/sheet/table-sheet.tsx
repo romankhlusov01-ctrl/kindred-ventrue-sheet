@@ -377,9 +377,9 @@ export function TableSheet() {
               onClick={() => {
                 pushUndo("Везучий");
                 if (!spendLucky()) return toast.error("Нет очков");
-                setField("pendingDis", true);
-                addLog("Везучий: помеха на атаку по вам");
-                toast.success("Помеха на атаку по вам");
+                // RAW: disadv on an attack against you — note only (not self pendingDis)
+                addLog("Везучий: помеха на следующую атаку по вам (скажите мастеру / NPC)");
+                toast.success("Помеха на атаку по вам (не на ваш бросок)");
               }}
             >
               Атака → помеха
@@ -597,11 +597,19 @@ export function TableSheet() {
               variant="secondary"
               className="h-12"
               onClick={() => {
+                if (c.beastActive) {
+                  useCharacterStore.getState().clearBeast();
+                  toast.message("Зверь снят");
+                  return;
+                }
                 if (!activateBeast()) toast.error("Зверь исчерпан");
-                else toast.success("Зверь · преим.");
+                else {
+                  setField("bonusUsed", true);
+                  toast.success("Зверь · преим.");
+                }
               }}
             >
-              Зверь ({beastLeft})
+              Зверь ({beastLeft}{c.beastActive ? "★" : ""})
             </Button>
             <Button type="button" variant="outline" className="h-12" onClick={() => tableInitiative()}>
               Иниц

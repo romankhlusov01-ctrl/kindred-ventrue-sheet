@@ -1,12 +1,9 @@
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { abilityMod, formatMod, cn } from "@/lib/utils";
-import { getLevelData } from "@/data/kindred-ru";
 import { useCharacterStore, type Abilities } from "@/lib/character-store";
-import { rollD20 } from "@/lib/roll-engine";
-import { conditionMode } from "@/lib/play-helpers";
-import { useSessionStore } from "@/lib/session-store";
+import { characterPb } from "@/lib/skill-math";
+import { tableCheckAbility, tableSave } from "@/lib/table-roll";
 
 const KEYS: { key: keyof Abilities; short: string; label: string }[] = [
   { key: "str", short: "СИЛ", label: "Сила" },
@@ -17,45 +14,12 @@ const KEYS: { key: keyof Abilities; short: string; label: string }[] = [
   { key: "cha", short: "ХАР", label: "Харизма" },
 ];
 
-/** Compact ability grid with roll / save / edit */
+/** Compact ability grid — rolls via table-roll (same as play sheet) */
 export function AbilityEditor() {
   const c = useCharacterStore((s) => s.character);
   const setAbility = useCharacterStore((s) => s.setAbility);
   const toggleSave = useCharacterStore((s) => s.toggleSave);
-  const addLog = useCharacterStore((s) => s.addLog);
-  const setLastRoll = useSessionStore((s) => s.setLastRoll);
-  const pb = getLevelData(c.level).pb;
-
-  function rollCheck(key: keyof Abilities, short: string) {
-    const mod = abilityMod(c.abilities[key]);
-    const mode = conditionMode(
-      c,
-      "check",
-      c.beastActive || c.pendingAdv ? "adv" : c.rollMode ?? "norm",
-    );
-    const r = rollD20(short, mod, mode);
-    addLog(`${r.label}: ${r.detail} = ${r.total}`);
-    setLastRoll({ label: r.label, total: r.total, detail: r.detail, at: Date.now() });
-    toast.message(`${short}: ${r.total}`);
-  }
-
-  function rollSave(key: keyof Abilities, short: string) {
-    const mod = abilityMod(c.abilities[key]);
-    const prof = !!c.saveProfs[key];
-    const bonus = mod + (prof ? pb : 0);
-    let mode = conditionMode(
-      c,
-      "save",
-      c.beastActive || c.pendingAdv ? "adv" : c.rollMode ?? "norm",
-    );
-    if (c.clan === "ventrue" && key === "wis") {
-      mode = mode === "dis" ? "norm" : "adv";
-    }
-    const r = rollD20(`Спас ${short}`, bonus, mode);
-    addLog(`${r.label}: ${r.detail} = ${r.total}`);
-    setLastRoll({ label: r.label, total: r.total, detail: r.detail, at: Date.now() });
-    toast.message(`Спас ${short}: ${r.total}`);
-  }
+  const pb = characterPb(c.level, c.multiclass);
 
   return (
     <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -74,7 +38,7 @@ export function AbilityEditor() {
             </div>
             <button
               type="button"
-              onClick={() => rollCheck(key, short)}
+              onClick={() => tableCheckAbility(key, short)}
               className="mx-auto flex h-12 w-full items-center justify-center font-display text-2xl tabular-nums leading-none text-accent active:scale-95 sm:text-3xl"
             >
               {formatMod(mod)}
@@ -90,7 +54,7 @@ export function AbilityEditor() {
             <div className="mt-1.5 grid grid-cols-2 gap-0.5">
               <button
                 type="button"
-                onClick={() => rollSave(key, short)}
+                onClick={() => tableSave(key, short)}
                 className={cn(
                   "rounded py-2 text-[10px] font-medium",
                   saveProf ? "bg-primary/10 text-primary" : "bg-surface-2 text-faint",

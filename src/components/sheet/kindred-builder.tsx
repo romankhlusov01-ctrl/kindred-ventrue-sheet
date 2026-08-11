@@ -249,9 +249,15 @@ export function KindredBuilder() {
     setBaseScores({ ...p.baseScores });
     setAsiPlus2(p.asiPlus2);
     setAsiPlus1(p.asiPlus1);
+    setAsiExtra({ ...(p.asiExtra ?? {}) });
     setClassSkills([...p.classSkills]);
-    setAsiExtra({});
     setMethod("array");
+    // all ASI levels default to spending points (not empty feat slots)
+    const modes: Record<number, "asi" | "general" | "kindred"> = {};
+    for (const L of ASI_LEVELS) {
+      if (p.level >= L) modes[L] = "asi";
+    }
+    setAsiSlotMode(modes);
     setField("level", p.level);
     setField("multiclass", p.multiclass);
     setField("backgroundId", p.backgroundId);
@@ -260,20 +266,27 @@ export function KindredBuilder() {
     setField("humanSkill", p.humanSkill);
     setField("preferredBlood", p.preferredBlood);
     setField("name", p.nameSuggestion);
+    setField("species", "Человек");
+    setField("generalFeats", []);
     if (clan === "toreador") {
-      setArtistSkills(["performance", "investigation"]);
+      setArtistSkills(
+        p.artistSkills?.length === 2
+          ? [...p.artistSkills]
+          : ["perception", "performance"],
+      );
       if (p.level >= 11) {
         setVisionaryExpertise(["performance", "persuasion", "insight"]);
+      } else {
+        setVisionaryExpertise([]);
       }
     } else {
       setArtistSkills([]);
       setVisionaryExpertise([]);
     }
-    // feats
-    const current = new Set(character.selectedFeats);
-    // clear then set via patch
     patch({
       selectedFeats: [...p.selectedFeats],
+      clan,
+      species: "Человек",
       backgroundFeatId:
         p.backgroundId === "touchstone"
           ? "protected"
@@ -357,20 +370,22 @@ export function KindredBuilder() {
       toast.error(validation[0]);
       return;
     }
+    const clan: "ventrue" | "toreador" =
+      builderClan === "toreador" ? "toreador" : "ventrue";
     const skillProfs: CharacterSheet["skillProfs"] = {};
     for (const id of classSkills) skillProfs[id] = "proficient";
     for (const id of bgSkillIds) skillProfs[id] = "proficient";
-    const sp = speciesByName(character.species);
+    const sp = speciesByName(character.species || "Человек");
     if (sp.skillful && humanSkill) skillProfs[humanSkill] = "proficient";
     // Artist's Soul: +2 skills; if already proficient → expertise
-    if (builderClan === "toreador" && level >= 3) {
+    if (clan === "toreador" && level >= 3) {
       for (const id of artistSkills) {
         if (skillProfs[id]) skillProfs[id] = "expertise";
         else skillProfs[id] = "proficient";
       }
     }
     // Visionary L11: expertise on 3 skilled
-    if (builderClan === "toreador" && level >= 11) {
+    if (clan === "toreador" && level >= 11) {
       for (const id of visionaryExpertise) {
         if (skillProfs[id]) skillProfs[id] = "expertise";
       }
@@ -387,7 +402,7 @@ export function KindredBuilder() {
       max: number;
       note: string;
     }[] = [];
-    if (builderClan === "ventrue" && level >= 3) {
+    if (clan === "ventrue" && level >= 3) {
       resources.push({
         id: "cr-voice",
         name: "Голос власти",
@@ -418,7 +433,7 @@ export function KindredBuilder() {
 
     // Live Fast L9: Dex +2 (max 25)
     const appliedScores = { ...finalScores };
-    if (builderClan === "toreador" && level >= 9) {
+    if (clan === "toreador" && level >= 9) {
       appliedScores.dex = Math.min(25, appliedScores.dex + 2);
     }
 
@@ -447,7 +462,7 @@ export function KindredBuilder() {
     let hp = calcKindredHp(
       level,
       appliedScores.con,
-      builderClan === "ventrue" && level >= 6,
+      clan === "ventrue" && level >= 6,
     );
     // Tough (origin or general ASI feat)
     if (
@@ -465,11 +480,11 @@ export function KindredBuilder() {
     if (character.selectedFeats.includes("alacrity")) speed += 10;
 
     const visionNote =
-      builderClan === "toreador" && level >= 3
+      clan === "toreador" && level >= 3
         ? "Тёмное зрение 120 фт. (Душа художника)"
         : "Тёмное зрение 60 фт.";
     const toolNote =
-      builderClan === "toreador" && level >= 3
+      clan === "toreador" && level >= 3
         ? `Инструмент (Душа художника): ${artistTool}`
         : "";
 
@@ -479,7 +494,7 @@ export function KindredBuilder() {
       saveProfs,
       species: sp.name,
       fiendishLegacy: sp.id === "tiefling" ? (character.fiendishLegacy || "infernal") : "",
-      clan: builderClan,
+      clan,
       background: bg.name,
       backgroundId: bg.id,
       originFeatId: originFeat,
@@ -498,7 +513,7 @@ export function KindredBuilder() {
       selectedFeats: character.selectedFeats,
       preferredBlood:
         character.preferredBlood ||
-        (builderClan === "toreador" ? TOREADOR_BANE_FIELD : "солдаты / военные"),
+        (clan === "toreador" ? TOREADOR_BANE_FIELD : "солдаты / военные"),
       attacks,
       feats: [
         sp.id === "tiefling"
@@ -519,16 +534,16 @@ export function KindredBuilder() {
         `💰 15\n• Короткий меч ×1 (2 lb)\n• Кинжал ×2 (1 lb)\n• Нагрудник ×1 (20 lb)\n• ${bg.equipment}`,
       notes: (() => {
         const auto = [
-          `Сл ${spellDc}. ${clanBaneLine(builderClan, character.preferredBlood)}.`,
+          `Сл ${spellDc}. ${clanBaneLine(clan, character.preferredBlood)}.`,
           visionNote,
           toolNote,
-          builderClan === "toreador" && level >= 3
+          clan === "toreador" && level >= 3
             ? "Душа художника: преимущество на Анализ и Внимательность."
             : "",
-          builderClan === "toreador" && level >= 9
+          clan === "toreador" && level >= 9
             ? `Живи быстро: Лов ${appliedScores.dex} (incl. +2, макс 25).`
             : "",
-          builderClan === "ventrue" && level >= 6
+          clan === "ventrue" && level >= 6
             ? "Не дрогнуть: +макс. ХП; переброс Очарование/Испуг/Оглушение."
             : "",
           "Dual luck: Везучий + Защищённый.",
