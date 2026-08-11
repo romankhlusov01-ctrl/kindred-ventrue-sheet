@@ -672,14 +672,19 @@ export function KindredBuilder() {
             </div>
 
             <div>
-              <h3 className="mb-2 text-sm font-medium">Быстрые пресеты · {builderClan === "toreador" ? "Тореадор" : "Вентру"}</h3>
+              <h3 className="mb-2 text-sm font-medium">Быстрые пресеты · оба клана</h3>
               <div className="grid gap-2 sm:grid-cols-2">
-                {BUILD_PRESETS.filter((p) => (p.clan ?? "ventrue") === builderClan).map((p) => (
+                {BUILD_PRESETS.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => applyPreset(p)}
-                    className="rounded-[var(--radius)] border border-border bg-surface-2 p-3 text-left hover:border-primary/50"
+                    className={cn(
+                      "rounded-[var(--radius)] border p-3 text-left hover:border-primary/50",
+                      builderClan === p.clan
+                        ? "border-primary/40 bg-primary/10"
+                        : "border-border bg-surface-2",
+                    )}
                   >
                     <div className="font-medium text-fg">{p.name}</div>
                     <p className="mt-1 text-xs text-muted">{p.blurb}</p>
