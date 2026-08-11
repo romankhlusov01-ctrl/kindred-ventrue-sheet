@@ -207,9 +207,15 @@ export function CharacterSheet() {
   const chaMod = abilityMod(character.abilities.cha);
   const spellDc = 8 + pb + chaMod;
   const passivePer =
-    10 + skillBonus(character.abilities.wis, pb, character.skillProfs.perception);
+    10 +
+    skillBonus(character.abilities.wis, pb, character.skillProfs.perception) +
+    ((character.generalFeats ?? []).includes("observant") ? pb : 0);
   const passiveIns =
     10 + skillBonus(character.abilities.wis, pb, character.skillProfs.insight);
+  const passiveInv =
+    10 +
+    skillBonus(character.abilities.int, pb, character.skillProfs.investigation) +
+    ((character.generalFeats ?? []).includes("observant") ? pb : 0);
 
   const core = useMemo(() => unlockedCore(character.level), [character.level]);
   const ventrue = useMemo(() => unlockedVentrue(character.level), [character.level]);
@@ -800,19 +806,29 @@ export function CharacterSheet() {
           <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h2 className="font-display text-lg">Навыки</h2>
-              <button
-                type="button"
-                onClick={() => setProfOnly((v) => !v)}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium",
-                  profOnly
-                    ? "border-primary bg-primary/15 text-primary"
-                    : "border-border text-muted",
-                )}
-              >
-                {profOnly ? "Владение" : "Все"}
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">
+                  БМ {formatMod(pb)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setProfOnly((v) => !v)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-medium",
+                    profOnly
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border text-muted",
+                  )}
+                >
+                  {profOnly ? "Владение" : "Все"}
+                </button>
+              </div>
             </div>
+            <p className="mb-2 text-[11px] text-muted">
+              Формула: <strong>мод. хар-ки + БМ</strong> (владение) или{" "}
+              <strong>+ 2×БМ</strong> (экспертиза). Зверь даёт преимущество на d20, не
+              число к бонусу.
+            </p>
             <ul className="space-y-1">
               {SKILLS.filter((sk) => {
                 if (!profOnly) return true;
@@ -820,7 +836,10 @@ export function CharacterSheet() {
                 return p !== "none";
               }).map((sk) => {
                 const prof = character.skillProfs[sk.id] ?? "none";
-                const bonus = skillBonus(character.abilities[sk.ability], pb, prof);
+                const abMod = abilityMod(character.abilities[sk.ability]);
+                const profBonus =
+                  prof === "expertise" ? pb * 2 : prof === "proficient" ? pb : 0;
+                const bonus = abMod + profBonus;
                 return (
                   <li
                     key={sk.id}
@@ -847,7 +866,17 @@ export function CharacterSheet() {
                     <span className="w-8 text-[10px] uppercase text-faint">
                       {ABILITY_KEYS.find((a) => a.key === sk.ability)?.short}
                     </span>
-                    <span className="flex-1 text-sm">{sk.nameRu}</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm">{sk.nameRu}</span>
+                      <div className="truncate text-[10px] text-faint">
+                        {formatMod(abMod)}
+                        {prof === "expertise"
+                          ? ` + БМ${formatMod(pb)}×2`
+                          : prof === "proficient"
+                            ? ` + БМ${formatMod(pb)}`
+                            : " · без владения"}
+                      </div>
+                    </div>
                     <button
                       type="button"
                       className="flex h-11 min-w-[3.25rem] items-center justify-center rounded-[var(--radius)] border border-accent/40 bg-accent/10 px-2 font-display text-base tabular-nums text-accent active:scale-[0.97]"
@@ -861,14 +890,18 @@ export function CharacterSheet() {
             </ul>
           </div>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-center">
-                <div className="text-xs text-muted">Пасс. внимательность</div>
+                <div className="text-xs text-muted">Пасс. внимат.</div>
                 <div className="font-display text-3xl text-accent">{passivePer}</div>
               </div>
               <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-center">
-                <div className="text-xs text-muted">Пасс. проницательность</div>
+                <div className="text-xs text-muted">Пасс. прониц.</div>
                 <div className="font-display text-3xl text-accent">{passiveIns}</div>
+              </div>
+              <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-4 text-center">
+                <div className="text-xs text-muted">Пасс. анализ</div>
+                <div className="font-display text-3xl text-accent">{passiveInv}</div>
               </div>
             </div>
 

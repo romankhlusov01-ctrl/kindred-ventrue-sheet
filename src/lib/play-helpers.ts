@@ -1,8 +1,15 @@
 import type { CharacterSheet } from "@/lib/character-store";
 import type { RollMode } from "@/lib/roll-engine";
 
-/** Conditions that impose disadvantage on ability checks (2024-ish common) */
-const CHECK_DISADV = new Set([
+/** Match condition names with suffixes like "Обездвижен (Проклятие)" */
+function hasCond(conds: string[], roots: string[]) {
+  return conds.some((c) => {
+    const base = c.split("(")[0]!.trim().toLowerCase();
+    return roots.some((r) => base === r.toLowerCase() || base.startsWith(r.toLowerCase()));
+  });
+}
+
+const CHECK_DISADV = [
   "Отравленный",
   "Отравлен",
   "Испуганный",
@@ -14,10 +21,9 @@ const CHECK_DISADV = new Set([
   "Схвачен",
   "Ошеломлён",
   "Оглушён",
-]);
+];
 
-/** Attack disadvantage */
-const ATTACK_DISADV = new Set([
+const ATTACK_DISADV = [
   "Отравленный",
   "Отравлен",
   "Ослеплённый",
@@ -31,13 +37,11 @@ const ATTACK_DISADV = new Set([
   "Опрокинутый",
   "Сбит с ног",
   "Ошеломлён",
-]);
+];
 
-/** Attack advantage */
-const ATTACK_ADV = new Set(["Невидимый", "Невидим"]);
+const ATTACK_ADV = ["Невидимый", "Невидим"];
 
-/** Save disadvantage */
-const SAVE_DISADV = new Set(["Отравленный", "Отравлен"]);
+const SAVE_DISADV = ["Отравленный", "Отравлен"];
 
 export type RollKind = "check" | "attack" | "save" | "init";
 
@@ -51,22 +55,21 @@ export function conditionMode(
   let dis = false;
 
   if (kind === "check") {
-    if (conds.some((x) => CHECK_DISADV.has(x))) dis = true;
+    if (hasCond(conds, CHECK_DISADV)) dis = true;
   }
   if (kind === "attack") {
-    if (conds.some((x) => ATTACK_DISADV.has(x))) dis = true;
-    if (conds.some((x) => ATTACK_ADV.has(x))) adv = true;
+    if (hasCond(conds, ATTACK_DISADV)) dis = true;
+    if (hasCond(conds, ATTACK_ADV)) adv = true;
   }
   if (kind === "save") {
-    if (conds.some((x) => SAVE_DISADV.has(x))) dis = true;
+    if (hasCond(conds, SAVE_DISADV)) dis = true;
   }
 
-  // Hunger: disadvantage on ability checks (Beast pressure — common VtM table rule; optional toast)
-  if (kind === "check" && (c.hunger || conds.includes("Голод"))) {
+  // Hunger: disadv on ability checks
+  if (kind === "check" && (c.hunger || hasCond(conds, ["Голод"]))) {
     dis = true;
   }
 
-  // Merge with sticky base
   if (base === "adv") adv = true;
   if (base === "dis") dis = true;
 
@@ -80,34 +83,29 @@ export function scenarioHints(scenario: string): string[] {
   switch (scenario) {
     case "combat":
       return [
-        "1. Инициатива / Старт боя (патруль · охота · сородич)",
-        "2. Новый ход → отметь Действие/БД/Реакцию",
-        "3. Атака+урон или Приказ/Внушение (Сл в панели)",
-        "4. Зверь / Lucky для преимущества",
-        "5. Реакция: Protected / Flesh of Marble",
+        "1. Инициатива",
+        "2. Новый ход → Действие/БД/Реакция",
+        "3. Атака / силы клана",
+        "4. Зверь = преим. на d20 до вашего след. хода (БМ раз / отдых)",
+        "5. БМ = бонус мастерства (не ОБК!)",
       ];
     case "social":
       return [
-        "1. Awe (БД) → преим. на социальные 10 мин",
-        "2. Убеждение / Запугивание / Обман",
-        "3. Приказ или Внушение (Голос) · спас NPC vs Сл",
-        "4. Daunt / Entrance / Terrify — бросок = Сл",
-        "5. Проклятие: Вентру — предпочтённая кровь; Тореадор — Обездвижен при d20≤9 на Анализ/Внимательность",
+        "1. Awe → соц. преимущество",
+        "2. Навык = мод. хар-ки + БМ (или 2×БМ при экспертизе)",
+        "3. Голос / Presence · Сл = 8+БМ+Хар",
+        "4. Зверь: преим., провал (нат.1) → Голод",
       ];
     case "feed":
       return [
-        "1. Цель в захвате / согласна / 0 хитов",
-        "2. Питание (Вентру: ½ костей, если не предпочтённая кровь) → урон макс. хитам",
-        "3. Каждая «6» = +1 ОБК",
-        "4. Ур.5+: Питание как бонусное действие",
-        "5. ≥1 ОБК на долгий отдых (Awaken)",
+        "1. Цель в захвате / согласна",
+        "2. Питание → кости + Тел",
+        "3. «6» = +1 ОБК",
       ];
     case "rest":
       return [
-        "Короткий: Зверь, Голос, HD",
-        "Длинный: нужен ≥1 ОБК → полные хиты + удача + вдохновение",
-        "Без ОБК: только эффекты короткого (Awaken)",
-        "Protected / Lucky восстанавливаются на LR",
+        "Короткий: Зверь и Голос восстанавливаются",
+        "Длинный: ≥1 ОБК → хиты + удача",
       ];
     default:
       return [];

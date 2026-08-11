@@ -8,25 +8,26 @@ import {
   useCharacterStore,
   type Abilities,
 } from "@/lib/character-store";
-import { effectivePb } from "@/lib/level-utils";
-import { abilityMod, rollDie } from "@/lib/utils";
+import { characterPb, skillBreakdown } from "@/lib/skill-math";
+import { abilityMod, formatMod, rollDie } from "@/lib/utils";
 import { rollD20, rollDamage, type RollMode } from "@/lib/roll-engine";
 import { conditionMode, type RollKind } from "@/lib/play-helpers";
 import { useSessionStore } from "@/lib/session-store";
 import { SKILLS, type SkillId } from "@/data/skills";
 import { getLevelData } from "@/data/kindred-ru";
 
-function modeFor(kind: RollKind): RollMode {
+function modeFor(kind: RollKind): { mode: RollMode; beast: boolean } {
   const c = useCharacterStore.getState().character;
   const sticky = c.rollMode ?? "norm";
   let base: RollMode = sticky;
-  if (c.beastActive || c.pendingAdv) {
+  const beast = !!(c.beastActive || c.pendingAdv);
+  if (beast) {
     base = sticky === "dis" ? "norm" : "adv";
   }
-  if (c.pendingDis) {
+  if (c.pendingDis && !beast) {
     base = sticky === "adv" ? "norm" : "dis";
   }
-  return conditionMode(c, kind, base);
+  return { mode: conditionMode(c, kind, base), beast: !!(c.beastActive || c.pendingAdv) };
 }
 
 function publish(label: string, total: number, detail: string) {
@@ -35,17 +36,38 @@ function publish(label: string, total: number, detail: string) {
   toast.message(`${label}: ${total}`);
 }
 
+/** After a d20 with Beast: fail → Hunger (RAW Kindred Beast) */
+function maybeBeastHunger(used: number, total: number, dcHint?: number) {
+  const store = useCharacterStore.getState();
+  const c = store.character;
+  if (!c.beastActive && !c.pendingAdv) return;
+  // Heuristic: natural 1 always fails; total ≤ 10 often fail (no DC known)
+  const failed = used === 1 || (dcHint != null ? total < dcHint : false);
+  // For open checks we only auto-Hunger on natural 1; log note for other fails
+  if (used === 1) {
+    store.setField("hunger", true);
+    if (!store.character.conditions.includes("Голод")) {
+      store.toggleCondition("Голод");
+    }
+    store.addLog("Зверь · провал (нат. 1) → Голод / кровавая ярость");
+    toast.error("Зверь: провал → Голод (1 ОБК чтобы игнорировать)");
+  }
+}
+
 export function tableCheckSkill(id: SkillId) {
   const c = useCharacterStore.getState().character;
   const sk = SKILLS.find((s) => s.id === id);
   if (!sk) return null;
-  const pb = effectivePb(c.level, c.multiclass);
+  const pb = characterPb(c.level, c.multiclass);
+  const bd = skillBreakdown(c.abilities, id, pb, c.skillProfs);
+  // keep store skillBonus in sync path
   const bonus = skillBonus(c.abilities[sk.ability], pb, c.skillProfs[id]);
+  // assert
+  if (bonus !== bd.total) {
+    console.warn("skillBonus mismatch", id, bonus, bd.total);
+  }
 
-  // Toreador Artist's Soul L3+: advantage on Investigation / Perception
-  // Truly Majestic L15+: advantage on Deception / Persuasion
-  // Heightened Senses feat: advantage on Insight / Perception
-  let mode = modeFor("check");
+  let { mode, beast } = modeFor("check");
   const forceAdv =
     (c.clan === "toreador" &&
       c.level >= 3 &&
@@ -59,11 +81,15 @@ export function tableCheckSkill(id: SkillId) {
     mode = mode === "dis" ? "norm" : "adv";
   }
 
-  const r = rollD20(sk.nameRu, bonus, mode);
+  const r = rollD20(sk.nameRu, bd.total, mode);
   useCharacterStore.getState().consumeRollMode();
 
-  let detail =
-    r.detail + (r.crit ? " · крит" : r.fumble ? " · провал" : "");
+  let detail = `${r.detail}`;
+  // Full formula: dice + formula
+  detail += ` · ${bd.formula}`;
+  if (beast || c.beastActive) detail += " · Зверь";
+  if (r.crit) detail += " · крит";
+  if (r.fumble) detail += " · провал";
   if (
     c.clan === "toreador" &&
     c.level >= 3 &&
@@ -79,19 +105,23 @@ export function tableCheckSkill(id: SkillId) {
     detail += " · Величие";
   }
 
-  // Toreador Bane: natural d20 ≤9 on Inv/Perc → Restrained (Wis DC 10 EoT)
+  // Toreador Bane: natural d20 ≤9 on Inv/Perc → Restrained
   if (
     c.clan === "toreador" &&
     c.level >= 3 &&
     (id === "investigation" || id === "perception") &&
     r.used <= 9
   ) {
-    detail += " · BANE d20≤9 → Обездвижен";
+    detail += " · Проклятие d20≤9 → Обездвижен";
     const store = useCharacterStore.getState();
     if (!store.character.conditions.includes("Обездвижен (Проклятие)")) {
       store.toggleCondition("Обездвижен (Проклятие)");
     }
     toast.error("Проклятие Тореадор: d20≤9 → Обездвижен (спас Муд. Сл 10)");
+  }
+
+  if (beast || c.beastActive) {
+    maybeBeastHunger(r.used, r.total);
   }
 
   publish(r.label, r.total, detail);
@@ -100,28 +130,41 @@ export function tableCheckSkill(id: SkillId) {
 
 export function tableCheckAbility(key: keyof Abilities, labelRu: string) {
   const c = useCharacterStore.getState().character;
-  const r = rollD20(labelRu, abilityMod(c.abilities[key]), modeFor("check"));
+  const mod = abilityMod(c.abilities[key]);
+  const { mode, beast } = modeFor("check");
+  const r = rollD20(labelRu, mod, mode);
   useCharacterStore.getState().consumeRollMode();
-  publish(r.label, r.total, r.detail);
+  let detail = r.detail;
+  if (beast || c.beastActive) {
+    detail += " · Зверь";
+    maybeBeastHunger(r.used, r.total);
+  }
+  publish(r.label, r.total, detail);
   return r;
 }
 
 export function tableSave(key: keyof Abilities, labelRu: string) {
   const c = useCharacterStore.getState().character;
-  const pb = effectivePb(c.level, c.multiclass);
+  const pb = characterPb(c.level, c.multiclass);
+  const abMod = abilityMod(c.abilities[key]);
   const prof = c.saveProfs[key] ? pb : 0;
-  let m = modeFor("save");
-  // Ventrue Unshakably Confident: advantage on Wisdom saves
+  const totalMod = abMod + prof;
+  let { mode, beast } = modeFor("save");
   if (c.clan === "ventrue" && key === "wis" && c.level >= 3) {
-    m = m === "dis" ? "norm" : "adv";
+    mode = mode === "dis" ? "norm" : "adv";
   }
-  const r = rollD20(`Спас ${labelRu}`, abilityMod(c.abilities[key]) + prof, m);
+  const r = rollD20(`Спас ${labelRu}`, totalMod, mode);
   useCharacterStore.getState().consumeRollMode();
-  publish(
-    r.label,
-    r.total,
-    r.detail + (c.clan === "ventrue" && key === "wis" ? " · Непоколебимая" : ""),
-  );
+  let detail = r.detail;
+  detail += prof
+    ? ` · мод${formatMod(abMod)} · БМ${formatMod(pb)}`
+    : ` · мод${formatMod(abMod)} (без влад.)`;
+  if (c.clan === "ventrue" && key === "wis") detail += " · Непоколебимая";
+  if (beast || c.beastActive) {
+    detail += " · Зверь";
+    maybeBeastHunger(r.used, r.total);
+  }
+  publish(r.label, r.total, detail);
   return r;
 }
 
@@ -132,9 +175,15 @@ export function tableAttack(attackId: string) {
     toast.error("Нет атаки");
     return null;
   }
-  const r = rollD20(atk.name, atk.bonus, modeFor("attack"));
+  const { mode, beast } = modeFor("attack");
+  const r = rollD20(atk.name, atk.bonus, mode);
   store.consumeRollMode();
-  publish(r.label, r.total, r.detail + (r.crit ? " · КРИТ" : ""));
+  let detail = r.detail + (r.crit ? " · КРИТ" : "");
+  if (beast || store.character.beastActive) {
+    detail += " · Зверь";
+    maybeBeastHunger(r.used, r.total);
+  }
+  publish(r.label, r.total, detail);
   const dmg = rollDamage(atk.damage);
   let total = dmg.total;
   if (r.crit) total += rollDamage(atk.damage).total;
@@ -146,12 +195,15 @@ export function tableAttack(attackId: string) {
 export function tableInitiative() {
   const store = useCharacterStore.getState();
   const c = store.character;
-  let m = modeFor("init");
-  if (c.selectedFeats.includes("alacrity")) m = m === "dis" ? "norm" : "adv";
-  const r = rollD20("Инициатива", abilityMod(c.abilities.dex), m);
+  let { mode, beast } = modeFor("init");
+  if (c.selectedFeats.includes("alacrity")) mode = mode === "dis" ? "norm" : "adv";
+  const r = rollD20("Инициатива", abilityMod(c.abilities.dex), mode);
   store.consumeRollMode();
   store.setField("initiative", r.total);
-  publish(r.label, r.total, r.detail);
+  let detail = r.detail;
+  if (c.selectedFeats.includes("alacrity")) detail += " · Alacrity";
+  if (beast || c.beastActive) detail += " · Зверь";
+  publish(r.label, r.total, detail);
   return r;
 }
 
@@ -160,8 +212,6 @@ export function tableFeed(half = false) {
   const c = store.character;
   const row = getLevelData(c.level);
   const full = row.feedCount;
-  // Ventrue Bane: half dice when not preferred blood (caller decides half)
-  // Toreador: half is optional weak feed only
   const count = half ? Math.max(1, Math.floor(full / 2)) : full;
   const rolls = Array.from({ length: count }, () => rollDie(6));
   const sixes = rolls.filter((x) => x === 6).length;
@@ -199,8 +249,15 @@ export function tableHealBlood() {
 }
 
 export function tableD20Plain(label = "d20") {
-  const r = rollD20(label, 0, modeFor("check"));
+  const c = useCharacterStore.getState().character;
+  const { mode, beast } = modeFor("check");
+  const r = rollD20(label, 0, mode);
   useCharacterStore.getState().consumeRollMode();
-  publish(r.label, r.total, r.detail);
+  let detail = r.detail;
+  if (beast || c.beastActive) {
+    detail += " · Зверь";
+    maybeBeastHunger(r.used, r.total);
+  }
+  publish(r.label, r.total, detail);
   return r;
 }

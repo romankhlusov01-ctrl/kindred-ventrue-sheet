@@ -17,11 +17,10 @@ import { cn, abilityMod, formatMod } from "@/lib/utils";
 import {
   getBloodMax,
   getLuckMax,
-  skillBonus,
   useCharacterStore,
   type Abilities,
 } from "@/lib/character-store";
-import { effectivePb } from "@/lib/level-utils";
+import { characterPb, skillBreakdown } from "@/lib/skill-math";
 import { useSessionStore } from "@/lib/session-store";
 import { SKILLS, type SkillId } from "@/data/skills";
 import { getLevelData } from "@/data/kindred-ru";
@@ -93,7 +92,7 @@ export function TableSheet() {
   const [tab, setTab] = useState<PlayTab>("checks");
   const [allSkills, setAllSkills] = useState(false);
 
-  const pb = effectivePb(c.level, c.multiclass);
+  const pb = characterPb(c.level, c.multiclass);
   const bloodMax = getBloodMax(c);
   const luckMax = getLuckMax(c.level, c.multiclass);
   const luckyLeft = Math.max(0, luckMax - (c.luckyUsed ?? 0));
@@ -154,9 +153,20 @@ export function TableSheet() {
           <div className="min-w-0">
             <div className="font-display text-lg text-fg truncate">{c.name || "Сородич"}</div>
             <div className="text-xs text-muted">
-              {c.species} · {c.clan === "toreador" ? "Тореадор" : c.clan === "ventrue" ? "Вентру" : "Сородич"} {c.level}
-              {c.multiclass ? ` / ${c.multiclass}` : ""} · Сл{" "}
+              {c.species} ·{" "}
+              {c.clan === "toreador"
+                ? "Тореадор"
+                : c.clan === "ventrue"
+                  ? "Вентру"
+                  : "Сородич"}{" "}
+              {c.level}
+              {c.multiclass ? ` / ${c.multiclass}` : ""} ·{" "}
+              <span className="text-fg">БМ {formatMod(pb)}</span> · Сл{" "}
               <span className="font-display text-primary">{spellDc}</span>
+              {c.beastActive && (
+                <span className="ml-1 text-beast">· Зверь★</span>
+              )}
+              {c.hunger && <span className="ml-1 text-primary">· Голод</span>}
             </div>
           </div>
           <button
@@ -222,10 +232,15 @@ export function TableSheet() {
             label="Зверь"
             value={`${beastLeft}/${pb}${c.beastActive ? "★" : ""}`}
             onMinus={() => {
-              if (!activateBeast()) toast.error("Зверь исчерпан");
-              else toast.success("Преим. d20");
+              // spend charge without activating (correct uses)
+              if (c.beastUsed >= pb) return toast.error("Уже 0");
+              pushUndo("Зверь −заряд");
+              setField("beastUsed", c.beastUsed + 1);
             }}
-            onPlus={() => setField("beastUsed", Math.max(0, c.beastUsed - 1))}
+            onPlus={() => {
+              pushUndo("Зверь +заряд");
+              setField("beastUsed", Math.max(0, c.beastUsed - 1));
+            }}
           />
           <StatChip
             icon={<Shield className="size-3 text-accent" />}
@@ -252,6 +267,52 @@ export function TableSheet() {
               Новый
             </Button>
           </div>
+        </div>
+
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
+          <Button
+            type="button"
+            variant={c.beastActive ? "blood" : "secondary"}
+            className="h-11 text-xs"
+            onClick={() => {
+              if (c.beastActive) {
+                useCharacterStore.getState().clearBeast();
+                addLog("Зверь: снят");
+                toast.message("Зверь снят");
+                return;
+              }
+              if (!activateBeast()) {
+                toast.error(`Зверь исчерпан (0/${pb})`);
+                return;
+              }
+              setField("bonusUsed", true);
+              addLog(`Зверь: преим. на d20 до след. хода (${beastLeft - 1}/${pb})`);
+              toast.success("Зверь: преимущество на d20 Tests");
+            }}
+          >
+            {c.beastActive
+              ? "Зверь ★ активен (снять)"
+              : `Зверь · преим. (${beastLeft}/${pb})`}
+          </Button>
+          <Button
+            type="button"
+            variant={c.hunger ? "blood" : "outline"}
+            className="h-11 text-xs"
+            onClick={() => {
+              pushUndo("Голод");
+              const next = !c.hunger;
+              setField("hunger", next);
+              if (next && !c.conditions.includes("Голод")) {
+                useCharacterStore.getState().toggleCondition("Голод");
+              }
+              if (!next && c.conditions.includes("Голод")) {
+                useCharacterStore.getState().toggleCondition("Голод");
+              }
+              addLog(next ? "Голод вкл" : "Голод снят");
+            }}
+          >
+            {c.hunger ? "Голод ★" : "Голод"}
+          </Button>
         </div>
 
         <div className="mt-2 grid grid-cols-4 gap-1">
@@ -398,7 +459,12 @@ export function TableSheet() {
         <div className="space-y-3">
           <section className="rounded-[var(--radius-lg)] border border-border bg-surface p-3">
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-display text-sm">Проверки · тап = бросок</h3>
+              <h3 className="font-display text-sm">
+                Проверки · тап = бросок{" "}
+                <span className="text-xs font-normal text-muted">
+                  (мод + БМ{formatMod(pb)})
+                </span>
+              </h3>
               <button
                 type="button"
                 className="text-xs text-accent"
@@ -427,24 +493,33 @@ export function TableSheet() {
             </div>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
               {skillList.map((sk) => {
-                const prof = c.skillProfs[sk.id] ?? "none";
-                const bonus = skillBonus(c.abilities[sk.ability], pb, prof);
+                const bd = skillBreakdown(c.abilities, sk.id, pb, c.skillProfs);
                 return (
                   <button
                     key={sk.id}
                     type="button"
                     onClick={() => tableCheckSkill(sk.id)}
                     className={cn(
-                      "flex h-12 items-center justify-between gap-2 rounded-[var(--radius)] border px-3 text-left active:scale-[0.98]",
-                      prof !== "none"
+                      "flex h-14 flex-col justify-center gap-0.5 rounded-[var(--radius)] border px-3 text-left active:scale-[0.98]",
+                      bd.prof !== "none"
                         ? "border-primary/30 bg-primary/10"
                         : "border-border bg-surface-2",
                     )}
                   >
-                    <span className="min-w-0 truncate text-xs">{sk.nameRu}</span>
-                    <span className="font-display text-sm tabular-nums text-accent">
-                      {formatMod(bonus)}
-                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-xs font-medium">
+                        {sk.nameRu}
+                        {bd.prof === "expertise"
+                          ? " Э"
+                          : bd.prof === "proficient"
+                            ? " В"
+                            : ""}
+                      </span>
+                      <span className="font-display text-sm tabular-nums text-accent">
+                        {bd.short}
+                      </span>
+                    </div>
+                    <span className="truncate text-[10px] text-faint">{bd.formula}</span>
                   </button>
                 );
               })}
