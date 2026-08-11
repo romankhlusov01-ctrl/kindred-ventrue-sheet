@@ -228,7 +228,7 @@ export function tableInitiative() {
   store.consumeRollMode();
   store.setField("initiative", r.total);
   let detail = r.detail;
-  if (c.selectedFeats.includes("alacrity")) detail += " · Alacrity";
+  if (c.selectedFeats.includes("alacrity")) detail += " · Проворство";
   if (beast || c.beastActive) detail += " · Зверь";
   publish(r.label, r.total, detail);
   return r;
