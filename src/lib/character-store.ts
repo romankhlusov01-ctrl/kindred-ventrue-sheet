@@ -793,7 +793,7 @@ export const useCharacterStore = create<LibraryState>()(
     }),
     {
       name: "kindred-sheet-v7",
-      version: 7,
+      version: 8,
       partialize: (s) => ({
         characters: s.characters,
         activeId: s.activeId,
@@ -807,14 +807,13 @@ export const useCharacterStore = create<LibraryState>()(
           state!.character = migrateSheet(lib.character);
           return;
         }
+        // Always re-run migrateSheet (feat ASI sync, clan cleanup, …)
+        const characters = state.characters.map(migrateSheet);
         const active =
-          state.characters.find((c) => c.id === state.activeId) ??
-          state.characters[0]!;
+          characters.find((c) => c.id === state.activeId) ?? characters[0]!;
         state.activeId = active.id;
+        state.characters = characters;
         state.character = active;
-        state.characters = state.characters.map((c) =>
-          c.id === active.id ? active : c,
-        );
       },
       migrate: (persisted: unknown, fromVersion: number) => {
         // v7: purge legacy presets + old PlayHub-era sheets; keep only custom chars
