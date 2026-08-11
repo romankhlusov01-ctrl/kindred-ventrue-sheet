@@ -11,6 +11,7 @@ import { GENERAL_FEAT_CATALOG, generalFeatsForLevel } from "@/data/phb-feats-ru"
 import { FEAT_RECS } from "@/data/feat-recommendations";
 import { useCharacterStore } from "@/lib/character-store";
 import type { Abilities } from "@/lib/character-store";
+import { applyAbilityDelta, bonusForFeat } from "@/lib/feat-ability";
 
 const ABIL: { key: keyof Abilities; short: string }[] = [
   { key: "str", short: "СИЛ" },
@@ -115,9 +116,41 @@ export function LevelUpHelper() {
           : [...(c.generalFeats ?? []), pickedFeat];
         const fname =
           GENERAL_FEAT_CATALOG.find((f) => f.id === pickedFeat)?.name ?? pickedFeat;
-        patch({ ...base, generalFeats: feats });
-        addLog(`Ур.${next}: PHB «${fname}», +${gain} ХП`);
-        toast.success(`Ур.${next} · ${fname}`);
+        const abilities = applyAbilityDelta(
+          c.abilities,
+          bonusForFeat(pickedFeat),
+          1,
+        );
+        // HP may change if CON rose
+        let hp2 = calcKindredHp(
+          next,
+          abilities.con,
+          c.clan === "ventrue" && next >= 6,
+        );
+        if (
+          c.originFeatId === "tough" ||
+          c.backgroundFeatId === "tough" ||
+          feats.includes("tough-general")
+        ) {
+          hp2 += next * 2;
+        }
+        const gain2 = Math.max(1, hp2 - c.hpMax);
+        patch({
+          ...base,
+          generalFeats: feats,
+          abilities,
+          featScoreSync: 1,
+          hpMax: hp2,
+          hpCurrent: c.hpCurrent + gain2,
+        });
+        const abLab = bonusForFeat(pickedFeat);
+        const abNote = Object.keys(abLab).length
+          ? ` · ${Object.entries(abLab)
+              .map(([k, n]) => `${k}+${n}`)
+              .join(" ")}`
+          : "";
+        addLog(`Ур.${next}: PHB «${fname}»${abNote}, +${gain2} ХП`);
+        toast.success(`Ур.${next} · ${fname}${abNote}`);
       } else {
         if (!pickedFeat) {
           toast.error("Выберите Kindred Feat");
@@ -127,9 +160,47 @@ export function LevelUpHelper() {
           ? c.selectedFeats
           : [...c.selectedFeats, pickedFeat];
         const fname = KINDRED_FEATS.find((f) => f.id === pickedFeat)?.name ?? pickedFeat;
-        patch({ ...base, selectedFeats: feats });
-        addLog(`Ур.${next}: Kindred «${fname}», +${gain} ХП`);
-        toast.success(`Ур.${next} · Kindred ${fname}`);
+        const abilities = applyAbilityDelta(
+          c.abilities,
+          bonusForFeat(pickedFeat),
+          1,
+        );
+        let hp2 = calcKindredHp(
+          next,
+          abilities.con,
+          c.clan === "ventrue" && next >= 6,
+        );
+        if (
+          c.originFeatId === "tough" ||
+          c.backgroundFeatId === "tough" ||
+          (c.generalFeats ?? []).includes("tough-general")
+        ) {
+          hp2 += next * 2;
+        }
+        const gain2 = Math.max(1, hp2 - c.hpMax);
+        const bloodMax =
+          row.bp +
+          (feats.includes("vitae-conc")
+            ? Math.max(1, Math.floor((abilities.con - 10) / 2))
+            : 0) +
+          (feats.includes("boon-gen") ? 5 : 0);
+        patch({
+          ...base,
+          selectedFeats: feats,
+          abilities,
+          featScoreSync: 1,
+          hpMax: hp2,
+          hpCurrent: c.hpCurrent + gain2,
+          bloodCurrent: Math.min(bloodMax, c.bloodCurrent + 1),
+        });
+        const abLab = bonusForFeat(pickedFeat);
+        const abNote = Object.keys(abLab).length
+          ? ` · ${Object.entries(abLab)
+              .map(([k, n]) => `${k}+${n}`)
+              .join(" ")}`
+          : "";
+        addLog(`Ур.${next}: Kindred «${fname}»${abNote}, +${gain2} ХП`);
+        toast.success(`Ур.${next} · Kindred ${fname}${abNote}`);
       }
     } else if (newClassKindred) {
       // auto open kindred pick optional: just level + toast reminder

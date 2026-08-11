@@ -6,6 +6,12 @@ import type { ProfLevel, SkillId } from "@/data/skills";
 import { BLANK_TEMPLATE, releaseLibrary } from "@/data/presets";
 import type { RollMode } from "@/lib/roll-engine";
 import { effectivePb } from "@/lib/level-utils";
+import {
+  applyAbilityDelta,
+  applyAllFeatAbilityBonuses,
+  bonusForFeat,
+} from "@/lib/feat-ability";
+import { calcKindredHp } from "@/data/builder-ru";
 
 
 export type Abilities = {
@@ -103,6 +109,8 @@ export type CharacterSheet = {
   scenario: "combat" | "social" | "feed" | "rest";
   /** Combat round number for solo tracking */
   round: number;
+  /** 1 = ASI-bonuses from known feats already synced into abilities */
+  featScoreSync?: number;
 };
 
 
@@ -168,27 +176,58 @@ function bpMax(level: number, con: number, selectedFeats: string[]) {
   return max;
 }
 
+function recalcHpFor(c: CharacterSheet, abilities: Abilities): Pick<CharacterSheet, "hpMax" | "hpCurrent"> {
+  const gens = c.generalFeats ?? [];
+  let hp = calcKindredHp(
+    c.level,
+    abilities.con,
+    c.clan === "ventrue" && c.level >= 6,
+  );
+  if (
+    c.originFeatId === "tough" ||
+    c.backgroundFeatId === "tough" ||
+    gens.includes("tough-general")
+  ) {
+    hp += c.level * 2;
+  }
+  const gain = hp - c.hpMax;
+  return {
+    hpMax: hp,
+    hpCurrent: Math.max(
+      0,
+      Math.min(hp, c.hpCurrent + (gain > 0 ? gain : 0)),
+    ),
+  };
+}
+
 function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): CharacterSheet {
   const base = BLANK_TEMPLATE();
-  // drop unimplemented clans from old architecture
   const rawClan = (raw as CharacterSheet | undefined)?.clan as string | undefined;
   if (rawClan && !["ventrue", "toreador", "none"].includes(rawClan)) {
     raw = { ...raw, clan: "none" as CharacterSheet["clan"] };
   }
   if (!raw) return base;
-  return {
+  const selectedFeats = raw.selectedFeats ?? [];
+  const generalFeats = (() => {
+    const g = (raw as CharacterSheet).generalFeats ?? [];
+    return g.map((id) => (id === "resilient" ? "resilient-con" : id));
+  })();
+  let abilities = { ...base.abilities, ...raw.abilities };
+  let featScoreSync = (raw as CharacterSheet).featScoreSync ?? 0;
+  // One-shot: feats that grant +ability were not applied historically
+  if (featScoreSync < 1) {
+    abilities = applyAllFeatAbilityBonuses(abilities, selectedFeats, generalFeats);
+    featScoreSync = 1;
+  }
+  const sheetBase: CharacterSheet = {
     ...base,
     ...raw,
     id: raw.id || base.id,
-    abilities: { ...base.abilities, ...raw.abilities },
+    abilities,
     skillProfs: { ...raw.skillProfs },
     saveProfs: { con: true, cha: true, ...raw.saveProfs },
-    selectedFeats: raw.selectedFeats ?? [],
-    generalFeats: (() => {
-      const g = (raw as CharacterSheet).generalFeats ?? [];
-      // migrate legacy "resilient" → resilient-con
-      return g.map((id) => (id === "resilient" ? "resilient-con" : id));
-    })(),
+    selectedFeats,
+    generalFeats,
     attacks: raw.attacks ?? [],
     conditions: raw.conditions ?? [],
     sessionLog: raw.sessionLog ?? [],
@@ -211,7 +250,24 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     pendingDis: raw.pendingDis ?? false,
     scenario: raw.scenario ?? "combat",
     round: raw.round ?? 1,
+    featScoreSync,
   };
+  // If we just synced CON from feats, refresh HP max (delta heal)
+  if ((raw as CharacterSheet).featScoreSync !== 1 && abilities.con !== (raw.abilities?.con ?? abilities.con)) {
+    const hp = recalcHpFor(sheetBase, abilities);
+    return { ...sheetBase, ...hp };
+  }
+  // Always recalc if sync just ran and con feat present
+  if ((raw as CharacterSheet).featScoreSync !== 1) {
+    const hadConFeat = [...selectedFeats, ...generalFeats].some(
+      (id) => (bonusForFeat(id).con ?? 0) > 0,
+    );
+    if (hadConFeat) {
+      const hp = recalcHpFor(sheetBase, abilities);
+      return { ...sheetBase, ...hp };
+    }
+  }
+  return sheetBase;
 }
 
 function updateActive(
@@ -307,7 +363,6 @@ export const useCharacterStore = create<LibraryState>()(
               ? c.selectedFeats.filter((x) => x !== featId)
               : [...c.selectedFeats, featId];
             let customResources = c.customResources;
-            // auto Presence resource for Forceful Presence
             if (featId === "forceful" && !has) {
               if (!customResources.some((r) => /присутств|forceful|awe/i.test(r.name))) {
                 const pb = Math.ceil(c.level / 4) + 1;
@@ -323,7 +378,21 @@ export const useCharacterStore = create<LibraryState>()(
                 ];
               }
             }
-            return { ...c, selectedFeats, customResources };
+            // Ability ASI from feat (Convincing, Vitae Conc, …)
+            const delta = bonusForFeat(featId);
+            const abilities = applyAbilityDelta(c.abilities, delta, has ? -1 : 1);
+            const hpPatch =
+              (delta.con ?? 0) !== 0
+                ? recalcHpFor({ ...c, selectedFeats, abilities }, abilities)
+                : {};
+            return {
+              ...c,
+              selectedFeats,
+              customResources,
+              abilities,
+              featScoreSync: 1,
+              ...hpPatch,
+            };
           }),
         ),
       toggleGeneralFeat: (featId) =>
@@ -335,14 +404,60 @@ export const useCharacterStore = create<LibraryState>()(
             if (has) {
               generalFeats = cur.filter((x) => x !== featId);
             } else {
-              // only one Resilient pick
               const isRes = featId === "resilient" || featId.startsWith("resilient-");
               const base = isRes
                 ? cur.filter((x) => x !== "resilient" && !x.startsWith("resilient-"))
                 : cur;
               generalFeats = [...base, featId];
             }
-            return { ...c, generalFeats };
+            // Resilient swap: remove old bonus if switching variant
+            let abilities = { ...c.abilities };
+            if (!has && (featId === "resilient" || featId.startsWith("resilient-"))) {
+              for (const old of cur) {
+                if (old === "resilient" || old.startsWith("resilient-")) {
+                  abilities = applyAbilityDelta(abilities, bonusForFeat(old), -1);
+                }
+              }
+            }
+            const delta = bonusForFeat(featId);
+            abilities = applyAbilityDelta(abilities, delta, has ? -1 : 1);
+            // Resilient also grants save proficiency
+            let saveProfs = { ...c.saveProfs };
+            const resMap: Record<string, keyof Abilities> = {
+              "resilient-str": "str",
+              "resilient-dex": "dex",
+              "resilient-con": "con",
+              "resilient-int": "int",
+              "resilient-wis": "wis",
+              "resilient-cha": "cha",
+              resilient: "wis",
+            };
+            if (featId in resMap || featId.startsWith("resilient")) {
+              const ab = resMap[featId];
+              if (ab) {
+                if (has) {
+                  // only clear if not class save
+                  if (ab !== "con" && ab !== "cha") {
+                    const { [ab]: _, ...rest } = saveProfs;
+                    saveProfs = rest;
+                  }
+                } else {
+                  saveProfs = { ...saveProfs, [ab]: true };
+                }
+              }
+            }
+            const hpPatch =
+              (delta.con ?? 0) !== 0
+                ? recalcHpFor({ ...c, generalFeats, abilities }, abilities)
+                : {};
+            return {
+              ...c,
+              generalFeats,
+              abilities,
+              saveProfs,
+              featScoreSync: 1,
+              ...hpPatch,
+            };
           }),
         ),
       patch: (partial) =>

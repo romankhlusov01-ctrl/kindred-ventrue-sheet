@@ -69,6 +69,7 @@ import { VENTRUE_MILESTONES } from "@/data/ventrue-milestones";
 import { TOREADOR_MILESTONES } from "@/data/toreador-milestones";
 import { FEAT_RECS } from "@/data/feat-recommendations";
 import { packagesFor } from "@/data/talent-packages";
+import { applyAllFeatAbilityBonuses } from "@/lib/feat-ability";
 import {
   GENERAL_FEAT_CATALOG,
   generalFeatsForLevel,
@@ -432,15 +433,20 @@ export function KindredBuilder() {
     }
 
     // Live Fast L9: Dex +2 (max 25)
-    const appliedScores = { ...finalScores };
+    let appliedScores = { ...finalScores };
     if (clan === "toreador" && level >= 9) {
       appliedScores.dex = Math.min(25, appliedScores.dex + 2);
     }
 
-    // Class saves Con + Cha; Resilient adds save + half-feat +1 (before HP)
+    // Class saves Con + Cha; feat ASI + Resilient saves
     const saveProfs: CharacterSheet["saveProfs"] = { con: true, cha: true };
     const gens = character.generalFeats ?? [];
-    const resilientMap: Record<string, keyof Abilities> = {
+    appliedScores = applyAllFeatAbilityBonuses(
+      appliedScores,
+      character.selectedFeats,
+      gens,
+    );
+    const resMap: Record<string, keyof Abilities> = {
       "resilient-str": "str",
       "resilient-dex": "dex",
       "resilient-con": "con",
@@ -450,13 +456,8 @@ export function KindredBuilder() {
       resilient: "wis",
     };
     for (const id of gens) {
-      const ab = resilientMap[id];
-      if (ab) {
-        saveProfs[ab] = true;
-        if (appliedScores[ab] < 20) {
-          appliedScores[ab] = Math.min(20, appliedScores[ab] + 1);
-        }
-      }
+      const ab = resMap[id];
+      if (ab) saveProfs[ab] = true;
     }
 
     let hp = calcKindredHp(
@@ -491,6 +492,7 @@ export function KindredBuilder() {
     patch({
       abilities: appliedScores,
       skillProfs,
+      featScoreSync: 1,
       saveProfs,
       species: sp.name,
       fiendishLegacy: sp.id === "tiefling" ? (character.fiendishLegacy || "infernal") : "",
