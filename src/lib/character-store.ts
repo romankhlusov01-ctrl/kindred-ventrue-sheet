@@ -12,6 +12,7 @@ import {
   bonusForFeat,
 } from "@/lib/feat-ability";
 import { calcKindredHp } from "@/data/builder-ru";
+import { skillBonusTotal } from "@/lib/skill-math";
 
 
 export type Abilities = {
@@ -231,7 +232,10 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     attacks: raw.attacks ?? [],
     conditions: raw.conditions ?? [],
     sessionLog: raw.sessionLog ?? [],
-    customResources: raw.customResources ?? [],
+    customResources: (raw.customResources ?? []).map((r) => ({
+      ...r,
+      name: /^голос$/i.test((r.name || "").trim()) ? "Голос власти" : r.name,
+    })),
     backgroundId: raw.backgroundId ?? base.backgroundId,
     originFeatId: raw.originFeatId ?? base.originFeatId,
     backgroundFeatId: raw.backgroundFeatId ?? base.backgroundFeatId,
@@ -244,30 +248,46 @@ function migrateSheet(raw: Partial<CharacterSheet> | null | undefined): Characte
     reactionUsed: raw.reactionUsed ?? false,
     movementUsed: raw.movementUsed ?? false,
     beastActive: raw.beastActive ?? false,
-    rollMode: raw.rollMode ?? "norm",
+    rollMode: "norm",
     initiative: raw.initiative ?? null,
-    pendingAdv: raw.pendingAdv ?? false,
-    pendingDis: raw.pendingDis ?? false,
+    pendingAdv: false,
+    pendingDis: false,
     scenario: raw.scenario ?? "combat",
     round: raw.round ?? 1,
     featScoreSync,
+    preferredBlood: sanitizePreferredBlood(
+      (raw as CharacterSheet).clan,
+      raw.preferredBlood ?? "",
+    ),
   };
-  // If we just synced CON from feats, refresh HP max (delta heal)
-  if ((raw as CharacterSheet).featScoreSync !== 1 && abilities.con !== (raw.abilities?.con ?? abilities.con)) {
-    const hp = recalcHpFor(sheetBase, abilities);
-    return { ...sheetBase, ...hp };
-  }
-  // Always recalc if sync just ran and con feat present
+  let out: CharacterSheet = sheetBase;
   if ((raw as CharacterSheet).featScoreSync !== 1) {
     const hadConFeat = [...selectedFeats, ...generalFeats].some(
       (id) => (bonusForFeat(id).con ?? 0) > 0,
     );
-    if (hadConFeat) {
-      const hp = recalcHpFor(sheetBase, abilities);
-      return { ...sheetBase, ...hp };
+    if (hadConFeat || abilities.con !== (raw.abilities?.con ?? abilities.con)) {
+      out = { ...out, ...recalcHpFor(out, abilities) };
     }
   }
-  return sheetBase;
+  const bmax = bpMax(out.level, out.abilities.con, out.selectedFeats);
+  if (out.bloodCurrent > bmax) out = { ...out, bloodCurrent: bmax };
+  return out;
+}
+
+/** Ventrue must not keep Toreador bane text (and reverse) */
+function sanitizePreferredBlood(clan: string | undefined, blood: string): string {
+  const t = (blood || "").trim();
+  const looksToreador =
+    /d20\s*≤\s*9|d20≤9|Обездвиж|Restrained|Анализ\/Внимательность/i.test(t);
+  if (clan === "ventrue" && looksToreador) {
+    const taste = t.match(/вкус:\s*([^·]+)/i)?.[1]?.trim();
+    return taste || "артисты / музыканты";
+  }
+  if (clan === "toreador" && t && !looksToreador) {
+    // keep flavor taste, bane is automatic by clan
+    return t.startsWith("Проклятие") ? t : t;
+  }
+  return t;
 }
 
 function updateActive(
@@ -365,7 +385,7 @@ export const useCharacterStore = create<LibraryState>()(
             let customResources = c.customResources;
             if (featId === "forceful" && !has) {
               if (!customResources.some((r) => /присутств|forceful|awe/i.test(r.name))) {
-                const pb = Math.ceil(c.level / 4) + 1;
+                const pb = effectivePb(c.level, c.multiclass);
                 customResources = [
                   ...customResources,
                   {
@@ -548,9 +568,9 @@ export const useCharacterStore = create<LibraryState>()(
               tempHp: 0,
               beastUsed: 0,
               beastActive: false,
-                luckyUsed: 0,
-              protectedUsed: 0,
-              inspiration: true,
+              luckyUsed: hasBlood ? 0 : c.luckyUsed,
+              protectedUsed: hasBlood ? 0 : c.protectedUsed,
+              inspiration: hasBlood ? true : c.inspiration,
               hitDiceUsed: hasBlood ? 0 : c.hitDiceUsed,
               deathSuccess: 0,
               deathFail: 0,
@@ -558,8 +578,15 @@ export const useCharacterStore = create<LibraryState>()(
               bonusUsed: false,
               reactionUsed: false,
               movementUsed: false,
+              hunger: hasBlood ? false : c.hunger,
               concentrating: hasBlood ? "" : c.concentrating,
-              customResources: c.customResources.map((r) => ({ ...r, current: r.max })),
+              customResources: hasBlood
+                ? c.customResources.map((r) => ({ ...r, current: r.max }))
+                : c.customResources.map((r) =>
+                    /голос|коротк|voice|short/i.test(r.name + r.note)
+                      ? { ...r, current: r.max }
+                      : r,
+                  ),
               sessionLog: [
                 {
                   id: `log-${Date.now()}`,
@@ -895,8 +922,5 @@ export function skillBonus(
   pb: number,
   prof: ProfLevel | undefined,
 ): number {
-  const mod = Math.floor((abilityScore - 10) / 2);
-  if (prof === "expertise") return mod + pb * 2;
-  if (prof === "proficient") return mod + pb;
-  return mod;
+  return skillBonusTotal(abilityScore, pb, prof);
 }

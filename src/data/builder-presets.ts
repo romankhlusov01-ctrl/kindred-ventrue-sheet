@@ -90,7 +90,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     classSkills: ["persuasion", "insight"],
     artistSkills: ["perception", "performance"],
     selectedFeats: ["forceful", "alacrity"],
-    preferredBlood: BANE.toreadorField,
+    preferredBlood: "артисты / музыканты",
     nameSuggestion: "Алая роза",
   },
   {
@@ -110,7 +110,7 @@ export const BUILD_PRESETS: BuildPreset[] = [
     classSkills: ["persuasion", "perception"],
     artistSkills: ["investigation", "performance"],
     selectedFeats: ["forceful"],
-    preferredBlood: BANE.toreadorField,
+    preferredBlood: "артисты",
     nameSuggestion: "Новая муза",
   },
 ];

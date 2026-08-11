@@ -19,7 +19,7 @@ export function AsiHelper() {
   const setAbility = useCharacterStore((s) => s.setAbility);
   const addLog = useCharacterStore((s) => s.addLog);
 
-  const asiLevels = [4, 8, 12, 16, 19];
+  const asiLevels = [4, 8, 12, 16];
   const nextAsi = asiLevels.find((l) => l > c.level) ?? null;
   const atAsi = asiLevels.includes(c.level);
 

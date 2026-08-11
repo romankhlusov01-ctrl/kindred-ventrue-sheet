@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TableSheet } from "@/components/sheet/table-sheet";
-import { PrintSheetBlock, PrintSheetButton } from "@/components/sheet/print-sheet";
+import { PrintSheetBlock } from "@/components/sheet/print-sheet";
 import { Hotkeys } from "@/components/sheet/hotkeys";
 import { AsiHelper } from "@/components/sheet/asi-helper";
 import { LevelUpHelper } from "@/components/sheet/level-up-helper";
@@ -87,10 +87,8 @@ import {
   useCharacterStore,
   type Abilities,
 } from "@/lib/character-store";
-import { abilityMod, cn, formatMod, rollDie } from "@/lib/utils";
+import { abilityMod, cn, formatMod } from "@/lib/utils";
 import { effectivePb } from "@/lib/level-utils";
-import { rollD20, rollDamage } from "@/lib/roll-engine";
-import { conditionMode } from "@/lib/play-helpers";
 
 
 const ABILITY_KEYS: { key: keyof Abilities; label: string; short: string }[] = [
@@ -257,32 +255,16 @@ export function CharacterSheet() {
           ...character.customResources,
           {
             id: `voice-${Date.now()}`,
-            name: "Голос",
+            name: "Голос власти",
             max: pb,
             current: pb,
-            note: "Приказ / Внушение · LR",
-          },
-        ],
-      });
-    }
-    const isWarlock = /колдун|warlock/i.test(character.multiclass || "");
-    const pact = character.customResources.find((r) => /пакт|pact|слот/i.test(r.name + r.note));
-    if (isWarlock && !pact) {
-      useCharacterStore.getState().patch({
-        customResources: [
-          ...useCharacterStore.getState().character.customResources,
-          {
-            id: `pact-${Date.now()}`,
-            name: "Слот пакта",
-            max: 1,
-            current: 1,
-            note: "Колдун · короткий отдых",
+            note: "Приказ / Внушение · короткий/долгий",
           },
         ],
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [character.level, pb, character.clan, character.multiclass]);
+  }, [character.level, pb, character.clan]);
 
   function exportJson() {
     const blob = new Blob([JSON.stringify(exportLibrary(), null, 2)], {
@@ -1345,7 +1327,7 @@ export function CharacterSheet() {
               Слоты ASI (4/8/12/16/19):{" "}
               <strong>
                 {(character.generalFeats ?? []).length}/
-                {[4, 8, 12, 16, 19].filter((l) => character.level >= l).length}
+                {[4, 8, 12, 16].filter((l) => character.level >= l).length}
               </strong>
               . Тап — вкл/выкл (лишние не даём).
             </p>
@@ -1360,7 +1342,7 @@ export function CharacterSheet() {
               )
               .map((f) => {
                 const on = (character.generalFeats ?? []).includes(f.id);
-                const gMax = [4, 8, 12, 16, 19].filter((l) => character.level >= l).length;
+                const gMax = [4, 8, 12, 16].filter((l) => character.level >= l).length;
                 const full = !on && (character.generalFeats ?? []).length >= gMax;
                 return (
                   <button

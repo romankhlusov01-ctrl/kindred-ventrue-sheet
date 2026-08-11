@@ -54,12 +54,17 @@ export function LevelUpHelper() {
   );
 
   function applyLevel() {
+    let abilities = { ...c.abilities };
+    // Toreador Live Fast L9: Dex +2 (max 25) when crossing into 9+
+    if (c.clan === "toreador" && c.level < 9 && next >= 9) {
+      abilities.dex = Math.min(25, abilities.dex + 2);
+    }
+
     let hp = calcKindredHp(
       next,
-      c.abilities.con,
+      abilities.con,
       c.clan === "ventrue" && next >= 6,
     );
-    // Tough origin / general: +2 HP per level (match applyToSheet)
     if (
       c.originFeatId === "tough" ||
       c.backgroundFeatId === "tough" ||
@@ -67,10 +72,9 @@ export function LevelUpHelper() {
     ) {
       hp += next * 2;
     }
-    // Live Fast L9: if leveling into 9+ as Toreador and Dex not yet bumped — leave to builder notes
     const gain = Math.max(1, hp - c.hpMax);
     const resources = c.customResources.map((r) => {
-      if (/голос|присутств|forceful|aura/i.test(r.name)) {
+      if (/голос|присутств|forceful|aura|провор|alacrity/i.test(r.name + r.note)) {
         return { ...r, max: row.pb, current: Math.min(r.current + 1, row.pb) };
       }
       return r;
@@ -78,13 +82,13 @@ export function LevelUpHelper() {
 
     const base = {
       level: next,
+      abilities,
       hpMax: hp,
       hpCurrent: c.hpCurrent + gain,
       bloodCurrent: Math.min(
-        // table BP; vitae feats applied via getBloodMax if imported — keep row.bp+feats soft
         row.bp +
           (c.selectedFeats.includes("vitae-conc")
-            ? Math.max(1, Math.floor((c.abilities.con - 10) / 2))
+            ? Math.max(1, Math.floor((abilities.con - 10) / 2))
             : 0) +
           (c.selectedFeats.includes("boon-gen") ? 5 : 0),
         c.bloodCurrent + 1,
@@ -94,7 +98,7 @@ export function LevelUpHelper() {
 
     if (newAsi) {
       if (mode === "asi") {
-        const scores = { ...c.abilities };
+        const scores = { ...abilities };
         if (asiB && asiB !== asiA) {
           scores[asiA] = Math.min(20, scores[asiA] + 1);
           scores[asiB] = Math.min(20, scores[asiB] + 1);
@@ -116,15 +120,14 @@ export function LevelUpHelper() {
           : [...(c.generalFeats ?? []), pickedFeat];
         const fname =
           GENERAL_FEAT_CATALOG.find((f) => f.id === pickedFeat)?.name ?? pickedFeat;
-        const abilities = applyAbilityDelta(
-          c.abilities,
+        const nextAbilities = applyAbilityDelta(
+          abilities,
           bonusForFeat(pickedFeat),
           1,
         );
-        // HP may change if CON rose
         let hp2 = calcKindredHp(
           next,
-          abilities.con,
+          nextAbilities.con,
           c.clan === "ventrue" && next >= 6,
         );
         if (
@@ -138,7 +141,7 @@ export function LevelUpHelper() {
         patch({
           ...base,
           generalFeats: feats,
-          abilities,
+          abilities: nextAbilities,
           featScoreSync: 1,
           hpMax: hp2,
           hpCurrent: c.hpCurrent + gain2,
@@ -160,14 +163,14 @@ export function LevelUpHelper() {
           ? c.selectedFeats
           : [...c.selectedFeats, pickedFeat];
         const fname = KINDRED_FEATS.find((f) => f.id === pickedFeat)?.name ?? pickedFeat;
-        const abilities = applyAbilityDelta(
-          c.abilities,
+        const nextAbilities = applyAbilityDelta(
+          abilities,
           bonusForFeat(pickedFeat),
           1,
         );
         let hp2 = calcKindredHp(
           next,
-          abilities.con,
+          nextAbilities.con,
           c.clan === "ventrue" && next >= 6,
         );
         if (
@@ -181,13 +184,13 @@ export function LevelUpHelper() {
         const bloodMax =
           row.bp +
           (feats.includes("vitae-conc")
-            ? Math.max(1, Math.floor((abilities.con - 10) / 2))
+            ? Math.max(1, Math.floor((nextAbilities.con - 10) / 2))
             : 0) +
           (feats.includes("boon-gen") ? 5 : 0);
         patch({
           ...base,
           selectedFeats: feats,
-          abilities,
+          abilities: nextAbilities,
           featScoreSync: 1,
           hpMax: hp2,
           hpCurrent: c.hpCurrent + gain2,

@@ -29,7 +29,6 @@ import { BloodPips } from "@/components/sheet/blood-pips";
 import { ClanPowers } from "@/components/sheet/clan-powers";
 import { DeathPanel } from "@/components/sheet/death-panel";
 import { RestWizard } from "@/components/sheet/rest-wizard";
-import { WarlockSnippet } from "@/components/sheet/warlock-snippet";
 import { ConcentrationHelper } from "@/components/sheet/concentration-helper";
 import { QuickCondition } from "@/components/sheet/quick-condition";
 import { FreeRoll } from "@/components/sheet/free-roll";
@@ -650,7 +649,6 @@ export function TableSheet() {
             </Button>
           </div>
           <ClanPowers />
-          {/колдун|warlock/i.test(c.multiclass || "") && <WarlockSnippet />}
           <p className="text-center text-[10px] text-faint">
             {c.clan === "toreador"
               ? "Проклятие Тореадор: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.)"

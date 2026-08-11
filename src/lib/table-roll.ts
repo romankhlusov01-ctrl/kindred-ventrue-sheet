@@ -203,8 +203,18 @@ export function tableAttack(attackId: string) {
   publish(r.label, r.total, detail);
   const dmg = rollDamage(atk.damage);
   let total = dmg.total;
-  if (r.crit) total += rollDamage(atk.damage).total;
-  publish(`Урон · ${atk.name}`, total, dmg.detail + (r.crit ? " · ×2" : ""));
+  if (r.crit) {
+    // RAW: double dice only, not static mods — re-roll dice groups without flat bonus
+    const critExtra = rollDamage(atk.damage.replace(/([+-]\d+)(?!d)/g, ""));
+    // fallback: add dice total only from a second roll minus bonus
+    const extraDice = Math.max(0, critExtra.total - critExtra.bonus);
+    total += extraDice || rollDamage(atk.damage).rolls.reduce((a, b) => a + b, 0);
+  }
+  publish(
+    `Урон · ${atk.name}`,
+    total,
+    dmg.detail + (r.crit ? " · крит (кости×2)" : ""),
+  );
   toast.success(`${atk.name}: ${r.total} → ${total} ${atk.type}`);
   return { hit: r, damage: total };
 }

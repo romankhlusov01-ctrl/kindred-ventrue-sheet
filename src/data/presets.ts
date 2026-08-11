@@ -70,7 +70,6 @@ export const PRESET_VENTRUE_PLAYER: CharacterSheet = (() => {
       intimidation: "proficient",
       deception: "proficient",
       insight: "proficient",
-      perception: "proficient",
     },
     saveProfs: { con: true, cha: true },
     selectedFeats: feats,
@@ -151,7 +150,7 @@ export const PRESET_TOREADOR_PLAYER: CharacterSheet = (() => {
     bloodCurrent: bp(level),
     beastUsed: 0,
     hunger: false,
-    preferredBlood: BANE.toreadorField + " · вкус: артисты",
+    preferredBlood: "артисты / музыканты",
     skillProfs: {
       persuasion: "proficient",
       survival: "proficient",

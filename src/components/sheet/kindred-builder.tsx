@@ -515,7 +515,7 @@ export function KindredBuilder() {
       selectedFeats: character.selectedFeats,
       preferredBlood:
         character.preferredBlood ||
-        (clan === "toreador" ? TOREADOR_BANE_FIELD : "солдаты / военные"),
+        (clan === "toreador" ? "артисты / музыканты" : "солдаты / военные"),
       attacks,
       feats: [
         sp.id === "tiefling"
