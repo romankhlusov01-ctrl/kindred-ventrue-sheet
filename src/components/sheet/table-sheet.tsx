@@ -43,6 +43,8 @@ import {
   tableInitiative,
   tableSave,
 } from "@/lib/table-roll";
+import { PLAY_TABS } from "@/data/terms-ru";
+import { LevelUpHelper } from "@/components/sheet/level-up-helper";
 
 /**
  * Режим «Играть» — стол без перегруза.
@@ -433,10 +435,10 @@ export function TableSheet() {
       <div className="grid grid-cols-4 gap-1 rounded-[var(--radius)] border border-border bg-surface p-1">
         {(
           [
-            ["checks", "Проверки", Dices],
-            ["fight", "Бой", Swords],
-            ["kindred", "Сородич", Droplets],
-            ["more", "Ещё", Zap],
+            ["checks", PLAY_TABS.checks, Dices],
+            ["fight", PLAY_TABS.combat, Swords],
+            ["kindred", PLAY_TABS.kindred, Droplets],
+            ["more", PLAY_TABS.more, Zap],
           ] as const
         ).map(([id, label, Icon]) => (
           <button
@@ -662,6 +664,7 @@ export function TableSheet() {
 
       {tab === "more" && (
         <div className="space-y-3">
+          <LevelUpHelper />
           <RestWizard />
           <DeathPanel />
           <ConcentrationHelper />
@@ -669,7 +672,7 @@ export function TableSheet() {
           <FreeRoll />
           <RollHistory />
           <p className="text-xs text-muted">
-            Справка по силам/чертам — режим «Создать» или вкладка Силы. Все броски — в журнал.
+            Справка по силам/чертам — режим «Создать». Все броски — в журнал.
           </p>
         </div>
       )}

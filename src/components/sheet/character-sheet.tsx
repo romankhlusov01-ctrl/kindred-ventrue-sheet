@@ -27,7 +27,6 @@ import { TableSheet } from "@/components/sheet/table-sheet";
 import { PrintSheetBlock } from "@/components/sheet/print-sheet";
 import { Hotkeys } from "@/components/sheet/hotkeys";
 import { AsiHelper } from "@/components/sheet/asi-helper";
-import { LevelUpHelper } from "@/components/sheet/level-up-helper";
 import { ClearLog } from "@/components/sheet/clear-log";
 import { LogSearch } from "@/components/sheet/log-search";
 import { KindredBuilder } from "@/components/sheet/kindred-builder";
@@ -766,8 +765,10 @@ export function CharacterSheet() {
             </summary>
             <div className="mt-3 space-y-3">
               <AbilityEditor />
-              <LevelUpHelper />
               <AsiHelper />
+              <p className="text-[11px] text-muted">
+                Повышение уровня — вкладка «Ещё» в режиме Играть.
+              </p>
             </div>
           </details>
           )}

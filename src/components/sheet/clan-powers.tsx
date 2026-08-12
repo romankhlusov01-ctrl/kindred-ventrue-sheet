@@ -9,8 +9,9 @@ import {
   tableD20Plain,
 } from "@/lib/table-roll";
 import { DominateDc } from "@/components/sheet/dominate-dc";
+import { BANE, FEATURES, baneLine } from "@/data/terms-ru";
 
-/** Clan-specific table actions (Ventrue / Toreador) */
+/** Clan-specific table actions (Ventrue / Toreador) — RU labels from terms-ru */
 export function ClanPowers() {
   const c = useCharacterStore((s) => s.character);
   const spendBlood = useCharacterStore((s) => s.spendBlood);
@@ -22,14 +23,15 @@ export function ClanPowers() {
   const dc = 8 + pb + abilityMod(c.abilities.cha);
 
   const voice = c.customResources.find((r) => /голос|voice/i.test(r.name));
+  const magnum = c.selectedFeats.filter((id) => id.startsWith("magnum-"));
 
   function spendVoice(label: string) {
     if (!voice) {
-      toast.error("Нет ресурса «Голос власти» — примените билд (Вентру 3+)");
+      toast.error(`Нет «${FEATURES.voice}» — примените билд (Вентру 3+)`);
       return false;
     }
     if (voice.current < 1) {
-      toast.error("Голос власти: 0");
+      toast.error(`${FEATURES.voice}: 0`);
       return false;
     }
     pushUndo(label);
@@ -48,7 +50,7 @@ export function ClanPowers() {
             <span className="text-[10px] text-muted">Сл {dc}</span>
           </div>
           <p className="mb-2 text-[11px] text-accent">
-            Проклятие: d20≤9 Анализ/Внимательность → Обездвижен (Сл 10 Муд.) · Душа художника: преим.
+            {BANE.toreadorShort} · {FEATURES.artistSoul}: преим. Анализ/Внимательность
           </p>
           <div className="grid grid-cols-2 gap-1.5">
             <Button
@@ -75,13 +77,13 @@ export function ClanPowers() {
                   className="h-12 text-xs"
                   onClick={() => {
                     if (c.bloodCurrent < 2) return toast.error("Нужно 2 ОБК");
-                    pushUndo("Aura Sight");
+                    pushUndo("Взгляд ауры");
                     spendBlood(2);
-                    addLog("Aura Sight (−2 ОБК) · 2 вопроса да/нет");
-                    toast.success("Aura Sight");
+                    addLog(`${FEATURES.depth}: Взгляд ауры (−2 ОБК) · 2 вопроса да/нет`);
+                    toast.success("Взгляд ауры");
                   }}
                 >
-                  Aura Sight (−2)
+                  Взгляд ауры (−2)
                 </Button>
                 <Button
                   type="button"
@@ -89,13 +91,15 @@ export function ClanPowers() {
                   className="h-12 text-xs"
                   onClick={() => {
                     if (c.bloodCurrent < 1) return toast.error("Нет ОБК");
-                    pushUndo("Charm/Calm");
+                    pushUndo("Очарование/Спокойствие");
                     spendBlood(1);
-                    addLog("Calm Emotions / Charm (−1 ОБК) · Сл " + dc);
-                    toast.success("Charm / Calm · Сл " + dc);
+                    addLog(
+                      `${FEATURES.depth}: Calm / Charm (−1 ОБК) · Сл ${dc}`,
+                    );
+                    toast.success(`Очарование · Сл ${dc}`);
                   }}
                 >
-                  Charm/Calm (−1)
+                  Очарование / Calm (−1)
                 </Button>
               </>
             )}
@@ -106,15 +110,19 @@ export function ClanPowers() {
                 className="col-span-2 h-12 text-xs"
                 onClick={() => {
                   if (c.bloodCurrent < 1) return toast.error("Нет ОБК");
-                  pushUndo("Live Fast");
+                  pushUndo(FEATURES.liveFast);
                   spendBlood(1);
                   setField("bonusUsed", true);
-                  useSessionStore.getState().addEffect(`Live Fast (${pb} ход.)`, pb);
-                  addLog(`Live Fast (−1 ОБК) · доп. действие ${pb} ходов`);
-                  toast.success("Live Fast");
+                  useSessionStore
+                    .getState()
+                    .addEffect(`${FEATURES.liveFast} (${pb} ход.)`, pb);
+                  addLog(
+                    `${FEATURES.liveFast} (−1 ОБК) · доп. действие ${pb} ходов`,
+                  );
+                  toast.success(FEATURES.liveFast);
                 }}
               >
-                Live Fast · доп. действие (−1 ОБК · {pb} ход.)
+                {FEATURES.liveFast} · доп. действие (−1 · {pb} ход.)
               </Button>
             )}
             {c.level >= 11 && (
@@ -124,13 +132,15 @@ export function ClanPowers() {
                 className="col-span-2 h-12 text-xs"
                 onClick={() => {
                   if (c.bloodCurrent < 2) return toast.error("Нужно 2 ОБК");
-                  pushUndo("Spirit's Touch");
+                  pushUndo("Касание духа");
                   spendBlood(2);
-                  addLog(`Spirit's Touch (−2 ОБК) · вопросов ≤ ${pb}`);
-                  toast.success("Spirit's Touch");
+                  addLog(
+                    `${FEATURES.visionary}: Касание духа (−2 ОБК) · вопросов ≤ ${pb}`,
+                  );
+                  toast.success("Касание духа");
                 }}
               >
-                Spirit's Touch (−2 ОБК)
+                Касание духа (−2 ОБК)
               </Button>
             )}
             {c.level >= 15 && (
@@ -140,27 +150,63 @@ export function ClanPowers() {
                 className="col-span-2 h-12 text-xs"
                 onClick={() => {
                   if (c.bloodCurrent < 3) return toast.error("Нужно 3 ОБК");
-                  pushUndo("Sanctuary");
+                  pushUndo("Убежище");
                   spendBlood(3);
-                  useSessionStore.getState().addEffect("Sanctuary (Truly Majestic)", null);
-                  addLog("Sanctuary (−3 ОБК) · Truly Majestic");
-                  toast.success("Sanctuary");
+                  useSessionStore
+                    .getState()
+                    .addEffect(`Убежище (${FEATURES.majestic})`, null);
+                  addLog(
+                    `${FEATURES.majestic}: Убежище (−3 ОБК)`,
+                  );
+                  toast.success("Убежище");
                 }}
               >
-                Sanctuary (−3 ОБК)
+                Убежище (−3 ОБК) · {FEATURES.majestic}
               </Button>
+            )}
+            {magnum.length > 0 && (
+              <div className="col-span-2 rounded border border-accent/30 bg-accent/5 p-2 text-[11px]">
+                <div className="mb-1 font-medium text-fg">{FEATURES.magnum}</div>
+                <div className="flex flex-wrap gap-1">
+                  {magnum.map((id) => {
+                    const labels: Record<string, string> = {
+                      "magnum-flicker": "Мерцание",
+                      "magnum-clairvoyance": "Ясновидение",
+                      "magnum-open-mind": "Открытый разум",
+                      "magnum-star": "Звёздный магнетизм",
+                    };
+                    return (
+                      <Button
+                        key={id}
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-9 text-[10px]"
+                        onClick={() => {
+                          addLog(`${FEATURES.magnum}: ${labels[id] ?? id}`);
+                          toast.message(labels[id] ?? id);
+                        }}
+                      >
+                        {labels[id] ?? id}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
             <Button
               type="button"
               variant="outline"
               className="col-span-2 h-11 text-xs"
               onClick={() => {
-                useCharacterStore.getState().toggleCondition("Обездвижен (Проклятие)");
-                addLog("Проклятие: Обездвижен (Тореадор)");
-                toast.message("Проклятие: Обездвижен");
+                useCharacterStore
+                  .getState()
+                  .toggleCondition(BANE.condition);
+                addLog(`Проклятие: ${BANE.condition} (Тореадор)`);
+                toast.message(`Проклятие: ${BANE.condition}`);
               }}
             >
-              Проклятие: Обездвижен (вкл/выкл)
+              {BANE.condition} (вкл/выкл)
             </Button>
             <Button
               type="button"
@@ -196,14 +242,14 @@ export function ClanPowers() {
           </span>
         </div>
         <p className="mb-2 text-[11px] text-muted">
-          Проклятие: предпочтённая кровь «{c.preferredBlood || "—"}» · иначе ½ костей питания. Непоколебимая уверенность: преим. на спас Муд.
+          {baneLine("ventrue", c.preferredBlood)}. {FEATURES.unshakable}: преим. на спас Муд.
         </p>
         <div className="grid grid-cols-2 gap-1.5">
           <Button
             type="button"
             variant="blood"
             className="h-12 text-xs"
-            onClick={() => spendVoice("Приказ (Command)")}
+            onClick={() => spendVoice("Приказ")}
           >
             Приказ (−1 Голос)
           </Button>
@@ -211,7 +257,7 @@ export function ClanPowers() {
             type="button"
             variant="blood"
             className="h-12 text-xs"
-            onClick={() => spendVoice("Внушение (Suggestion)")}
+            onClick={() => spendVoice("Внушение")}
           >
             Внушение (−1 Голос)
           </Button>
@@ -221,11 +267,13 @@ export function ClanPowers() {
               variant="secondary"
               className="col-span-2 h-11 text-xs"
               onClick={() => {
-                addLog("Не дрогнуть: переброс спас vs Очарование/Испуг/Оглушение (раз/ход)");
-                toast.message("Переброс Очарование/Испуг/Оглушение");
+                addLog(
+                  `${FEATURES.dnf}: переброс спас vs Очарование/Испуг/Оглушение (раз/ход)`,
+                );
+                toast.message("Не дрогнуть · переброс");
               }}
             >
-              Не дрогнуть · переброс (заметка)
+              {FEATURES.dnf} · переброс
             </Button>
           )}
           {c.level >= 9 && (
@@ -236,14 +284,14 @@ export function ClanPowers() {
                 className="h-12 text-xs"
                 onClick={() => {
                   if (c.bloodCurrent < 2) return toast.error("2 ОБК");
-                  pushUndo("Entrance");
+                  pushUndo("Очарование (Entrance)");
                   spendBlood(2);
                   tableCheckSkill("persuasion");
-                  addLog(`Entrance (−2 ОБК) · Сл = проверка Убеждения`);
-                  toast.success("Entrance · 2 ОБК");
+                  addLog(`Очарование / Entrance (−2 ОБК) · Сл = Убеждение`);
+                  toast.success("Очарование · 2 ОБК");
                 }}
               >
-                Entrance (−2 ОБК)
+                Очарование (−2 ОБК)
               </Button>
               <Button
                 type="button"
@@ -251,14 +299,14 @@ export function ClanPowers() {
                 className="h-12 text-xs"
                 onClick={() => {
                   if (c.bloodCurrent < 1) return toast.error("1 ОБК");
-                  pushUndo("Terrify");
+                  pushUndo("Ужас (Terrify)");
                   spendBlood(1);
                   tableCheckSkill("intimidation");
-                  addLog(`Terrify (−1 ОБК) · Сл = проверка Запугивания`);
-                  toast.success("Terrify · 1 ОБК");
+                  addLog(`Ужас / Terrify (−1 ОБК) · Сл = Запугивание`);
+                  toast.success("Ужас · 1 ОБК");
                 }}
               >
-                Terrify (−1 ОБК)
+                Ужас (−1 ОБК)
               </Button>
               <Button
                 type="button"
@@ -266,13 +314,15 @@ export function ClanPowers() {
                 className="h-12 text-xs"
                 onClick={() => {
                   if (c.bloodCurrent < 1) return toast.error("1 ОБК");
-                  pushUndo("Befuddle");
+                  pushUndo("Замешательство");
                   spendBlood(1);
-                  addLog(`Замешательство / Befuddle (−1 ОБК) · Гипнотический узор · Сл ${dc}`);
-                  toast.success("Befuddle · 1 ОБК");
+                  addLog(
+                    `Замешательство (−1 ОБК) · Гипнотический узор · Сл ${dc}`,
+                  );
+                  toast.success("Замешательство · 1 ОБК");
                 }}
               >
-                Befuddle (−1 ОБК)
+                Замешательство (−1)
               </Button>
               <Button
                 type="button"
@@ -280,13 +330,15 @@ export function ClanPowers() {
                 className="h-12 text-xs"
                 onClick={() => {
                   if (c.bloodCurrent < 1) return toast.error("1 ОБК");
-                  pushUndo("Persuade");
+                  pushUndo("Убеждение (магия)");
                   spendBlood(1);
-                  addLog(`Убеждение / Persuade (−1 ОБК) · Очаровать чудовище · Сл ${dc}`);
-                  toast.success("Persuade · 1 ОБК");
+                  addLog(
+                    `Убеждение (−1 ОБК) · Очаровать чудовище · Сл ${dc}`,
+                  );
+                  toast.success("Убеждение · 1 ОБК");
                 }}
               >
-                Persuade (−1 ОБК)
+                Убеждение (−1)
               </Button>
             </>
           )}
@@ -299,13 +351,13 @@ export function ClanPowers() {
                 const cost =
                   c.level >= 20 ? 6 : c.level >= 18 ? 5 : c.level >= 15 ? 4 : 3;
                 if (c.bloodCurrent < cost) return toast.error(`${cost} ОБК`);
-                pushUndo("Mass Suggestion");
+                pushUndo("Массовое внушение");
                 spendBlood(cost);
-                addLog(`Mass Suggestion (−${cost} ОБК) · Сл ${dc}`);
-                toast.success(`Mass Suggestion · ${cost} ОБК`);
+                addLog(`Массовое внушение (−${cost} ОБК) · Сл ${dc}`);
+                toast.success(`Массовое внушение · ${cost} ОБК`);
               }}
             >
-              Mass Suggestion (−
+              Массовое внушение (−
               {c.level >= 20 ? 6 : c.level >= 18 ? 5 : c.level >= 15 ? 4 : 3} ОБК)
             </Button>
           )}
@@ -316,10 +368,14 @@ export function ClanPowers() {
               className="col-span-2 h-12 text-xs"
               onClick={() => {
                 if (c.bloodCurrent < 2) return toast.error("2 ОБК");
-                pushUndo("Flesh of Marble");
+                pushUndo("Плоть мрамора");
                 spendBlood(2);
-                useSessionStore.getState().addEffect("Плоть мрамора (½ урон)", null);
-                addLog("Плоть мрамора (−2 ОБК, реакция): ½ урона (не огонь/луч); 4 ОБК → 0");
+                useSessionStore
+                  .getState()
+                  .addEffect("Плоть мрамора (½ урон)", null);
+                addLog(
+                  "Плоть мрамора (−2 ОБК, реакция): ½ урона (не огонь/луч); 4 ОБК → 0",
+                );
                 toast.success("Плоть мрамора · −2 ОБК");
               }}
             >
@@ -328,32 +384,34 @@ export function ClanPowers() {
           )}
           {c.level >= 18 && (
             <>
-            <Button
-              type="button"
-              variant="outline"
-              className="col-span-2 h-12 text-xs"
-              onClick={() => {
-                const auraDc = 8 + pb + abilityMod(c.abilities.str);
-                addLog(`Внушительная аура (пассивно) · спас Муд. Сл ${auraDc} (8+Сил+БМ)`);
-                toast.message(`Аура · Сл ${auraDc}`);
-              }}
-            >
-              Внушительная аура (пасс. · Сл Сил)
-            </Button>
-            <Button
-              type="button"
-              variant="blood"
-              className="col-span-2 h-12 text-xs"
-              onClick={() => {
-                if (c.bloodCurrent < 3) return toast.error("3 ОБК");
-                pushUndo("Summon");
-                spendBlood(3);
-                addLog(`Призыв (−3 ОБК) · Сл ${dc}`);
-                toast.success("Призыв");
-              }}
-            >
-              Призыв (−3 ОБК)
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="col-span-2 h-12 text-xs"
+                onClick={() => {
+                  const auraDc = 8 + pb + abilityMod(c.abilities.str);
+                  addLog(
+                    `Внушительная аура (пассивно) · спас Муд. Сл ${auraDc} (8+Сил+БМ)`,
+                  );
+                  toast.message(`Аура · Сл ${auraDc}`);
+                }}
+              >
+                Внушительная аура (пасс. · Сл Сил)
+              </Button>
+              <Button
+                type="button"
+                variant="blood"
+                className="col-span-2 h-12 text-xs"
+                onClick={() => {
+                  if (c.bloodCurrent < 3) return toast.error("3 ОБК");
+                  pushUndo("Призыв");
+                  spendBlood(3);
+                  addLog(`Призыв (−3 ОБК) · Сл ${dc}`);
+                  toast.success("Призыв");
+                }}
+              >
+                Призыв (−3 ОБК)
+              </Button>
             </>
           )}
         </div>
